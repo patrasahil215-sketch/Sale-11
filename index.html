@@ -1,19 +1,8 @@
-<!-- Invoice Modal (ise </body> ke thik upar add karein) -->
-<div id="invoiceModal" class="modal" style="display:none;">
-    <div class="modal-content" style="max-width: 450px;">
-        <span class="close" onclick="closeInvoiceModal()">&times;</span>
-        <div id="invoiceContent" style="padding: 10px;">
-            <h2 style="text-align:center; color:#d81b60;">Sale 11 - Tax Invoice</h2>
-            <hr style="margin: 10px 0;">
-            <p id="invOrderNo"><strong>Order ID:</strong> </p>
-            <p id="invDate"><strong>Date:</strong> </p>
-            <p id="invCustomer"><strong>Customer:</strong> </p>
-            <p id="invAddress"><strong>Address:</strong> </p>
-            <hr style="margin: 10px 0;">
-            <div id="invItemsList"></div>
-            <hr style="margin: 10px 0;">
-            <h3 style="text-align:right;" id="invTotal">Total: ₹0</h3>
-        </div>
-        <button onclick="window.print()" class="btn-primary" style="margin-top: 15px;">Print / Download Invoice</button>
+<!-- Search Bar area in index.html -->
+<div class="search-container" style="position: relative; width: 40%;">
+    <div class="search-bar" style="width: 100%;">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Search products..." onkeyup="showSearchSuggestions()" onfocus="showSearchSuggestions()">
     </div>
+    <div id="searchSuggestionsBox" class="suggestions-dropdown" style="display:none;"></div>
 </div>
