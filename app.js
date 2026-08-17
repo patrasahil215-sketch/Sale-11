@@ -28,6 +28,7 @@ function toggleDarkMode() {
 
 function renderProducts(filteredList = products) {
     const grid = document.getElementById('productsGrid');
+    if(!grid) return;
     grid.innerHTML = '';
     
     if(filteredList.length === 0) {
@@ -136,6 +137,7 @@ function openCartModal() {
 
 function renderCartItems() {
     const container = document.getElementById('cartItemsContainer');
+    if(!container) return;
     container.innerHTML = '';
     let total = 0;
 
@@ -214,6 +216,7 @@ function openOrdersModal() {
     closeLoginModal();
     document.getElementById('ordersModal').style.display = 'block';
     const container = document.getElementById('ordersContainer');
+    if(!container) return;
     container.innerHTML = '';
 
     if(orders.length === 0) {
@@ -254,16 +257,18 @@ function openInvoice(index) {
     document.getElementById('invAddress').innerHTML = '<strong>Payment:</strong> Cash on Delivery (Verified)';
     
     let listDiv = document.getElementById('invItemsList');
-    listDiv.innerHTML = '<h4>Ordered Items:</h4>';
-    let total = 0;
-    ord.items.forEach(item => {
-        total += item.price;
-        listDiv.innerHTML += `<div style="display:flex; justify-content:space-between; font-size:14px; margin:4px 0;">
-            <span>${item.name}</span>
-            <span>₹${item.price}</span>
-        </div>`;
-    });
-    document.getElementById('invTotal').innerText = 'Total: ₹' + total;
+    if(listDiv) {
+        listDiv.innerHTML = '<h4>Ordered Items:</h4>';
+        let total = 0;
+        ord.items.forEach(item => {
+            total += item.price;
+            listDiv.innerHTML += `<div style="display:flex; justify-content:space-between; font-size:14px; margin:4px 0;">
+                <span>${item.name}</span>
+                <span>₹${item.price}</span>
+            </div>`;
+        });
+        document.getElementById('invTotal').innerText = 'Total: ₹' + total;
+    }
 
     document.getElementById('ordersModal').style.display = 'none';
     document.getElementById('invoiceModal').style.display = 'block';
@@ -395,6 +400,7 @@ function toggleWishlist(productName, price, btnElement) {
 function openWishlistModal() {
     document.getElementById('wishlistModal').style.display = 'block';
     const container = document.getElementById('wishlistItemsContainer');
+    if(!container) return;
     container.innerHTML = wishlist.length === 0 ? '<p>Your wishlist is empty.</p>' : '';
     wishlist.forEach(item => { container.innerHTML += `<div>${item.name} - ₹${item.price}</div>`; });
 }
