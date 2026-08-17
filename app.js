@@ -31,6 +31,63 @@ function renderProducts(filteredList = products) {
     });
 }
 
+// Address Management
+let savedAddresses = JSON.parse(localStorage.getItem('sale11_addresses')) || [];
+
+function openAddressModal() {
+    closeLoginModal();
+    document.getElementById('addressModal').style.display = 'block';
+    renderAddresses();
+}
+
+function closeAddressModal() { document.getElementById('addressModal').style.display = 'none'; }
+
+function renderAddresses() {
+    let container = document.getElementById('addressList');
+    container.innerHTML = '';
+    if(savedAddresses.length === 0) {
+        container.innerHTML = '<p style="font-size:13px; color:#888;">No saved addresses yet.</p>';
+        return;
+    }
+    savedAddresses.forEach((addr, idx) => {
+        container.innerHTML += `<div style="background:#f9f9f9; padding:8px; margin-bottom:5px; border-radius:4px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
+            <span>${addr}</span>
+            <button onclick="deleteAddress(${idx})" style="background:none; border:none; color:red; cursor:pointer;">❌</button>
+        </div>`;
+    });
+}
+
+function saveNewAddress() {
+    let newAddr = document.getElementById('newAddressInput').value.trim();
+    if(newAddr) {
+        savedAddresses.push(newAddr);
+        localStorage.setItem('sale11_addresses', JSON.stringify(savedAddresses));
+        document.getElementById('newAddressInput').value = '';
+        renderAddresses();
+    } else {
+        alert('Please enter an address.');
+    }
+}
+
+function deleteAddress(idx) {
+    savedAddresses.splice(idx, 1);
+    localStorage.setItem('sale11_addresses', JSON.stringify(savedAddresses));
+    renderAddresses();
+}
+
+// Policy Modal
+function openPolicyModal(type) {
+    document.getElementById('policyModal').style.display = 'block';
+    if(type === 'Terms') {
+        document.getElementById('policyTitle').innerText = 'Terms & Conditions';
+        document.getElementById('policyText').innerText = 'Welcome to Sale 11. By using our platform, you agree to comply with our reselling policies, pricing guidelines, and code of conduct. All orders are subject to availability and confirmation.';
+    } else {
+        document.getElementById('policyTitle').innerText = 'Privacy Policy';
+        document.getElementById('policyText').innerText = 'We respect your privacy and protect your personal data such as name, phone number, and address provided during checkout. Your data is strictly used for order processing and delivery.';
+    }
+}
+function closePolicyModal() { document.getElementById('policyModal').style.display = 'none'; }
+
 function shareProduct(name, price) {
     if (navigator.share) {
         navigator.share({
@@ -39,20 +96,20 @@ function shareProduct(name, price) {
             url: window.location.href,
         }).catch(() => {});
     } else {
-        alert(`Product link copied for ${name}! Share it with friends.`);
+        alert(`Product link copied for ${name}!`);
     }
 }
 
 function startCountdown() {
-    let time = 5 * 3600 + 45 * 60 + 30; // 5 hours 45 mins
+    let time = 5 * 3600 + 45 * 60 + 30;
     setInterval(() => {
         let hours = Math.floor(time / 3600);
         let minutes = Math.floor((time % 3600) / 60);
         let seconds = time % 60;
-        document.getElementById('countdownTimer').innerText = 
-            String(hours).padStart(2,'0') + 'h : ' + 
-            String(minutes).padStart(2,'0') + 'm : ' + 
-            String(seconds).padStart(2,'0') + 's';
+        let timerElem = document.getElementById('countdownTimer');
+        if(timerElem) {
+            timerElem.innerText = String(hours).padStart(2,'0') + 'h : ' + String(minutes).padStart(2,'0') + 'm : ' + String(seconds).padStart(2,'0') + 's';
+        }
         if(time > 0) time--;
     }, 1000);
 }
@@ -74,19 +131,17 @@ function filterCategory(category) {
     }
 }
 
-// Support Modal Functions
 function openSupportModal() { document.getElementById('supportModal').style.display = 'block'; }
 function closeSupportModal() { document.getElementById('supportModal').style.display = 'none'; }
 function submitSupportQuery() {
     let query = document.getElementById('supportQuery').value.trim();
     if(query) {
-        alert('✅ Query submitted successfully! Our support team will contact you.');
+        alert('✅ Query submitted successfully! Support team will contact you.');
         document.getElementById('supportQuery').value = '';
         closeSupportModal();
     } else { alert('Please write your query first.'); }
 }
 
-// Cart & Coupon System
 let cart = JSON.parse(localStorage.getItem('sale11_cart')) || [];
 let discountAmount = 0;
 updateCartCount();
@@ -99,7 +154,8 @@ function addToCart(name, price) {
 }
 
 function updateCartCount() {
-    document.getElementById('cartCountBadge').innerText = cart.length;
+    let badge = document.getElementById('cartCountBadge');
+    if(badge) badge.innerText = cart.length;
 }
 
 function openCartModal() {
@@ -155,7 +211,6 @@ function openCheckoutModal() {
 }
 function closeCheckoutModal() { document.getElementById('checkoutModal').style.display = 'none'; }
 
-// Orders & Return System
 let orders = JSON.parse(localStorage.getItem('sale11_orders')) || [];
 
 function placeOrder() {
@@ -215,7 +270,8 @@ function closeOrdersModal() { document.getElementById('ordersModal').style.displ
 function requestReturn(index) {
     orders[index].status = 'Return Requested';
     localStorage.setItem('sale11_orders', JSON.stringify(orders));
-    document.getElementById(`status-${index}`).innerText = 'Return Requested';
+    let statusElem = document.getElementById(`status-${index}`);
+    if(statusElem) statusElem.innerText = 'Return Requested';
     alert('Return request initiated.');
 }
 
@@ -247,7 +303,6 @@ function closeInvoiceModal() {
     document.getElementById('ordersModal').style.display = 'block';
 }
 
-// Admin Panel
 function openAdminModal() { document.getElementById('adminModal').style.display = 'block'; renderAdminProductList(); }
 function closeAdminModal() { document.getElementById('adminModal').style.display = 'none'; }
 function addNewProduct() {
@@ -288,7 +343,6 @@ function deleteProduct(index) {
     renderAdminProductList();
 }
 
-// Search & Suggestions
 function showSearchSuggestions() {
     let input = document.getElementById('searchInput').value.toLowerCase();
     let box = document.getElementById('searchSuggestionsBox');
@@ -363,13 +417,19 @@ function checkLoginState() {
     const savedName = localStorage.getItem('sale11_user_name');
     const savedPhone = localStorage.getItem('sale11_user_phone');
     if(savedName && savedPhone) {
-        document.getElementById('authContainer').style.display = 'none';
-        document.getElementById('profileContainer').style.display = 'block';
-        document.getElementById('displayUserName').innerText = 'Name: ' + savedName;
-        document.getElementById('displayUserPhone').innerText = 'Phone: ' + savedPhone;
+        let auth = document.getElementById('authContainer');
+        let prof = document.getElementById('profileContainer');
+        if(auth) auth.style.display = 'none';
+        if(prof) prof.style.display = 'block';
+        let dName = document.getElementById('displayUserName');
+        let dPhone = document.getElementById('displayUserPhone');
+        if(dName) dName.innerText = 'Name: ' + savedName;
+        if(dPhone) dPhone.innerText = 'Phone: ' + savedPhone;
     } else {
-        document.getElementById('authContainer').style.display = 'block';
-        document.getElementById('profileContainer').style.display = 'none';
+        let auth = document.getElementById('authContainer');
+        let prof = document.getElementById('profileContainer');
+        if(auth) auth.style.display = 'block';
+        if(prof) prof.style.display = 'none';
     }
 }
 function handleLogout() {
