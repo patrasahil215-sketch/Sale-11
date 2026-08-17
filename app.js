@@ -6,6 +6,7 @@ let products = JSON.parse(localStorage.getItem('sale11_products')) || [
 
 let currentCategory = 'All';
 renderProducts();
+startCountdown();
 
 function renderProducts(filteredList = products) {
     const grid = document.getElementById('productsGrid');
@@ -24,9 +25,36 @@ function renderProducts(filteredList = products) {
                 <h3>${prod.name}</h3>
                 <p class="price">₹${prod.price} <span class="mrp">₹${prod.mrp}</span></p>
                 <button class="btn-primary" onclick="addToCart('${prod.name}', ${prod.price})">Add to Cart</button>
+                <button class="share-btn" onclick="shareProduct('${prod.name}', ${prod.price})"><i class="fas fa-share-alt"></i> Share</button>
             </div>
         `;
     });
+}
+
+function shareProduct(name, price) {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Sale 11 Store',
+            text: `Check out ${name} for just ₹${price} on Sale 11!`,
+            url: window.location.href,
+        }).catch(() => {});
+    } else {
+        alert(`Product link copied for ${name}! Share it with friends.`);
+    }
+}
+
+function startCountdown() {
+    let time = 5 * 3600 + 45 * 60 + 30; // 5 hours 45 mins
+    setInterval(() => {
+        let hours = Math.floor(time / 3600);
+        let minutes = Math.floor((time % 3600) / 60);
+        let seconds = time % 60;
+        document.getElementById('countdownTimer').innerText = 
+            String(hours).padStart(2,'0') + 'h : ' + 
+            String(minutes).padStart(2,'0') + 'm : ' + 
+            String(seconds).padStart(2,'0') + 's';
+        if(time > 0) time--;
+    }, 1000);
 }
 
 function filterCategory(category) {
@@ -52,12 +80,10 @@ function closeSupportModal() { document.getElementById('supportModal').style.dis
 function submitSupportQuery() {
     let query = document.getElementById('supportQuery').value.trim();
     if(query) {
-        alert('✅ Your query has been submitted successfully! Our support team will contact you within 24 hours.');
+        alert('✅ Query submitted successfully! Our support team will contact you.');
         document.getElementById('supportQuery').value = '';
         closeSupportModal();
-    } else {
-        alert('Please write your query first.');
-    }
+    } else { alert('Please write your query first.'); }
 }
 
 // Cart & Coupon System
@@ -119,9 +145,7 @@ function applyCoupon() {
         discountAmount = 50;
         document.getElementById('couponMsg').innerText = '🎉 Coupon Applied! Flat ₹50 OFF';
         renderCartItems();
-    } else {
-        alert('Invalid Code. Try SALE11');
-    }
+    } else { alert('Invalid Code. Try SALE11'); }
 }
 
 function openCheckoutModal() {
@@ -157,9 +181,7 @@ function placeOrder() {
         localStorage.removeItem('sale11_cart');
         updateCartCount();
         closeCheckoutModal();
-    } else {
-        alert('Please fill all details.');
-    }
+    } else { alert('Please fill all details.'); }
 }
 
 function openOrdersModal() {
@@ -194,7 +216,7 @@ function requestReturn(index) {
     orders[index].status = 'Return Requested';
     localStorage.setItem('sale11_orders', JSON.stringify(orders));
     document.getElementById(`status-${index}`).innerText = 'Return Requested';
-    alert('Return request has been initiated for this order.');
+    alert('Return request initiated.');
 }
 
 function openInvoice(index) {
