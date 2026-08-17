@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sale 11</title>
+<meta name="description" content="Sale 11 - affordable products and great deals.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">SALE <span>11</span></div>
+  <div class="search"><input id="search" placeholder="Search products..." oninput="renderProducts()"></div>
+  <button class="cartBtn" onclick="openCart()">🛒 Cart <b id="cartCount">0</b></button>
+</header>
+
+<section class="hero">
+  <h1>Shop Smart. Save More.</h1>
+  <p>Useful products at great prices.</p>
+</section>
+
+<main>
+  <div class="sectionHead"><h2>Featured Products</h2></div>
+  <div id="products" class="grid"></div>
+</main>
+
+<div id="cartModal" class="modal hidden">
+  <div class="panel">
+    <button class="close" onclick="closeCart()">×</button>
+    <h2>Your Cart</h2>
+    <div id="cartItems"></div>
+    <div class="total">Total: ₹<span id="cartTotal">0</span></div>
+    <button class="primary" onclick="checkout()">Proceed to Checkout</button>
+  </div>
+</div>
+
+<div id="checkoutModal" class="modal hidden">
+  <div class="panel">
+    <button class="close" onclick="closeCheckout()">×</button>
+    <h2>Checkout</h2>
+    <p class="note">Enter the customer's delivery details.</p>
+    <input id="name" placeholder="Customer name">
+    <input id="phone" placeholder="Phone number">
+    <textarea id="address" placeholder="Full delivery address"></textarea>
+    <input id="pincode" placeholder="PIN code">
+    <div class="total">Order total: ₹<span id="checkoutTotal">0</span></div>
+    <button class="primary" onclick="placeOrder()">Place Order</button>
+    <p class="small">Payment gateway can be connected later. This free version does not collect real payments.</p>
+  </div>
+</div>
+
+<footer>© 2026 Sale 11</footer>
+<script src="app.js"></script>
+</body>
+</html>
