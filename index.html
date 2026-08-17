@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sale 11 - Meesho Reselling Store</title>
+    <title>Sale 11 - Reselling Store</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -14,14 +14,14 @@
         <div class="logo">Sale 11</div>
         <div class="search-bar">
             <i class="fas fa-search"></i>
-            <input type="text" placeholder="Search for products, brands and more">
+            <input type="text" id="searchInput" placeholder="Search for products..." onkeyup="filterProducts()">
         </div>
         <div class="nav-icons">
             <div class="nav-item" onclick="openLoginModal()">
                 <i class="fas fa-user"></i>
                 <span>Account</span>
             </div>
-            <div class="nav-item">
+            <div class="nav-item" onclick="openWishlistModal()">
                 <i class="fas fa-heart"></i>
                 <span>Wishlist</span>
             </div>
@@ -32,21 +32,83 @@
         </div>
     </header>
 
-    <!-- Main Content Area -->
+    <!-- Filters & Sorting Bar -->
+    <div class="filter-sort-bar">
+        <div class="filter-dropdown">
+            <select id="sortSelect" onchange="sortProducts()">
+                <option value="popular">Sort by: Popular</option>
+                <option value="low-high">Price: Low to High</option>
+                <option value="high-low">Price: High to Low</option>
+                <option value="rating">Highest Rated</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Main Content / Products Grid -->
     <main class="container">
         <section class="banner">
-            <h1>Welcome to Sale 11 Reselling Store</h1>
-            <p>Best quality products at wholesale prices!</p>
+            <h1>Phase 2: Wishlist & Reviews Active</h1>
+            <p>Explore trending products with ratings and advanced options!</p>
         </section>
+
+        <h2>Trending Products</h2>
+        <div class="products-grid" id="productsGrid">
+            <!-- Product 1 -->
+            <div class="product-card">
+                <button class="wishlist-btn" onclick="toggleWishlist('Classic Kurti', 499, this)"><i class="fas fa-heart"></i></button>
+                <img src="https://via.placeholder.com/150" alt="Product">
+                <h3>Classic Kurti</h3>
+                <p class="price">₹499 <span class="mrp">₹999</span> <span class="discount">50% off</span></p>
+                <p class="rating">⭐ 4.2 (120 reviews)</p>
+                <button class="btn-primary" onclick="openReviewModal('Classic Kurti', '4.2', '120')">View Reviews</button>
+            </div>
+            <!-- Product 2 -->
+            <div class="product-card">
+                <button class="wishlist-btn" onclick="toggleWishlist('Smart Watch', 1299, this)"><i class="fas fa-heart"></i></button>
+                <img src="https://via.placeholder.com/150" alt="Product">
+                <h3>Smart Watch</h3>
+                <p class="price">₹1,299 <span class="mrp">₹2,999</span> <span class="discount">56% off</span></p>
+                <p class="rating">⭐ 4.5 (340 reviews)</p>
+                <button class="btn-primary" onclick="openReviewModal('Smart Watch', '4.5', '340')">View Reviews</button>
+            </div>
+        </div>
     </main>
 
-    <!-- Login / Profile Modal -->
+    <!-- Wishlist Modal -->
+    <div id="wishlistModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeWishlistModal()">&times;</span>
+            <h2>My Wishlist ❤️</h2>
+            <div id="wishlistItemsContainer">
+                <p>Your wishlist is empty.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reviews Modal -->
+    <div id="reviewModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeReviewModal()">&times;</span>
+            <h2 id="reviewProductName">Product Reviews</h2>
+            <p id="reviewStats">⭐ 4.0 | Based on verified purchases</p>
+            <hr style="margin: 10px 0;">
+            <div class="customer-review-box">
+                <p><strong>Rahul Kumar</strong> - ⭐⭐⭐⭐⭐</p>
+                <p style="font-size: 14px; color: #555;">Awesome product! Quality is very good for this price.</p>
+            </div>
+            <div class="customer-review-box" style="margin-top: 10px;">
+                <p><strong>Priya Sharma</strong> - ⭐⭐⭐⭐</p>
+                <p style="font-size: 14px; color: #555;">Nice fabric and fast delivery.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
     <div id="loginModal" class="modal" style="display:none;">
         <div class="modal-content">
             <span class="close" onclick="closeLoginModal()">&times;</span>
             <div id="authContainer">
                 <h2>Sign In / Sign Up</h2>
-                <p>Login to manage orders and profile.</p>
                 <input type="text" id="userNameInput" placeholder="Enter Your Name" class="input-box">
                 <input type="tel" id="userPhoneInput" placeholder="Enter Mobile Number" class="input-box">
                 <button onclick="handleLogin()" class="btn-primary">Continue</button>
