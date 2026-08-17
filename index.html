@@ -1,2 +1,8 @@
-<!-- Navigation bar ke nav-icons ke andar yeh language button add karein -->
-<div class="nav-item" onclick="toggleLanguage()"><i class="fas fa-language"></i><span id="langText">हिंदी</span></div>
+<!-- Product Image Zoom Modal -->
+<div id="imageZoomModal" class="modal" style="display:none; text-align:center;">
+    <div class="modal-content" style="max-width: 400px; background:var(--card-bg);">
+        <span class="close" onclick="closeZoomModal()">&times;</span>
+        <h3 id="zoomProductName" style="margin-bottom:10px; color:var(--text-color);">Product Image</h3>
+        <img id="zoomImageSrc" src="" style="width:100%; height:280px; object-fit:contain; border-radius:6px;">
+    </div>
+</div>
