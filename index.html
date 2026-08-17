@@ -25,30 +25,19 @@
                 <i class="fas fa-heart"></i>
                 <span>Wishlist</span>
             </div>
-            <div class="nav-item">
+            <div class="nav-item" onclick="openCartModal()">
                 <i class="fas fa-shopping-cart"></i>
                 <span>Cart</span>
+                <span id="cartCountBadge" class="badge">0</span>
             </div>
         </div>
     </header>
 
-    <!-- Filters & Sorting Bar -->
-    <div class="filter-sort-bar">
-        <div class="filter-dropdown">
-            <select id="sortSelect" onchange="sortProducts()">
-                <option value="popular">Sort by: Popular</option>
-                <option value="low-high">Price: Low to High</option>
-                <option value="high-low">Price: High to Low</option>
-                <option value="rating">Highest Rated</option>
-            </select>
-        </div>
-    </div>
-
     <!-- Main Content / Products Grid -->
     <main class="container">
         <section class="banner">
-            <h1>Phase 2: Wishlist & Reviews Active</h1>
-            <p>Explore trending products with ratings and advanced options!</p>
+            <h1>Phase 3: Cart & Checkout Active</h1>
+            <p>Add products to cart and place orders instantly!</p>
         </section>
 
         <h2>Trending Products</h2>
@@ -59,8 +48,7 @@
                 <img src="https://via.placeholder.com/150" alt="Product">
                 <h3>Classic Kurti</h3>
                 <p class="price">₹499 <span class="mrp">₹999</span> <span class="discount">50% off</span></p>
-                <p class="rating">⭐ 4.2 (120 reviews)</p>
-                <button class="btn-primary" onclick="openReviewModal('Classic Kurti', '4.2', '120')">View Reviews</button>
+                <button class="btn-primary" onclick="addToCart('Classic Kurti', 499)">Add to Cart</button>
             </div>
             <!-- Product 2 -->
             <div class="product-card">
@@ -68,11 +56,39 @@
                 <img src="https://via.placeholder.com/150" alt="Product">
                 <h3>Smart Watch</h3>
                 <p class="price">₹1,299 <span class="mrp">₹2,999</span> <span class="discount">56% off</span></p>
-                <p class="rating">⭐ 4.5 (340 reviews)</p>
-                <button class="btn-primary" onclick="openReviewModal('Smart Watch', '4.5', '340')">View Reviews</button>
+                <button class="btn-primary" onclick="addToCart('Smart Watch', 1299)">Add to Cart</button>
             </div>
         </div>
     </main>
+
+    <!-- Cart Modal -->
+    <div id="cartModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeCartModal()">&times;</span>
+            <h2>Shopping Cart 🛒</h2>
+            <div id="cartItemsContainer" style="max-height: 200px; overflow-y: auto; margin: 10px 0;">
+                <p>Your cart is empty.</p>
+            </div>
+            <h3>Total: ₹<span id="cartTotalPrice">0</span></h3>
+            <button onclick="openCheckoutModal()" class="btn-primary" style="margin-top: 15px;">Proceed to Checkout</button>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkoutModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeCheckoutModal()">&times;</span>
+            <h2>Delivery Address & Checkout</h2>
+            <input type="text" id="checkoutName" placeholder="Full Name" class="input-box">
+            <input type="tel" id="checkoutPhone" placeholder="Mobile Number" class="input-box">
+            <input type="text" id="checkoutAddress" placeholder="House No, Street, Area" class="input-box">
+            <input type="text" id="checkoutCity" placeholder="City" class="input-box">
+            <input type="text" id="checkoutPincode" placeholder="Pincode" class="input-box">
+            <h3>Payment Method</h3>
+            <label style="display:block; margin: 10px 0;"><input type="radio" name="payment" checked> Cash on Delivery (COD)</label>
+            <button onclick="placeOrder()" class="btn-primary">Place Order</button>
+        </div>
+    </div>
 
     <!-- Wishlist Modal -->
     <div id="wishlistModal" class="modal" style="display:none;">
@@ -81,24 +97,6 @@
             <h2>My Wishlist ❤️</h2>
             <div id="wishlistItemsContainer">
                 <p>Your wishlist is empty.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Reviews Modal -->
-    <div id="reviewModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeReviewModal()">&times;</span>
-            <h2 id="reviewProductName">Product Reviews</h2>
-            <p id="reviewStats">⭐ 4.0 | Based on verified purchases</p>
-            <hr style="margin: 10px 0;">
-            <div class="customer-review-box">
-                <p><strong>Rahul Kumar</strong> - ⭐⭐⭐⭐⭐</p>
-                <p style="font-size: 14px; color: #555;">Awesome product! Quality is very good for this price.</p>
-            </div>
-            <div class="customer-review-box" style="margin-top: 10px;">
-                <p><strong>Priya Sharma</strong> - ⭐⭐⭐⭐</p>
-                <p style="font-size: 14px; color: #555;">Nice fabric and fast delivery.</p>
             </div>
         </div>
     </div>
