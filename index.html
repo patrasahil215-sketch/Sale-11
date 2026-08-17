@@ -17,6 +17,10 @@
             <input type="text" id="searchInput" placeholder="Search for products..." onkeyup="filterProducts()">
         </div>
         <div class="nav-icons">
+            <div class="nav-item" onclick="openAdminModal()">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin</span>
+            </div>
             <div class="nav-item" onclick="openLoginModal()">
                 <i class="fas fa-user"></i>
                 <span>Account</span>
@@ -36,30 +40,36 @@
     <!-- Main Content / Products Grid -->
     <main class="container">
         <section class="banner">
-            <h1>Phase 3: Cart & Checkout Active</h1>
-            <p>Add products to cart and place orders instantly!</p>
+            <h1>Phase 4: Admin Panel Active</h1>
+            <p>Manage products and view your complete store dashboard!</p>
         </section>
 
-        <h2>Trending Products</h2>
+        <h2>Store Products</h2>
         <div class="products-grid" id="productsGrid">
-            <!-- Product 1 -->
-            <div class="product-card">
-                <button class="wishlist-btn" onclick="toggleWishlist('Classic Kurti', 499, this)"><i class="fas fa-heart"></i></button>
-                <img src="https://via.placeholder.com/150" alt="Product">
-                <h3>Classic Kurti</h3>
-                <p class="price">₹499 <span class="mrp">₹999</span> <span class="discount">50% off</span></p>
-                <button class="btn-primary" onclick="addToCart('Classic Kurti', 499)">Add to Cart</button>
-            </div>
-            <!-- Product 2 -->
-            <div class="product-card">
-                <button class="wishlist-btn" onclick="toggleWishlist('Smart Watch', 1299, this)"><i class="fas fa-heart"></i></button>
-                <img src="https://via.placeholder.com/150" alt="Product">
-                <h3>Smart Watch</h3>
-                <p class="price">₹1,299 <span class="mrp">₹2,999</span> <span class="discount">56% off</span></p>
-                <button class="btn-primary" onclick="addToCart('Smart Watch', 1299)">Add to Cart</button>
-            </div>
+            <!-- Products will be loaded dynamically via JavaScript -->
         </div>
     </main>
+
+    <!-- Admin Panel Modal -->
+    <div id="adminModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeAdminModal()">&times;</span>
+            <h2>Admin Dashboard 🛠️</h2>
+            <div style="margin: 15px 0;">
+                <h3>Add New Product</h3>
+                <input type="text" id="adminProdName" placeholder="Product Name" class="input-box">
+                <input type="number" id="adminProdPrice" placeholder="Selling Price (₹)" class="input-box">
+                <input type="number" id="adminProdMrp" placeholder="MRP Price (₹)" class="input-box">
+                <input type="text" id="adminProdImg" placeholder="Image URL (e.g., https://...)" class="input-box">
+                <button onclick="addNewProduct()" class="btn-primary">Add Product to Store</button>
+            </div>
+            <hr style="margin: 15px 0;">
+            <h3>Manage Existing Products</h3>
+            <div id="adminProductList" style="max-height: 150px; overflow-y: auto;">
+                <!-- Admin product items -->
+            </div>
+        </div>
+    </div>
 
     <!-- Cart Modal -->
     <div id="cartModal" class="modal" style="display:none;">
