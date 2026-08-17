@@ -1,7 +1,9 @@
-const products=[
+let defaultProducts=[
  {id:1,name:"Self Adhesive Wall Hooks - Pack of 2",price:199,mrp:299,image:"https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?auto=format&fit=crop&w=700&q=80"},
  {id:2,name:"Kitchen Utility Organizer",price:249,mrp:399,image:"https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=700&q=80"}
 ];
+
+let products = JSON.parse(localStorage.getItem("sale11_products")) || defaultProducts;
 let cart=JSON.parse(localStorage.getItem("sale11cart")||"[]");
 
 function renderProducts(){
@@ -10,6 +12,33 @@ function renderProducts(){
  <article class="card"><img src="${p.image}" alt="${p.name}"><div class="info">
  <div class="name">${p.name}</div><div class="price">₹${p.price} <span class="mrp">₹${p.mrp}</span></div>
  <button class="primary" onclick="addToCart(${p.id})">Add to Cart</button></div></article>`).join("");
+}
+
+function openAdmin(){
+ document.getElementById("adminModal").classList.remove("hidden");
+}
+
+function closeAdmin(){
+ document.getElementById("adminModal").classList.add("hidden");
+}
+
+function addNewProduct(){
+ let name = document.getElementById("prodName").value.trim();
+ let price = Number(document.getElementById("prodPrice").value);
+ let mrp = Number(document.getElementById("prodMrp").value);
+ let image = document.getElementById("prodImg").value.trim();
+
+ if(!name || !price || !image){
+   alert("Please fill all required product fields.");
+   return;
+ }
+
+ let newId = products.length ? products[products.length - 1].id + 1 : 1;
+ products.push({id: newId, name, price, mrp: mrp || price, image});
+ localStorage.setItem("sale11_products", JSON.stringify(products));
+ renderProducts();
+ closeAdmin();
+ alert("Product added successfully!");
 }
 
 function addToCart(id){
@@ -70,7 +99,6 @@ function placeOrder(){
 
  let total = cart.reduce((a,x)=>a+x.price*x.qty,0);
  let orderId = "S11-" + Date.now();
-
  let itemsList = cart.map(x => `• ${x.name} (Qty: ${x.qty}) - ₹${x.price * x.qty}`).join("\n");
 
  let message = `New Order: ${orderId}\n` +
@@ -81,9 +109,6 @@ function placeOrder(){
                `Total: ₹${total}`;
 
  let whatsappNumber = "918779165289";
-
- let order={orderId,name,phone,address,pin,items:cart,total,created:new Date().toISOString()};
- localStorage.setItem("sale11_last_order",JSON.stringify(order));
 
  cart=[];
  save();
