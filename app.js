@@ -49,7 +49,6 @@ function renderProducts(filteredList = products) {
     });
 }
 
-// Image Zoom Functions
 function openImageZoom(imgUrl, prodName) {
     document.getElementById('zoomImageSrc').src = imgUrl;
     document.getElementById('zoomProductName').innerText = prodName;
@@ -103,7 +102,6 @@ function filterCategory(category) {
     }
 }
 
-// Support Modal Functions
 function openSupportModal() { document.getElementById('supportModal').style.display = 'block'; }
 function closeSupportModal() { document.getElementById('supportModal').style.display = 'none'; }
 function submitSupportQuery() {
@@ -115,7 +113,6 @@ function submitSupportQuery() {
     } else { alert('Please write your query first.'); }
 }
 
-// Cart & Coupon System
 let cart = JSON.parse(localStorage.getItem('sale11_cart')) || [];
 let discountAmount = 0;
 updateCartCount();
@@ -185,7 +182,6 @@ function openCheckoutModal() {
 }
 function closeCheckoutModal() { document.getElementById('checkoutModal').style.display = 'none'; }
 
-// Orders System
 let orders = JSON.parse(localStorage.getItem('sale11_orders')) || [];
 
 function placeOrder() {
@@ -278,7 +274,6 @@ function closeInvoiceModal() {
     document.getElementById('ordersModal').style.display = 'block';
 }
 
-// Admin Panel Stats & Management
 function openAdminModal() {
     document.getElementById('adminModal').style.display = 'block';
     renderAdminProductList();
@@ -443,7 +438,6 @@ function handleLogout() {
     checkLoginState();
 }
 
-// Saved Addresses & Policies
 let savedAddresses = JSON.parse(localStorage.getItem('sale11_addresses')) || [];
 function openAddressModal() {
     closeLoginModal();
