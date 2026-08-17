@@ -1,14 +1,19 @@
-<!-- Yeh code index.html mein add karein -->
-<!-- Product Details Modal (ise </body> ke thik upar rakhein) -->
-<div id="detailsModal" class="modal" style="display:none;">
-    <div class="modal-content">
-        <span class="close" onclick="closeDetailsModal()">&times;</span>
-        <img id="detailImg" src="" style="width:100%; height:200px; object-fit:cover; border-radius:8px;">
-        <h2 id="detailName"></h2>
-        <p class="price">Price: ₹<span id="detailPrice"></span></p>
-        <p id="detailCategory" style="color:#777;"></p>
-        <button class="btn-primary" onclick="addToCartFromDetails()">Add to Cart</button>
-        <h3 style="margin-top:15px;">Similar Products</h3>
-        <div id="similarProducts" style="display:flex; gap:10px; margin-top:10px; overflow-x:auto;"></div>
+<!-- Invoice Modal (ise </body> ke thik upar add karein) -->
+<div id="invoiceModal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 450px;">
+        <span class="close" onclick="closeInvoiceModal()">&times;</span>
+        <div id="invoiceContent" style="padding: 10px;">
+            <h2 style="text-align:center; color:#d81b60;">Sale 11 - Tax Invoice</h2>
+            <hr style="margin: 10px 0;">
+            <p id="invOrderNo"><strong>Order ID:</strong> </p>
+            <p id="invDate"><strong>Date:</strong> </p>
+            <p id="invCustomer"><strong>Customer:</strong> </p>
+            <p id="invAddress"><strong>Address:</strong> </p>
+            <hr style="margin: 10px 0;">
+            <div id="invItemsList"></div>
+            <hr style="margin: 10px 0;">
+            <h3 style="text-align:right;" id="invTotal">Total: ₹0</h3>
+        </div>
+        <button onclick="window.print()" class="btn-primary" style="margin-top: 15px;">Print / Download Invoice</button>
     </div>
 </div>
