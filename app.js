@@ -1,4 +1,3 @@
-// Default Products Database
 let products = JSON.parse(localStorage.getItem('sale11_products')) || [
     { name: 'Classic Kurti', price: 499, mrp: 999, img: 'https://via.placeholder.com/150' },
     { name: 'Smart Watch', price: 1299, mrp: 2999, img: 'https://via.placeholder.com/150' }
@@ -6,7 +5,6 @@ let products = JSON.parse(localStorage.getItem('sale11_products')) || [
 
 renderProducts();
 
-// Render Products on Home Page
 function renderProducts() {
     const grid = document.getElementById('productsGrid');
     grid.innerHTML = '';
@@ -23,16 +21,135 @@ function renderProducts() {
     });
 }
 
-// Admin Panel Functions
-function openAdminModal() {
-    document.getElementById('adminModal').style.display = 'block';
-    renderAdminProductList();
+// Cart & Coupon System
+let cart = JSON.parse(localStorage.getItem('sale11_cart')) || [];
+let discountAmount = 0;
+updateCartCount();
+
+function addToCart(name, price) {
+    cart.push({ name: name, price: price });
+    localStorage.setItem('sale11_cart', JSON.stringify(cart));
+    updateCartCount();
+    alert(name + ' added to Cart 🛒');
 }
 
-function closeAdminModal() {
-    document.getElementById('adminModal').style.display = 'none';
+function updateCartCount() {
+    document.getElementById('cartCountBadge').innerText = cart.length;
 }
 
+function openCartModal() {
+    document.getElementById('cartModal').style.display = 'block';
+    renderCartItems();
+}
+
+function renderCartItems() {
+    const container = document.getElementById('cartItemsContainer');
+    container.innerHTML = '';
+    let total = 0;
+
+    if(cart.length === 0) {
+        container.innerHTML = '<p>Your cart is empty.</p>';
+        document.getElementById('cartTotalPrice').innerText = '0';
+        return;
+    }
+
+    cart.forEach((item, index) => {
+        total += item.price;
+        container.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding: 6px 0; border-bottom: 1px solid #eee;">
+            <span>${item.name} - ₹${item.price}</span>
+            <button onclick="removeFromCart(${index})" style="background:none; border:none; color:red; cursor:pointer;">❌</button>
+        </div>`;
+    });
+
+    let finalTotal = total - discountAmount;
+    if(finalTotal < 0) finalTotal = 0;
+    document.getElementById('cartTotalPrice').innerText = finalTotal;
+}
+
+function closeCartModal() { document.getElementById('cartModal').style.display = 'none'; }
+function removeFromCart(index) {
+    cart.splice(index, 1);
+    localStorage.setItem('sale11_cart', JSON.stringify(cart));
+    updateCartCount();
+    renderCartItems();
+}
+
+function applyCoupon() {
+    const code = document.getElementById('couponInput').value.trim().toUpperCase();
+    if(code === 'SALE11') {
+        discountAmount = 50;
+        document.getElementById('couponMsg').innerText = '🎉 Coupon Applied! Flat ₹50 OFF';
+        renderCartItems();
+    } else {
+        alert('Invalid Coupon Code. Try SALE11');
+    }
+}
+
+function openCheckoutModal() {
+    if(cart.length === 0) { alert('Your cart is empty!'); return; }
+    closeCartModal();
+    document.getElementById('checkoutModal').style.display = 'block';
+}
+function closeCheckoutModal() { document.getElementById('checkoutModal').style.display = 'none'; }
+
+// Orders System
+let orders = JSON.parse(localStorage.getItem('sale11_orders')) || [];
+
+function placeOrder() {
+    const name = document.getElementById('checkoutName').value;
+    const phone = document.getElementById('checkoutPhone').value;
+    const address = document.getElementById('checkoutAddress').value;
+    const city = document.getElementById('checkoutCity').value;
+    const pincode = document.getElementById('checkoutPincode').value;
+
+    if(name && phone && address && city && pincode) {
+        let orderDetails = {
+            id: 'ORD' + Math.floor(100000 + Math.random() * 900000),
+            items: [...cart],
+            date: new Date().toLocaleDateString(),
+            status: 'Order Placed (Confirmed)'
+        };
+        orders.push(orderDetails);
+        localStorage.setItem('sale11_orders', JSON.stringify(orders));
+
+        alert('🎉 Order Placed Successfully!');
+        cart = [];
+        discountAmount = 0;
+        localStorage.removeItem('sale11_cart');
+        updateCartCount();
+        closeCheckoutModal();
+    } else {
+        alert('Please fill in all delivery details.');
+    }
+}
+
+function openOrdersModal() {
+    closeLoginModal();
+    document.getElementById('ordersModal').style.display = 'block';
+    const container = document.getElementById('ordersContainer');
+    container.innerHTML = '';
+
+    if(orders.length === 0) {
+        container.innerHTML = '<p>No orders placed yet.</p>';
+        return;
+    }
+
+    orders.forEach(ord => {
+        container.innerHTML += `
+            <div style="background:#f9f9f9; padding: 10px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #d81b60;">
+                <p><strong>Order ID:</strong> ${ord.id}</p>
+                <p><strong>Date:</strong> ${ord.date}</p>
+                <p><strong>Status:</strong> <span style="color: green; font-weight:bold;">${ord.status}</span></p>
+                <p style="font-size: 13px; color: #555; margin-top: 5px;">Items: ${ord.items.map(i => i.name).join(', ')}</p>
+            </div>
+        `;
+    });
+}
+function closeOrdersModal() { document.getElementById('ordersModal').style.display = 'none'; }
+
+// Admin Panel
+function openAdminModal() { document.getElementById('adminModal').style.display = 'block'; renderAdminProductList(); }
+function closeAdminModal() { document.getElementById('adminModal').style.display = 'none'; }
 function addNewProduct() {
     const name = document.getElementById('adminProdName').value;
     const price = Number(document.getElementById('adminProdPrice').value);
@@ -49,139 +166,54 @@ function addNewProduct() {
         document.getElementById('adminProdPrice').value = '';
         document.getElementById('adminProdMrp').value = '';
         document.getElementById('adminProdImg').value = '';
-    } else {
-        alert('Please fill out product name, price, and MRP.');
-    }
+    } else { alert('Please fill product details.'); }
 }
-
 function renderAdminProductList() {
     const listContainer = document.getElementById('adminProductList');
     listContainer.innerHTML = '';
     products.forEach((prod, index) => {
         listContainer.innerHTML += `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding: 6px 0; border-bottom: 1px solid #eee;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 4px 0; border-bottom: 1px solid #eee;">
                 <span>${prod.name} (₹${prod.price})</span>
                 <button onclick="deleteProduct(${index})" style="background:none; border:none; color:red; cursor:pointer;">Delete</button>
             </div>
         `;
     });
 }
-
 function deleteProduct(index) {
     products.splice(index, 1);
     localStorage.setItem('sale11_products', JSON.stringify(products));
     renderProducts();
     renderAdminProductList();
-    alert('Product deleted.');
 }
 
-// Cart Array & Logic
-let cart = JSON.parse(localStorage.getItem('sale11_cart')) || [];
-updateCartCount();
-
-function addToCart(name, price) {
-    cart.push({ name: name, price: price });
-    localStorage.setItem('sale11_cart', JSON.stringify(cart));
-    updateCartCount();
-    alert(name + ' added to Cart 🛒');
-}
-
-function updateCartCount() {
-    document.getElementById('cartCountBadge').innerText = cart.length;
-}
-
-function openCartModal() {
-    document.getElementById('cartModal').style.display = 'block';
-    const container = document.getElementById('cartItemsContainer');
-    container.innerHTML = '';
-    let total = 0;
-
-    if(cart.length === 0) {
-        container.innerHTML = '<p>Your cart is empty.</p>';
-        document.getElementById('cartTotalPrice').innerText = '0';
-        return;
-    }
-
-    cart.forEach((item, index) => {
-        total += item.price;
-        container.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0; border-bottom: 1px solid #eee;">
-            <span>${item.name} - ₹${item.price}</span>
-            <button onclick="removeFromCart(${index})" style="background:none; border:none; color:red; cursor:pointer;">❌</button>
-        </div>`;
-    });
-    document.getElementById('cartTotalPrice').innerText = total;
-}
-
-function closeCartModal() { document.getElementById('cartModal').style.display = 'none'; }
-function removeFromCart(index) {
-    cart.splice(index, 1);
-    localStorage.setItem('sale11_cart', JSON.stringify(cart));
-    updateCartCount();
-    openCartModal();
-}
-
-function openCheckoutModal() {
-    if(cart.length === 0) { alert('Your cart is empty!'); return; }
-    closeCartModal();
-    document.getElementById('checkoutModal').style.display = 'block';
-}
-function closeCheckoutModal() { document.getElementById('checkoutModal').style.display = 'none'; }
-
-function placeOrder() {
-    const name = document.getElementById('checkoutName').value;
-    const phone = document.getElementById('checkoutPhone').value;
-    const address = document.getElementById('checkoutAddress').value;
-    const city = document.getElementById('checkoutCity').value;
-    const pincode = document.getElementById('checkoutPincode').value;
-
-    if(name && phone && address && city && pincode) {
-        alert('🎉 Order Placed Successfully! Thank you for shopping with Sale 11.');
-        cart = [];
-        localStorage.removeItem('sale11_cart');
-        updateCartCount();
-        closeCheckoutModal();
-    } else {
-        alert('Please fill in all delivery address details.');
-    }
-}
-
-// Search Filter Function
+// Search, Wishlist & Login
 function filterProducts() {
     let input = document.getElementById('searchInput').value.toLowerCase();
     let cards = document.getElementsByClassName('product-card');
     for (let i = 0; i < cards.length; i++) {
         let title = cards[i].getElementsByTagName('h3')[0].innerText.toLowerCase();
-        if (title.includes(input)) {
-            cards[i].style.display = "";
-        } else {
-            cards[i].style.display = "none";
-        }
+        cards[i].style.display = title.includes(input) ? "" : "none";
     }
 }
 
-// Wishlist & Login Functions
 let wishlist = JSON.parse(localStorage.getItem('sale11_wishlist')) || [];
 function toggleWishlist(productName, price, btnElement) {
     const index = wishlist.findIndex(item => item.name === productName);
     if(index > -1) {
         wishlist.splice(index, 1);
         btnElement.classList.remove('active');
-        alert(productName + ' removed from Wishlist');
     } else {
         wishlist.push({ name: productName, price: price });
         btnElement.classList.add('active');
-        alert(productName + ' added to Wishlist ❤️');
     }
     localStorage.setItem('sale11_wishlist', JSON.stringify(wishlist));
 }
 function openWishlistModal() {
     document.getElementById('wishlistModal').style.display = 'block';
     const container = document.getElementById('wishlistItemsContainer');
-    container.innerHTML = '';
-    if(wishlist.length === 0) { container.innerHTML = '<p>Your wishlist is empty.</p>'; return; }
-    wishlist.forEach(item => {
-        container.innerHTML += `<div style="padding: 8px 0; border-bottom: 1px solid #eee;">${item.name} - ₹${item.price}</div>`;
-    });
+    container.innerHTML = wishlist.length === 0 ? '<p>Your wishlist is empty.</p>' : '';
+    wishlist.forEach(item => { container.innerHTML += `<div>${item.name} - ₹${item.price}</div>`; });
 }
 function closeWishlistModal() { document.getElementById('wishlistModal').style.display = 'none'; }
 
@@ -195,7 +227,7 @@ function handleLogin() {
         localStorage.setItem('sale11_user_phone', phone);
         alert('Login Successful!');
         checkLoginState();
-    } else { alert('Please enter both name and mobile number.'); }
+    } else { alert('Enter name and phone.'); }
 }
 function checkLoginState() {
     const savedName = localStorage.getItem('sale11_user_name');
@@ -213,6 +245,6 @@ function checkLoginState() {
 function handleLogout() {
     localStorage.removeItem('sale11_user_name');
     localStorage.removeItem('sale11_user_phone');
-    alert('Logged out successfully.');
+    alert('Logged out.');
     checkLoginState();
 }

@@ -40,47 +40,31 @@
     <!-- Main Content / Products Grid -->
     <main class="container">
         <section class="banner">
-            <h1>Phase 4: Admin Panel Active</h1>
-            <p>Manage products and view your complete store dashboard!</p>
+            <h1>Phase 5: Orders Tracking & Coupons Active</h1>
+            <p>Track your orders live and apply discount coupons!</p>
         </section>
 
         <h2>Store Products</h2>
         <div class="products-grid" id="productsGrid">
-            <!-- Products will be loaded dynamically via JavaScript -->
+            <!-- Products loaded dynamically -->
         </div>
     </main>
-
-    <!-- Admin Panel Modal -->
-    <div id="adminModal" class="modal" style="display:none;">
-        <div class="modal-content" style="max-width: 500px;">
-            <span class="close" onclick="closeAdminModal()">&times;</span>
-            <h2>Admin Dashboard 🛠️</h2>
-            <div style="margin: 15px 0;">
-                <h3>Add New Product</h3>
-                <input type="text" id="adminProdName" placeholder="Product Name" class="input-box">
-                <input type="number" id="adminProdPrice" placeholder="Selling Price (₹)" class="input-box">
-                <input type="number" id="adminProdMrp" placeholder="MRP Price (₹)" class="input-box">
-                <input type="text" id="adminProdImg" placeholder="Image URL (e.g., https://...)" class="input-box">
-                <button onclick="addNewProduct()" class="btn-primary">Add Product to Store</button>
-            </div>
-            <hr style="margin: 15px 0;">
-            <h3>Manage Existing Products</h3>
-            <div id="adminProductList" style="max-height: 150px; overflow-y: auto;">
-                <!-- Admin product items -->
-            </div>
-        </div>
-    </div>
 
     <!-- Cart Modal -->
     <div id="cartModal" class="modal" style="display:none;">
         <div class="modal-content">
             <span class="close" onclick="closeCartModal()">&times;</span>
             <h2>Shopping Cart 🛒</h2>
-            <div id="cartItemsContainer" style="max-height: 200px; overflow-y: auto; margin: 10px 0;">
+            <div id="cartItemsContainer" style="max-height: 150px; overflow-y: auto; margin: 10px 0;">
                 <p>Your cart is empty.</p>
             </div>
+            <div style="margin: 10px 0; display: flex; gap: 5px;">
+                <input type="text" id="couponInput" placeholder="Enter Coupon (e.g. SALE11)" class="input-box" style="margin:0;">
+                <button onclick="applyCoupon()" class="btn-secondary" style="padding: 8px;">Apply</button>
+            </div>
+            <p id="couponMsg" style="font-size: 12px; color: green; margin-bottom: 5px;"></p>
             <h3>Total: ₹<span id="cartTotalPrice">0</span></h3>
-            <button onclick="openCheckoutModal()" class="btn-primary" style="margin-top: 15px;">Proceed to Checkout</button>
+            <button onclick="openCheckoutModal()" class="btn-primary" style="margin-top: 10px;">Proceed to Checkout</button>
         </div>
     </div>
 
@@ -100,14 +84,42 @@
         </div>
     </div>
 
+    <!-- My Orders Modal -->
+    <div id="ordersModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeOrdersModal()">&times;</span>
+            <h2>My Orders 📦</h2>
+            <div id="ordersContainer" style="max-height: 250px; overflow-y: auto; margin-top: 10px;">
+                <p>No orders placed yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="adminModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeAdminModal()">&times;</span>
+            <h2>Admin Dashboard 🛠️</h2>
+            <div style="margin: 15px 0;">
+                <h3>Add New Product</h3>
+                <input type="text" id="adminProdName" placeholder="Product Name" class="input-box">
+                <input type="number" id="adminProdPrice" placeholder="Selling Price (₹)" class="input-box">
+                <input type="number" id="adminProdMrp" placeholder="MRP Price (₹)" class="input-box">
+                <input type="text" id="adminProdImg" placeholder="Image URL" class="input-box">
+                <button onclick="addNewProduct()" class="btn-primary">Add Product</button>
+            </div>
+            <hr style="margin: 15px 0;">
+            <h3>Manage Products</h3>
+            <div id="adminProductList" style="max-height: 120px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
     <!-- Wishlist Modal -->
     <div id="wishlistModal" class="modal" style="display:none;">
         <div class="modal-content">
             <span class="close" onclick="closeWishlistModal()">&times;</span>
             <h2>My Wishlist ❤️</h2>
-            <div id="wishlistItemsContainer">
-                <p>Your wishlist is empty.</p>
-            </div>
+            <div id="wishlistItemsContainer"><p>Your wishlist is empty.</p></div>
         </div>
     </div>
 
@@ -125,6 +137,7 @@
                 <h2>My Account</h2>
                 <p id="displayUserName"></p>
                 <p id="displayUserPhone"></p>
+                <button onclick="openOrdersModal()" class="btn-primary" style="margin-top:10px;">View My Orders</button>
                 <button onclick="handleLogout()" class="btn-danger">Logout</button>
             </div>
         </div>
