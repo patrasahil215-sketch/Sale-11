@@ -1,57 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sale 11 - Store</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sale 11 - Meesho Reselling Store</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-<header>
-  <h1>Sale 11</h1>
-  <div class="actions">
-    <button onclick="openAdmin()" class="admin-btn">Admin</button>
-    <button onclick="openCart()">Cart (<span id="cartCount">0</span>)</button>
-  </div>
-</header>
 
-<main>
-  <section id="products" class="grid"></section>
-</main>
+    <!-- Header / Navigation -->
+    <header class="navbar">
+        <div class="logo">Sale 11</div>
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search for products, brands and more">
+        </div>
+        <div class="nav-icons">
+            <div class="nav-item" onclick="openLoginModal()">
+                <i class="fas fa-user"></i>
+                <span>Account</span>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-heart"></i>
+                <span>Wishlist</span>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Cart</span>
+            </div>
+        </div>
+    </header>
 
-<div id="detailModal" class="modal hidden">
-  <div class="modal-content">
-    <img id="detailImg" src="" alt="" class="detail-img">
-    <h2 id="detailName"></h2>
-    <p id="detailDesc"></p>
-    <p><b>Price: ₹<span id="detailPrice"></span></b></p>
-    <button onclick="addToCartFromDetail()" class="primary">Add to Cart</button>
-    <button onclick="closeDetail()">Close</button>
-  </div>
-</div>
+    <!-- Main Content Area -->
+    <main class="container">
+        <section class="banner">
+            <h1>Welcome to Sale 11 Reselling Store</h1>
+            <p>Best quality products at wholesale prices!</p>
+        </section>
+    </main>
 
-<div id="adminModal" class="modal hidden">
-  <div class="modal-content">
-    <h2>Add Product (Meesho Style)</h2>
-    <input type="text" id="prodName" placeholder="Product Name">
-    <textarea id="prodDesc" placeholder="Full Product Description"></textarea>
-    <input type="number" id="prodPrice" placeholder="Price (₹)">
-    <input type="number" id="prodMrp" placeholder="MRP (₹)">
-    <input type="text" id="prodImg" placeholder="Image URL">
-    <button onclick="addNewProduct()" class="primary">Add Product</button>
-    <button onclick="closeAdmin()">Close</button>
-  </div>
-</div>
+    <!-- Login / Profile Modal -->
+    <div id="loginModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeLoginModal()">&times;</span>
+            <div id="authContainer">
+                <h2>Sign In / Sign Up</h2>
+                <p>Login to manage orders and profile.</p>
+                <input type="text" id="userNameInput" placeholder="Enter Your Name" class="input-box">
+                <input type="tel" id="userPhoneInput" placeholder="Enter Mobile Number" class="input-box">
+                <button onclick="handleLogin()" class="btn-primary">Continue</button>
+            </div>
+            <div id="profileContainer" style="display:none;">
+                <h2>My Account</h2>
+                <p id="displayUserName"></p>
+                <p id="displayUserPhone"></p>
+                <button onclick="handleLogout()" class="btn-danger">Logout</button>
+            </div>
+        </div>
+    </div>
 
-<div id="cartModal" class="modal hidden">
-  <div class="modal-content">
-    <h2>Your Cart</h2>
-    <div id="cartItems"></div>
-    <h3>Total: ₹<span id="cartTotal">0</span></h3>
-    <button onclick="closeCart()">Close</button>
-  </div>
-</div>
-
-<script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
