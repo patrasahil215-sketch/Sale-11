@@ -4,20 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sale 11 - Pro Reselling Store & Admin Dashboard</title>
-    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #333333;
+            --card-bg: #ffffff;
+            --primary-color: #d81b60;
+            --primary-hover: #ad1457;
+            --border-color: #e0e0e0;
+        }
+        body.dark-mode {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --primary-color: #e91e63;
+            --border-color: #333333;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); transition: background 0.3s, color 0.3s; padding-bottom: 60px; }
+        
+        /* Navbar */
+        .navbar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 12px 20px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }
+        .logo { font-size: 22px; font-weight: 800; color: var(--primary-color); cursor: pointer; }
+        .search-bar { display: flex; align-items: center; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 6px 12px; width: 30%; }
+        .search-bar input { border: none; outline: none; background: transparent; width: 100%; margin-left: 8px; color: var(--text-color); font-size: 14px; }
+        .nav-icons { display: flex; gap: 15px; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 11px; cursor: pointer; color: var(--text-color); position: relative; }
+        .nav-item i { font-size: 16px; margin-bottom: 2px; color: var(--primary-color); }
+        .badge { position: absolute; top: -5px; right: 2px; background: var(--primary-color); color: white; font-size: 10px; padding: 1px 5px; border-radius: 50%; }
+
+        /* Category Bar */
+        .category-bar { display: flex; gap: 10px; overflow-x: auto; background: var(--card-bg); padding: 10px 20px; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+        .cat-btn { background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 16px; cursor: pointer; font-size: 13px; }
+        .cat-btn.active, .cat-btn:hover { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        /* Main Container */
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+        .flash-banner { background: linear-gradient(135deg, #d81b60, #8e24aa); color: white; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 25px; }
+        
+        /* Products Grid */
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .product-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; position: relative; display: flex; flex-direction: column; justify-content: space-between; }
+        .product-card img { width: 100%; height: 180px; object-fit: cover; border-radius: 6px; cursor: pointer; }
+        .product-card h3 { font-size: 14px; margin: 8px 0 4px 0; font-weight: 600; cursor: pointer; }
+        .price { font-size: 15px; font-weight: 700; color: var(--primary-color); margin-bottom: 8px; }
+        .mrp { font-size: 12px; text-decoration: line-through; color: #888; margin-left: 6px; }
+        .resell-badge { background: rgba(142, 36, 170, 0.1); color: #8e24aa; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; display: inline-block; font-weight: 600; }
+        
+        /* Buttons */
+        .btn-primary { background: var(--primary-color); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; width: 100%; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-top: 5px; width: 100%; }
+        .wishlist-btn { position: absolute; top: 18px; right: 18px; background: var(--card-bg); border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; color: #888; }
+        .wishlist-btn.active { color: #e53935; }
+
+        /* Modals */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 10px; }
+        .modal-content { background: var(--card-bg); color: var(--text-color); padding: 20px; border-radius: 10px; width: 100%; max-width: 500px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .close { position: absolute; top: 12px; right: 15px; font-size: 20px; cursor: pointer; color: #888; }
+        .input-box { width: 100%; padding: 10px; margin: 8px 0; background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; }
+
+        /* Admin Dashboard Styles */
+        .admin-tab-btn { background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .admin-tab-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .admin-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; }
+        .stat-card { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 4px solid var(--primary-color); }
+        .stat-card h3 { font-size: 20px; color: var(--primary-color); margin-bottom: 5px; }
+        .stat-card p { font-size: 12px; color: #888; }
+
+        /* Mobile Bottom Nav Bar */
+        .mobile-bottom-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border-color); display: none; justify-content: space-around; padding: 8px 0; z-index: 1500; }
+        .mobile-nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text-color); cursor: pointer; }
+        .mobile-nav-item i { font-size: 18px; color: var(--primary-color); margin-bottom: 2px; }
+
+        @media (max-width: 768px) {
+            .search-bar { width: 30% !important; }
+            .nav-item span { display: none; }
+            .products-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .mobile-bottom-nav { display: flex; }
+        }
+    </style>
 </head>
 <body id="pageBody">
 
     <!-- Header / Navigation -->
     <header class="navbar">
-        <div class="logo" onclick="switchTab('store')" style="cursor:pointer;">Sale 11</div>
-        <div class="search-container" style="position: relative; width: 30%;">
-            <div class="search-bar" style="width: 100%;">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search products, categories..." onkeyup="showSearchSuggestions()" onfocus="showSearchSuggestions()">
-            </div>
-            <div id="searchSuggestionsBox" class="suggestions-dropdown" style="display:none;"></div>
+        <div class="logo" onclick="switchTab('store')">Sale 11</div>
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search products..." onkeyup="filterProductsSearch()">
         </div>
         <div class="nav-icons">
             <div class="nav-item" onclick="toggleDarkMode()"><i class="fas fa-moon" id="darkModeIcon"></i><span>Theme</span></div>
@@ -32,133 +108,83 @@
         </div>
     </header>
 
-    <!-- Main Store & Customer View -->
+    <!-- Main Store View -->
     <div id="customerStoreView">
-        <!-- Category Filter Bar -->
-        <div class="category-bar" id="categoryBarContainer">
+        <div class="category-bar">
             <button onclick="filterCategory('All')" class="cat-btn active">All</button>
             <button onclick="filterCategory('Fashion')" class="cat-btn">Fashion</button>
             <button onclick="filterCategory('Electronics')" class="cat-btn">Electronics</button>
-            <button onclick="filterCategory('Home')" class="cat-btn">Home & Kitchen</button>
+            <button onclick="filterCategory('Home & Kitchen')" class="cat-btn">Home & Kitchen</button>
             <button onclick="filterCategory('Beauty')" class="cat-btn">Beauty</button>
             <button onclick="filterCategory('Kids')" class="cat-btn">Kids</button>
-            <button onclick="filterCategory('Accessories')" class="cat-btn">Accessories</button>
-            <button onclick="filterCategory('Stationery')" class="cat-btn">Stationery</button>
-            <button onclick="filterCategory('New Arrivals')" class="cat-btn">New Arrivals</button>
             <button onclick="filterCategory('Best Sellers')" class="cat-btn">Best Sellers</button>
         </div>
 
-        <!-- Main Content / Products Grid -->
         <main class="container">
-            <!-- Flash Sale Banner with Countdown -->
             <section class="flash-banner">
                 <h2>⚡ FLASH SALE LIVE!</h2>
-                <p>Hurry up! Massive reselling margins & discounts ending soon.</p>
-                <div id="countdownTimer" class="countdown">05h : 45m : 30s</div>
+                <p>Massive discounts & reselling margins ending soon. Free Delivery on all orders!</p>
             </section>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2 id="sectionTitle">Store Products</h2>
-                <select id="sortFilter" onchange="sortProducts()" class="input-box" style="width: 180px; margin:0;">
-                    <option value="default">Sort By: Featured</option>
-                    <option value="low-high">Price: Low to High</option>
-                    <option value="high-low">Price: High to Low</option>
-                    <option value="rating">Top Rated</option>
-                </select>
-            </div>
-
-            <div class="products-grid" id="productsGrid">
-                <!-- Products loaded dynamically -->
-            </div>
+            <h2>Store Products</h2>
+            <div class="products-grid" id="productsGrid"></div>
         </main>
     </div>
 
-    <!-- PRO ADMIN DASHBOARD PANEL (Hidden by default) -->
+    <!-- Admin Dashboard View -->
     <div id="adminDashboardView" style="display:none; padding: 20px; max-width: 1200px; margin: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #d81b60; padding-bottom: 10px;">
-            <h2>🛠️ Admin Control Panel (Sale 11)</h2>
-            <button onclick="switchTab('store')" class="btn-secondary" style="background:#333; color:#fff; padding:8px 15px;">Exit to Store 🛍️</button>
+            <h2>🛠️ Admin Control Panel</h2>
+            <button onclick="switchTab('store')" class="btn-secondary" style="background:#333; color:#fff; width:auto; padding:8px 15px;">Exit to Store 🛍️</button>
         </div>
-
-        <!-- Admin Navigation Sub-Tabs -->
         <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
             <button onclick="switchAdminTab('dashboard')" class="admin-tab-btn active" id="tabBtnDash">📊 Dashboard</button>
             <button onclick="switchAdminTab('products')" class="admin-tab-btn" id="tabBtnProds">📦 Manage Products</button>
-            <button onclick="switchAdminTab('orders')" class="admin-tab-btn" id="tabBtnOrders">🛒 Order Management</button>
+            <button onclick="switchAdminTab('orders')" class="admin-tab-btn" id="tabBtnOrders">🛒 Orders</button>
             <button onclick="switchAdminTab('customers')" class="admin-tab-btn" id="tabBtnCust">👥 Customers</button>
-            <button onclick="switchAdminTab('settings')" class="admin-tab-btn" id="tabBtnSett">⚙️ Settings</button>
         </div>
 
-        <!-- 1. STATS & DASHBOARD TAB -->
-        <div id="adminTabDashboard" class="admin-tab-content">
+        <div id="adminTabDashboard">
             <div class="admin-stats-grid">
                 <div class="stat-card"><h3>₹<span id="statRevenue">0</span></h3><p>Total Revenue</p></div>
                 <div class="stat-card"><h3><span id="statOrders">0</span></h3><p>Total Orders</p></div>
                 <div class="stat-card"><h3><span id="statProds">0</span></h3><p>Total Products</p></div>
                 <div class="stat-card"><h3><span id="statCusts">0</span></h3><p>Total Customers</p></div>
-                <div class="stat-card" style="border-left: 4px solid orange;"><h3><span id="statPending">0</span></h3><p>Pending Orders</p></div>
-                <div class="stat-card" style="border-left: 4px solid green;"><h3>₹<span id="statTodayRev">0</span></h3><p>Today's Revenue</p></div>
-            </div>
-
-            <div style="margin-top: 30px; background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <h3>🔔 Live Notifications & Alerts</h3>
-                <div id="adminNotificationsList" style="margin-top: 10px; max-height: 200px; overflow-y: auto;">
-                    <p style="font-size: 13px; color: #888;">No new alerts.</p>
-                </div>
             </div>
         </div>
 
-        <!-- 2. MANAGE & ADD PRODUCTS TAB -->
-        <div id="adminTabProducts" class="admin-tab-content" style="display:none;">
+        <div id="adminTabProducts" style="display:none;">
             <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px;">
                 <h3 id="adminFormTitle">➕ Add New Product</h3>
                 <input type="hidden" id="editProductIndex" value="-1">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 15px;">
-                    <input type="text" id="adminProdName" placeholder="Product Name *" class="input-box">
-                    <input type="number" id="adminProdPrice" placeholder="Selling Price (₹) *" class="input-box">
-                    <input type="number" id="adminProdMrp" placeholder="MRP Price (₹) *" class="input-box">
-                    <input type="number" id="adminProdResell" placeholder="Reselling Price / Margin (₹)" class="input-box">
-                    <select id="adminProdCat" class="input-box" style="padding:10px;">
-                        <option value="Fashion">Fashion</option>
-                        <option value="Electronics">Electronics</option>
-                        <option value="Home">Home & Kitchen</option>
-                        <option value="Beauty">Beauty</option>
-                        <option value="Kids">Kids</option>
-                        <option value="Accessories">Accessories</option>
-                        <option value="Stationery">Stationery</option>
-                        <option value="New Arrivals">New Arrivals</option>
-                        <option value="Best Sellers">Best Sellers</option>
-                    </select>
-                    <input type="number" id="adminProdStock" placeholder="Stock Quantity *" class="input-box">
-                    <input type="number" id="adminProdRating" placeholder="Rating (1-5)" step="0.1" value="4.5" class="input-box">
-                    <input type="text" id="adminProdImg" placeholder="Main Image URL *" class="input-box">
-                </div>
-                <input type="text" id="adminProdImages" placeholder="Multiple Image URLs (comma separated: url1, url2)" class="input-box" style="margin-top:10px;">
-                <textarea id="adminProdDesc" placeholder="Product Description..." class="input-box" style="margin-top:10px; height:60px;"></textarea>
-                <input type="text" id="adminProdFeatures" placeholder="Features (comma separated: Soft fabric, Waterproof)" class="input-box" style="margin-top:10px;">
-                <input type="text" id="adminProdVideo" placeholder="Video URL (YouTube/MP4 link)" class="input-box" style="margin-top:10px;">
-                
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button id="adminSaveBtn" onclick="saveAdminProduct()" class="btn-primary" style="flex:1;">Save Product</button>
-                    <button id="adminCancelBtn" onclick="resetAdminForm()" class="btn-secondary" style="display:none; flex:1; background:#888; color:#fff;">Cancel Edit</button>
-                </div>
+                <input type="text" id="adminProdName" placeholder="Product Name *" class="input-box">
+                <input type="number" id="adminProdPrice" placeholder="Selling Price (₹) *" class="input-box">
+                <input type="number" id="adminProdMrp" placeholder="MRP Price (₹) *" class="input-box">
+                <input type="number" id="adminProdResell" placeholder="Reselling Price (₹)" class="input-box">
+                <select id="adminProdCat" class="input-box">
+                    <option value="Fashion">Fashion</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Home & Kitchen">Home & Kitchen</option>
+                    <option value="Beauty">Beauty</option>
+                    <option value="Kids">Kids</option>
+                    <option value="Best Sellers">Best Sellers</option>
+                </select>
+                <input type="number" id="adminProdStock" placeholder="Stock Quantity" class="input-box" value="10">
+                <input type="text" id="adminProdImg" placeholder="Image URL *" class="input-box">
+                <input type="text" id="adminProdImages" placeholder="Extra Image URLs (comma separated)" class="input-box">
+                <textarea id="adminProdDesc" placeholder="Product Description" class="input-box" style="height:60px;"></textarea>
+                <button onclick="saveAdminProduct()" class="btn-primary" style="margin-top:10px;">Save Product</button>
             </div>
-
             <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <h3>📦 Existing Products List</h3>
-                <div style="margin: 15px 0; display: flex; gap: 10px;">
-                    <input type="text" id="adminSearchProd" placeholder="Search product..." class="input-box" onkeyup="renderAdminProductTable()" style="margin:0;">
-                </div>
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;" id="adminProductsTable">
+                <h3>📦 Existing Products</h3>
+                <div style="overflow-x: auto; margin-top: 10px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                         <thead>
                             <tr style="background: rgba(216,27,96,0.1); text-align: left;">
-                                <th style="padding: 10px;">Image</th>
-                                <th style="padding: 10px;">Name</th>
-                                <th style="padding: 10px;">Price</th>
-                                <th style="padding: 10px;">Resell</th>
-                                <th style="padding: 10px;">Stock</th>
-                                <th style="padding: 10px;">Actions</th>
+                                <th style="padding: 8px;">Image</th>
+                                <th style="padding: 8px;">Name</th>
+                                <th style="padding: 8px;">Price</th>
+                                <th style="padding: 8px;">Stock</th>
+                                <th style="padding: 8px;">Action</th>
                             </tr>
                         </thead>
                         <tbody id="adminProductsTableBody"></tbody>
@@ -167,233 +193,398 @@
             </div>
         </div>
 
-        <!-- 3. ORDER MANAGEMENT TAB -->
-        <div id="adminTabOrders" class="admin-tab-content" style="display:none;">
+        <div id="adminTabOrders" style="display:none;">
             <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <h3>🛒 Customer Orders Management</h3>
-                <div style="margin: 15px 0; display: flex; gap: 10px; flex-wrap: wrap;">
-                    <select id="adminOrderStatusFilter" onchange="renderAdminOrders()" class="input-box" style="width: 200px; margin:0;">
-                        <option value="All">All Statuses</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Shipped">Shipped</option>
-                        <option value="Out for Delivery">Out for Delivery</option>
-                        <option value="Delivered">Delivered</option>
-                        <option value="Cancelled">Cancelled</option>
-                    </select>
-                </div>
-                <div id="adminOrdersContainer" style="margin-top: 15px;">
-                    <p>No orders found.</p>
-                </div>
+                <div id="adminOrdersContainer" style="margin-top: 15px;"><p>No orders yet.</p></div>
             </div>
         </div>
 
-        <!-- 4. CUSTOMER MANAGEMENT TAB -->
-        <div id="adminTabCustomers" class="admin-tab-content" style="display:none;">
+        <div id="adminTabCustomers" style="display:none;">
             <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <h3>👥 Registered Customers</h3>
-                <div id="adminCustomersContainer" style="margin-top: 15px;">
-                    <p>No registered customers yet.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- 5. ADMIN SETTINGS TAB -->
-        <div id="adminTabSettings" class="admin-tab-content" style="display:none;">
-            <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); max-width: 600px;">
-                <h3>⚙️ Store & Admin Settings</h3>
-                <label style="display:block; margin-top:10px; font-size:13px;">Website Name</label>
-                <input type="text" id="stStoreName" value="Sale 11" class="input-box">
-                <label style="display:block; margin-top:10px; font-size:13px;">WhatsApp Number</label>
-                <input type="text" id="stWhatsapp" value="+91 9876543210" class="input-box">
-                <label style="display:block; margin-top:10px; font-size:13px;">Delivery Charges (₹)</label>
-                <input type="number" id="stDelivery" value="0" class="input-box">
-                <label style="display:block; margin-top:10px; font-size:13px;">COD Status</label>
-                <select id="stCodStatus" class="input-box">
-                    <option value="Enabled">Enabled</option>
-                    <option value="Disabled">Disabled</option>
-                </select>
-                <button onclick="saveAdminSettings()" class="btn-primary" style="margin-top: 15px;">Save Settings</button>
+                <div id="adminCustomersContainer" style="margin-top: 15px;"><p>No customers yet.</p></div>
             </div>
         </div>
     </div>
 
-    <!-- Product Details Modal (Customer View) -->
-    <div id="productDetailModal" class="modal" style="display:none;">
-        <div class="modal-content" style="max-width: 700px;">
-            <span class="close" onclick="closeProductDetailModal()">&times;</span>
-            <div id="productDetailContainer"></div>
-        </div>
+    <!-- Mobile Bottom Navigation -->
+    <div class="mobile-bottom-nav">
+        <div class="mobile-nav-item" onclick="switchTab('store')"><i class="fas fa-home"><span>Home</span></i></div>
+        <div class="mobile-nav-item" onclick="openWishlistModal()"><i class="fas fa-heart"><span>Wishlist</span></i></div>
+        <div class="mobile-nav-item" onclick="openCartModal()"><i class="fas fa-shopping-cart"><span>Cart</span></i></div>
+        <div class="mobile-nav-item" onclick="openLoginModal()"><i class="fas fa-user"><span>Account</span></i></div>
     </div>
 
-    <!-- Product Image Zoom Modal -->
-    <div id="imageZoomModal" class="modal" style="display:none; text-align:center;">
-        <div class="modal-content" style="max-width: 450px; background:var(--card-bg);">
-            <span class="close" onclick="closeZoomModal()">&times;</span>
-            <h3 id="zoomProductName" style="margin-bottom:10px; color:var(--text-color);">Product Image</h3>
-            <img id="zoomImageSrc" src="" style="width:100%; height:300px; object-fit:contain; border-radius:6px;">
-        </div>
-    </div>
-
-    <!-- Footer Links -->
+    <!-- Footer -->
     <footer style="background:var(--card-bg); padding: 20px; text-align:center; margin-top:30px; border-top:1px solid var(--border-color);">
-        <p style="font-size: 13px; color: var(--text-color); margin-bottom: 10px;">
-            <span onclick="openPolicyModal('Terms')" style="cursor:pointer; margin-right:15px; color:#d81b60;">Terms & Conditions</span> | 
-            <span onclick="openPolicyModal('Privacy')" style="cursor:pointer; margin-left:15px; color:#d81b60;">Privacy Policy</span>
-        </p>
-        <p style="font-size: 12px; color: #888;">&copy; 2026 Sale 11 Reselling Store. All rights reserved.</p>
+        <p style="font-size: 13px; color: var(--text-color);">&copy; 2026 Sale 11 Reselling Store. All rights reserved.</p>
     </footer>
 
-    <!-- Policy Modal -->
-    <div id="policyModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closePolicyModal()">&times;</span>
-            <h2 id="policyTitle">Policy</h2>
-            <div id="policyText" style="font-size: 13px; color: #555; margin-top: 10px; max-height:200px; overflow-y:auto;"></div>
-        </div>
-    </div>
+    <!-- Modals -->
+    <div id="productDetailModal" class="modal"><div class="modal-content"><span class="close" onclick="closeProductDetailModal()">&times;</span><div id="productDetailContainer"></div></div></div>
+    
+    <div id="cartModal" class="modal"><div class="modal-content"><span class="close" onclick="closeCartModal()">&times;</span><h2>Shopping Cart 🛒</h2><div id="cartItemsContainer" style="margin:10px 0; max-height:150px; overflow-y:auto;"><p>Cart is empty.</p></div><h3>Total: ₹<span id="cartTotalPrice">0</span></h3><button onclick="openCheckoutModal()" class="btn-primary" style="margin-top:10px;">Checkout</button></div></div>
 
-    <!-- Saved Addresses Modal -->
-    <div id="addressModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeAddressModal()">&times;</span>
-            <h2>My Saved Addresses 📍</h2>
-            <div id="addressList" style="margin: 10px 0; max-height: 150px; overflow-y:auto;"></div>
-            <input type="text" id="newAddressInput" placeholder="Add new delivery address..." class="input-box">
-            <button onclick="saveNewAddress()" class="btn-primary">Save Address</button>
-        </div>
-    </div>
+    <div id="checkoutModal" class="modal"><div class="modal-content"><span class="close" onclick="closeCheckoutModal()">&times;</span><h2>Checkout & Delivery</h2><input type="text" id="checkoutName" placeholder="Full Name *" class="input-box"><input type="tel" id="checkoutPhone" placeholder="Mobile Number *" class="input-box"><input type="text" id="checkoutAddress" placeholder="Full Address *" class="input-box"><input type="text" id="checkoutCity" placeholder="City *" class="input-box"><input type="text" id="checkoutPincode" placeholder="Pincode *" class="input-box"><h3 style="margin-top:10px;">Payment Method</h3><label><input type="radio" name="payment" value="COD" checked> Cash on Delivery (COD)</label><label style="display:block; margin-top:5px;"><input type="radio" name="payment" value="UPI"> Online UPI / QR Code</label><button onclick="placeOrder()" class="btn-primary" style="margin-top:10px;">Place Order</button></div></div>
 
-    <!-- Support Modal -->
-    <div id="supportModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeSupportModal()">&times;</span>
-            <h2>Customer Support ☎️</h2>
-            <p style="margin: 10px 0; font-size: 14px;">Need help with your order or payments? Contact us below:</p>
-            <div style="background:var(--card-bg); padding: 10px; border-radius: 5px; margin-bottom: 10px; border:1px solid var(--border-color);">
-                <p><strong>Email:</strong> support@sale11store.com</p>
-                <p><strong>WhatsApp / Phone:</strong> +91 98765 43210</p>
-            </div>
-            <input type="text" id="supportQuery" placeholder="Write your issue/query..." class="input-box">
-            <button onclick="submitSupportQuery()" class="btn-primary">Submit Query</button>
-        </div>
-    </div>
+    <div id="supportModal" class="modal"><div class="modal-content"><span class="close" onclick="closeSupportModal()">&times;</span><h2>Support ☎️</h2><p style="font-size:13px; margin:10px 0;">WhatsApp / Call: +91 9876543210<br>Email: support@sale11store.com</p></div></div>
 
-    <!-- Cart Modal -->
-    <div id="cartModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeCartModal()">&times;</span>
-            <h2>Shopping Cart 🛒</h2>
-            <div id="cartItemsContainer" style="max-height: 180px; overflow-y: auto; margin: 10px 0;">
-                <p>Your cart is empty.</p>
-            </div>
-            <div style="margin: 10px 0; display: flex; gap: 5px;">
-                <input type="text" id="couponInput" placeholder="Enter Coupon (SALE11)" class="input-box" style="margin:0;">
-                <button onclick="applyCoupon()" class="btn-secondary" style="padding: 8px;">Apply</button>
-            </div>
-            <p id="couponMsg" style="font-size: 12px; color: green; margin-bottom: 5px;"></p>
-            <h3>Total: ₹<span id="cartTotalPrice">0</span></h3>
-            <button onclick="openCheckoutModal()" class="btn-primary" style="margin-top: 10px;">Proceed to Checkout</button>
-        </div>
-    </div>
+    <div id="wishlistModal" class="modal"><div class="modal-content"><span class="close" onclick="closeWishlistModal()">&times;</span><h2>Wishlist ❤️</h2><div id="wishlistItemsContainer"><p>Wishlist is empty.</p></div></div></div>
 
-    <!-- Checkout Modal with UPI & COD -->
-    <div id="checkoutModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeCheckoutModal()">&times;</span>
-            <h2>Delivery Address & Checkout</h2>
-            <input type="text" id="checkoutName" placeholder="Full Name *" class="input-box">
-            <input type="tel" id="checkoutPhone" placeholder="Mobile Number *" class="input-box">
-            <input type="text" id="checkoutAddress" placeholder="House No, Street, Area *" class="input-box">
-            <input type="text" id="checkoutCity" placeholder="City *" class="input-box">
-            <input type="text" id="checkoutPincode" placeholder="Pincode *" class="input-box">
-            
-            <h3 style="margin-top:10px;">Payment Method</h3>
-            <label style="display:block; margin: 8px 0; cursor:pointer;"><input type="radio" name="payment" value="COD" checked> Cash on Delivery (COD)</label>
-            <label style="display:block; margin: 8px 0; cursor:pointer;"><input type="radio" name="payment" value="UPI"> Online UPI / QR Code</label>
-            
-            <div id="upiScannerBox" style="display:none; text-align:center; margin:10px 0; background:var(--bg-color); padding:10px; border-radius:6px; border:1px solid var(--border-color);">
-                <p style="font-size:12px; margin-bottom:5px;">Scan QR to Pay via GPay / PhonePe / Paytm</p>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=upi://pay?pa=sale11store@upi&pn=Sale11" alt="UPI QR" style="width:110px; height:110px;">
-                <p style="font-size:11px; color:green; margin-top:5px;">(Secure Gateway)</p>
-            </div>
+    <div id="loginModal" class="modal"><div class="modal-content"><span class="close" onclick="closeLoginModal()">&times;</span><div id="authContainer"><h2>My Account Login</h2><input type="text" id="userNameInput" placeholder="Name" class="input-box"><input type="tel" id="userPhoneInput" placeholder="Phone" class="input-box"><button onclick="handleLogin()" class="btn-primary" style="margin-top:10px;">Login</button></div><div id="profileContainer" style="display:none;"><h2>My Profile</h2><p id="displayUserName"></p><p id="displayUserPhone"></p><button onclick="handleLogout()" class="btn-primary" style="background:#e53935; margin-top:10px;">Logout</button></div></div></div>
 
-            <button onclick="placeOrder()" class="btn-primary" style="margin-top:10px;">Place Order</button>
-        </div>
-    </div>
+    <!-- Script Logic -->
+    <script>
+        let products = JSON.parse(localStorage.getItem('sale11_products')) || [
+            { name: 'Classic Kurti', price: 499, mrp: 999, resellPrice: 750, category: 'Fashion', stock: 15, rating: 4.5, img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400', images: [], description: 'Comfortable daily wear cotton kurti.' },
+            { name: 'Smart Watch', price: 1299, mrp: 2999, resellPrice: 1650, category: 'Electronics', stock: 10, rating: 4.7, img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400', images: [], description: 'Fitness tracker smartwatch with heart rate monitor.' }
+        ];
+        let orders = JSON.parse(localStorage.getItem('sale11_orders')) || [];
+        let customers = JSON.parse(localStorage.getItem('sale11_customers')) || [];
+        let cart = JSON.parse(localStorage.getItem('sale11_cart')) || [];
+        let wishlist = JSON.parse(localStorage.getItem('sale11_wishlist')) || [];
 
-    <!-- My Orders Modal -->
-    <div id="ordersModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeOrdersModal()">&times;</span>
-            <h2>My Orders 📦</h2>
-            <div id="ordersContainer" style="max-height: 250px; overflow-y: auto; margin-top: 10px;">
-                <p>No orders placed yet.</p>
-            </div>
-        </div>
-    </div>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+            updateCartCount();
+            if (localStorage.getItem('sale11_theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+                let icon = document.getElementById('darkModeIcon');
+                if(icon) icon.className = "fas fa-sun";
+            }
+        });
 
-    <!-- Invoice Modal -->
-    <div id="invoiceModal" class="modal" style="display:none;">
-        <div class="modal-content" style="max-width: 450px;">
-            <span class="close" onclick="closeInvoiceModal()">&times;</span>
-            <div id="invoiceContent" style="padding: 10px;">
-                <h2 style="text-align:center; color:#d81b60;">Sale 11 - Tax Invoice</h2>
-                <hr style="margin: 10px 0;">
-                <p id="invOrderNo"><strong>Order ID:</strong> </p>
-                <p id="invDate"><strong>Date:</strong> </p>
-                <p id="invCustomer"><strong>Customer:</strong> </p>
-                <p id="invAddress"><strong>Payment:</strong> </p>
-                <hr style="margin: 10px 0;">
-                <div id="invItemsList"></div>
-                <hr style="margin: 10px 0;">
-                <h3 style="text-align:right;" id="invTotal">Total: ₹0</h3>
-            </div>
-            <button onclick="window.print()" class="btn-primary" style="margin-top: 15px;">Print / Download Invoice</button>
-        </div>
-    </div>
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            let icon = document.getElementById('darkModeIcon');
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('sale11_theme', 'dark');
+                if(icon) icon.className = "fas fa-sun";
+            } else {
+                localStorage.setItem('sale11_theme', 'light');
+                if(icon) icon.className = "fas fa-moon";
+            }
+        }
 
-    <!-- Wishlist Modal -->
-    <div id="wishlistModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeWishlistModal()">&times;</span>
-            <h2>My Wishlist ❤️</h2>
-            <div id="wishlistItemsContainer"><p>Your wishlist is empty.</p></div>
-        </div>
-    </div>
+        // Secure Admin Authentication using password s@hil2026
+        function checkAdminAccess() {
+            let isAdminLoggedIn = sessionStorage.getItem('sale11_admin_auth');
+            if(isAdminLoggedIn === 'true') {
+                openAdminDashboard();
+            } else {
+                let pass = prompt('🔐 Enter Admin Password:');
+                if(pass === 's@hil2026') {
+                    sessionStorage.setItem('sale11_admin_auth', 'true');
+                    openAdminDashboard();
+                    alert('✅ Welcome Admin!');
+                } else if(pass !== null) {
+                    alert('❌ Incorrect Password!');
+                }
+            }
+        }
 
-    <!-- Login Modal -->
-    <div id="loginModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span class="close" onclick="closeLoginModal()">&times;</span>
-            <div id="authContainer">
-                <h2>Sign In / Sign Up</h2>
-                <input type="text" id="userNameInput" placeholder="Enter Your Name" class="input-box">
-                <input type="tel" id="userPhoneInput" placeholder="Enter Mobile Number" class="input-box">
-                <button onclick="handleLogin()" class="btn-primary">Continue</button>
-            </div>
-            <div id="profileContainer" style="display:none;">
-                <h2>My Account</h2>
-                <p id="displayUserName"></p>
-                <p id="displayUserPhone"></p>
-                <button onclick="openOrdersModal()" class="btn-primary" style="margin-top:10px;">View My Orders</button>
-                <button onclick="openAddressModal()" class="btn-secondary" style="margin-top:5px; width:100%; padding:8px;">Saved Addresses 📍</button>
-                <button onclick="handleLogout()" class="btn-danger">Logout</button>
-            </div>
-        </div>
-    </div>
+        function openAdminDashboard() {
+            document.getElementById('customerStoreView').style.display = 'none';
+            document.getElementById('adminDashboardView').style.display = 'block';
+            updateStats();
+            renderAdminProducts();
+            renderAdminOrders();
+            renderAdminCustomers();
+        }
 
-    <!-- Admin Login Security Modal -->
-    <div id="adminLoginModal" class="modal" style="display:none;">
-        <div class="modal-content" style="max-width: 350px;">
-            <span class="close" onclick="closeAdminLoginModal()">&times;</span>
-            <h2>Admin Login 🔐</h2>
-            <p style="font-size: 13px; color: #666; margin: 10px 0;">Enter admin password to access control panel (Default: admin123):</p>
-            <input type="password" id="adminPasswordInput" placeholder="Password" class="input-box">
-            <button onclick="verifyAdminPassword()" class="btn-primary" style="margin-top: 10px;">Login Admin</button>
-        </div>
-    </div>
+        function switchTab(tab) {
+            if(tab === 'store') {
+                document.getElementById('adminDashboardView').style.display = 'none';
+                document.getElementById('customerStoreView').style.display = 'block';
+                renderProducts();
+            }
+        }
 
-    <script src="app.js"></script>
+        function switchAdminTab(tabName) {
+            ['dashboard', 'products', 'orders', 'customers'].forEach(t => {
+                let el = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
+                if(el) el.style.display = (t === tabName) ? 'block' : 'none';
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('statRevenue').innerText = orders.reduce((s, o) => s + o.totalAmount, 0);
+            document.getElementById('statOrders').innerText = orders.length;
+            document.getElementById('statProds').innerText = products.length;
+            document.getElementById('statCusts').innerText = customers.length;
+        }
+
+        function renderProducts(list = products) {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = list.length === 0 ? '<p>No products found.</p>' : '';
+            list.forEach((p, idx) => {
+                let realIdx = products.indexOf(p);
+                let discount = p.mrp > p.price ? Math.round(((p.mrp - p.price)/p.mrp)*100) : 0;
+                grid.innerHTML += `
+                    <div class="product-card">
+                        <button class="wishlist-btn ${wishlist.some(w => w.name === p.name) ? 'active' : ''}" onclick="toggleWishlist('${p.name}', ${p.price}, this)"><i class="fas fa-heart"></i></button>
+                        <img src="${p.img}" alt="${p.name}" onclick="openProductDetail(${realIdx})">
+                        <h3 onclick="openProductDetail(${realIdx})">${p.name}</h3>
+                        <span class="resell-badge">Resell: ₹${p.resellPrice || p.price + 200}</span>
+                        <p class="price">₹${p.price} <span class="mrp">₹${p.mrp}</span> <span style="font-size:11px; color:green; float:right;">${discount}% OFF</span></p>
+                        <div style="font-size:11px; color:#888; margin-bottom:8px;">★ ${p.rating || 4.5} | Stock: ${p.stock ?? 10}</div>
+                        <button class="btn-primary" onclick="addToCart('${p.name}', ${p.price})" ${p.stock <= 0 ? 'disabled style="background:#ccc;"' : ''}>Add to Cart</button>
+                        <div style="display:flex; gap:5px; margin-top:5px;">
+                            <button class="btn-secondary" onclick="shareProduct('${p.name}', ${p.price}, ${p.resellPrice || p.price + 200})"><i class="fas fa-share-alt"></i> Share</button>
+                            <button class="btn-secondary" onclick="whatsappShare('${p.name}', ${p.price}, ${p.resellPrice || p.price + 200})" style="background:#25D366; color:#fff;"><i class="fab fa-whatsapp"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Product Details View
+        function openProductDetail(idx) {
+            let p = products[idx];
+            let modal = document.getElementById('productDetailModal');
+            let container = document.getElementById('productDetailContainer');
+            container.innerHTML = `
+                <span class="close" onclick="closeProductDetailModal()">&times;</span>
+                <img src="${p.img}" style="width:100%; height:220px; object-fit:contain; border-radius:6px;">
+                <h2 style="margin-top:10px;">${p.name}</h2>
+                <p class="price" style="font-size:18px; margin:5px 0;">₹${p.price} <span class="mrp">₹${p.mrp}</span></p>
+                <span class="resell-badge">Reselling Price: ₹${p.resellPrice || p.price + 200}</span>
+                <p style="font-size:13px; margin:8px 0;"><strong>Category:</strong> ${p.category}</p>
+                <p style="font-size:13px; margin:8px 0;">${p.description || 'High quality reselling product.'}</p>
+                <p style="font-size:12px; color:green; font-weight:600; margin:10px 0;">✓ Cash on Delivery Available | ✓ Easy Returns</p>
+                <button class="btn-primary" onclick="addToCart('${p.name}', ${p.price}); closeProductDetailModal();">Add to Cart</button>
+            `;
+            modal.style.display = 'flex';
+        }
+        function closeProductDetailModal() { document.getElementById('productDetailModal').style.display = 'none'; }
+
+        function filterCategory(cat) {
+            if(cat === 'All') renderProducts(products);
+            else renderProducts(products.filter(p => p.category === cat));
+        }
+
+        function filterProductsSearch() {
+            let q = document.getElementById('searchInput').value.toLowerCase();
+            renderProducts(products.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)));
+        }
+
+        function shareProduct(name, price, resellPrice) {
+            if (navigator.share) {
+                navigator.share({ title: 'Sale 11', text: `Check out ${name} for ₹${resellPrice}!`, url: window.location.href }).catch(()=>{});
+            } else { alert(`Link copied for ${name}!`); }
+        }
+
+        function whatsappShare(name, price, resellPrice) {
+            let msg = encodeURIComponent(`🔥 Hot Item! *${name}* - Resell Price: ₹${resellPrice}\nOrder now: ${window.location.href}`);
+            window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+        }
+
+        function addToCart(name, price) {
+            cart.push({name, price});
+            localStorage.setItem('sale11_cart', JSON.stringify(cart));
+            updateCartCount();
+            alert(name + ' added to cart!');
+        }
+        function updateCartCount() { document.getElementById('cartCountBadge').innerText = cart.length; }
+
+        function openCartModal() { document.getElementById('cartModal').style.display = 'flex'; renderCartItems(); }
+        function closeCartModal() { document.getElementById('cartModal').style.display = 'none'; }
+        function renderCartItems() {
+            const container = document.getElementById('cartItemsContainer');
+            container.innerHTML = cart.length === 0 ? '<p>Cart is empty.</p>' : '';
+            let total = 0;
+            cart.forEach((item, i) => {
+                total += item.price;
+                container.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${item.name} - ₹${item.price}</span><button onclick="cart.splice(${i},1);localStorage.setItem('sale11_cart',JSON.stringify(cart));updateCartCount();renderCartItems();" style="color:red;border:none;background:none;cursor:pointer;">❌</button></div>`;
+            });
+            document.getElementById('cartTotalPrice').innerText = total;
+        }
+
+        function openCheckoutModal() { if(cart.length === 0){alert('Cart is empty!');return;} closeCartModal(); document.getElementById('checkoutModal').style.display = 'flex'; }
+        function closeCheckoutModal() { document.getElementById('checkoutModal').style.display = 'none'; }
+
+        function placeOrder() {
+            let name = document.getElementById('checkoutName').value.trim();
+            let phone = document.getElementById('checkoutPhone').value.trim();
+            let address = document.getElementById('checkoutAddress').value.trim();
+            let city = document.getElementById('checkoutCity').value.trim();
+            let pincode = document.getElementById('checkoutPincode').value.trim();
+            let payment = document.querySelector('input[name="payment"]:checked').value;
+
+            if(name && phone && address && city && pincode) {
+                let total = cart.reduce((s, i) => s + i.price, 0);
+                orders.push({ id: 'ORD' + Math.floor(100000 + Math.random()*900000), customerName: name, phone, address: `${address}, ${city} - ${pincode}`, items: [...cart], totalAmount: total, payment, date: new Date().toLocaleDateString(), status: 'Pending' });
+                localStorage.setItem('sale11_orders', JSON.stringify(orders));
+
+                if(!customers.find(c => c.phone === phone)) {
+                    customers.push({name, phone, ordersCount: 1, totalSpent: total});
+                    localStorage.setItem('sale11_customers', JSON.stringify(customers));
+                }
+
+                alert('🎉 Order Placed Successfully!');
+                cart = [];
+                localStorage.removeItem('sale11_cart');
+                updateCartCount();
+                closeCheckoutModal();
+            } else { alert('Please fill all required checkout fields.'); }
+        }
+
+        // Admin Management
+        function saveAdminProduct() {
+            let editIdx = Number(document.getElementById('editProductIndex').value);
+            let name = document.getElementById('adminProdName').value.trim();
+            let price = Number(document.getElementById('adminProdPrice').value);
+            let mrp = Number(document.getElementById('adminProdMrp').value);
+            let resellPrice = Number(document.getElementById('adminProdResell').value) || price + 200;
+            let category = document.getElementById('adminProdCat').value;
+            let stock = Number(document.getElementById('adminProdStock').value) || 10;
+            let img = document.getElementById('adminProdImg').value.trim() || 'https://via.placeholder.com/150';
+            let description = document.getElementById('adminProdDesc').value.trim();
+
+            if(name && price && mrp) {
+                let pData = {name, price, mrp, resellPrice, category, stock, img, description, rating: 4.5};
+                if(editIdx === -1) products.push(pData);
+                else products[editIdx] = pData;
+
+                localStorage.setItem('sale11_products', JSON.stringify(products));
+                renderAdminProducts();
+                resetAdminForm();
+                alert('Product saved successfully!');
+            } else { alert('Fill name, price and MRP.'); }
+        }
+
+        function renderAdminProducts() {
+            let tbody = document.getElementById('adminProductsTableBody');
+            tbody.innerHTML = '';
+            products.forEach((p, idx) => {
+                tbody.innerHTML += `<tr>
+                    <td style="padding:8px;"><img src="${p.img}" width="35" height="35" style="border-radius:4px;object-fit:cover;"></td>
+                    <td style="padding:8px;">${p.name}</td>
+                    <td style="padding:8px;">₹${p.price}</td>
+                    <td style="padding:8px;">${p.stock}</td>
+                    <td style="padding:8px;">
+                        <button onclick="editProd(${idx})" style="background:#1976d2;color:#fff;border:none;padding:3px 6px;border-radius:3px;">Edit</button>
+                        <button onclick="products.splice(${idx},1);localStorage.setItem('sale11_products',JSON.stringify(products));renderAdminProducts();" style="background:#e53935;color:#fff;border:none;padding:3px 6px;border-radius:3px;">Del</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function editProd(idx) {
+            let p = products[idx];
+            document.getElementById('editProductIndex').value = idx;
+            document.getElementById('adminProdName').value = p.name;
+            document.getElementById('adminProdPrice').value = p.price;
+            document.getElementById('adminProdMrp').value = p.mrp;
+            document.getElementById('adminProdResell').value = p.resellPrice;
+            document.getElementById('adminProdCat').value = p.category;
+            document.getElementById('adminProdStock').value = p.stock;
+            document.getElementById('adminProdImg').value = p.img;
+            document.getElementById('adminProdDesc').value = p.description || '';
+            document.getElementById('adminFormTitle').innerText = 'Edit Product';
+            document.getElementById('adminSaveBtn').innerText = 'Update Product';
+        }
+
+        function resetAdminForm() {
+            document.getElementById('editProductIndex').value = '-1';
+            document.getElementById('adminProdName').value = '';
+            document.getElementById('adminProdPrice').value = '';
+            document.getElementById('adminProdMrp').value = '';
+            document.getElementById('adminProdResell').value = '';
+            document.getElementById('adminProdStock').value = '10';
+            document.getElementById('adminProdImg').value = '';
+            document.getElementById('adminProdDesc').value = '';
+            document.getElementById('adminFormTitle').innerText = 'Add New Product';
+            document.getElementById('adminSaveBtn').innerText = 'Save Product';
+        }
+
+        function renderAdminOrders() {
+            let container = document.getElementById('adminOrdersContainer');
+            container.innerHTML = orders.length === 0 ? '<p>No orders yet.</p>' : '';
+            orders.forEach((o, i) => {
+                container.innerHTML += `<div style="background:var(--bg-color);padding:10px;margin-bottom:8px;border-radius:5px;">
+                    <p><strong>${o.id}</strong> - ${o.customerName} (${o.phone})</p>
+                    <p>Items: ${o.items.map(i=>i.name).join(', ')} (₹${o.totalAmount}) - <b>${o.status}</b></p>
+                    <select class="input-box" style="width:150px;margin-top:5px;" onchange="orders[${i}].status=this.value;localStorage.setItem('sale11_orders',JSON.stringify(orders));alert('Status updated!');">
+                        <option value="Pending" ${o.status==='Pending'?'selected':''}>Pending</option>
+                        <option value="Confirmed" ${o.status==='Confirmed'?'selected':''}>Confirmed</option>
+                        <option value="Shipped" ${o.status==='Shipped'?'selected':''}>Shipped</option>
+                        <option value="Delivered" ${o.status==='Delivered'?'selected':''}>Delivered</option>
+                        <option value="Cancelled" ${o.status==='Cancelled'?'selected':''}>Cancelled</option>
+                    </select>
+                </div>`;
+            });
+        }
+
+        function renderAdminCustomers() {
+            let container = document.getElementById('adminCustomersContainer');
+            container.innerHTML = customers.length === 0 ? '<p>No customers yet.</p>' : '';
+            customers.forEach(c => {
+                container.innerHTML += `<div style="background:var(--bg-color);padding:8px;margin-bottom:5px;border-radius:4px;"><strong>${c.name}</strong> (${c.phone}) - Orders: ${c.ordersCount}, Spent: ₹${c.totalSpent}</div>`;
+            });
+        }
+
+        function openSupportModal() { document.getElementById('supportModal').style.display = 'flex'; }
+        function closeSupportModal() { document.getElementById('supportModal').style.display = 'none'; }
+        
+        function toggleWishlist(name, price, btn) {
+            let idx = wishlist.findIndex(w => w.name === name);
+            if(idx > -1) {
+                wishlist.splice(idx, 1);
+                btn.classList.remove('active');
+            } else {
+                wishlist.push({name, price});
+                btn.classList.add('active');
+            }
+            localStorage.setItem('sale11_wishlist', JSON.stringify(wishlist));
+        }
+
+        function openWishlistModal() {
+            let modal = document.getElementById('wishlistModal');
+            let container = document.getElementById('wishlistItemsContainer');
+            container.innerHTML = wishlist.length === 0 ? '<p>Wishlist is empty.</p>' : '';
+            wishlist.forEach((item, i) => {
+                container.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${item.name} - ₹${item.price}</span><button onclick="wishlist.splice(${i},1);localStorage.setItem('sale11_wishlist',JSON.stringify(wishlist));openWishlistModal();" style="color:red;border:none;background:none;cursor:pointer;">❌</button></div>`;
+            });
+            modal.style.display = 'flex';
+        }
+        function closeWishlistModal() { document.getElementById('wishlistModal').style.display = 'none'; }
+
+        function openLoginModal() { document.getElementById('loginModal').style.display = 'flex'; checkLoginState(); }
+        function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
+        
+        function handleLogin() {
+            let name = document.getElementById('userNameInput').value.trim();
+            let phone = document.getElementById('userPhoneInput').value.trim();
+            if(name && phone) {
+                localStorage.setItem('sale11_user_name', name);
+                localStorage.setItem('sale11_user_phone', phone);
+                alert('Login Successful!');
+                checkLoginState();
+            } else { alert('Please enter name and phone.'); }
+        }
+
+        function checkLoginState() {
+            let name = localStorage.getItem('sale11_user_name');
+            let phone = localStorage.getItem('sale11_user_phone');
+            if(name && phone) {
+                document.getElementById('authContainer').style.display = 'none';
+                document.getElementById('profileContainer').style.display = 'block';
+                document.getElementById('displayUserName').innerText = 'Name: ' + name;
+                document.getElementById('displayUserPhone').innerText = 'Phone: ' + phone;
+            } else {
+                document.getElementById('authContainer').style.display = 'block';
+                document.getElementById('profileContainer').style.display = 'none';
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('sale11_user_name');
+            localStorage.removeItem('sale11_user_phone');
+            alert('Logged out successfully.');
+            checkLoginState();
+        }
+    </script>
 </body>
 </html>
