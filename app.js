@@ -15,7 +15,12 @@ function renderProducts(){
 }
 
 function openAdmin(){
- document.getElementById("adminModal").classList.remove("hidden");
+  let password = prompt("Enter Admin Password:");
+  if (password === "1235") {
+    document.getElementById("adminModal").classList.remove("hidden");
+  } else if (password !== null) {
+    alert("Wrong Password!");
+  }
 }
 
 function closeAdmin(){
