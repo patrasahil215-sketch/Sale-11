@@ -1,126 +1,153 @@
-let defaultProducts=[
- {id:1,name:"Self Adhesive Wall Hooks - Pack of 2",price:199,mrp:299,image:"https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?auto=format&fit=crop&w=700&q=80"},
- {id:2,name:"Kitchen Utility Organizer",price:249,mrp:399,image:"https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=700&q=80"}
+let defaultProducts = [
+  {id:1, name:"Self Adhesive Wall Hooks", price:199, mrp:299,
+   desc:"Premium quality wall hooks, easy to install, no drilling needed.",
+   image:"https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?auto=format&fit=crop&w=700&q=80"}
 ];
 
 let products = JSON.parse(localStorage.getItem("sale11_products")) || defaultProducts;
-let cart=JSON.parse(localStorage.getItem("sale11cart")||"[]");
+let cart = JSON.parse(localStorage.getItem("sale11cart") || "[]");
+let selectedPid = null;
+
+function saveProducts() {
+  localStorage.setItem("sale11_products", JSON.stringify(products));
+}
+
+function saveCart() {
+  localStorage.setItem("sale11cart", JSON.stringify(cart));
+}
 
 function renderProducts(){
- const q=(document.getElementById("search").value||"").toLowerCase();
- document.getElementById("products").innerHTML=products.filter(p=>p.name.toLowerCase().includes(q)).map(p=>`
- <article class="card"><img src="${p.image}" alt="${p.name}"><div class="info">
- <div class="name">${p.name}</div><div class="price">₹${p.price} <span class="mrp">₹${p.mrp}</span></div>
- <button class="primary" onclick="addToCart(${p.id})">Add to Cart</button></div></article>`).join("");
+  const box = document.getElementById("products");
+  box.innerHTML = products.map(p => `
+    <article class="card" onclick="viewDetail(${p.id})">
+      <img src="${p.image}" alt="${escapeHtml(p.name)}">
+      <div class="info">
+        <div class="name">${escapeHtml(p.name)}</div>
+        <div class="price">₹${p.price} <span class="mrp">₹${p.mrp}</span></div>
+      </div>
+    </article>
+  `).join("");
+  updateCartCount();
 }
 
-function openAdmin(){
-  let password = prompt("Enter Admin Password:");
-  if (password === "1235") {
-    document.getElementById("adminModal").classList.remove("hidden");
-  } else if (password !== null) {
-    alert("Wrong Password!");
-  }
+function escapeHtml(text) {
+  return String(text ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+  }[c]));
 }
 
-function closeAdmin(){
- document.getElementById("adminModal").classList.add("hidden");
+function viewDetail(id){
+  let p = products.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById("detailImg").src = p.image;
+  document.getElementById("detailName").innerText = p.name;
+  document.getElementById("detailDesc").innerText = p.desc || "";
+  document.getElementById("detailPrice").innerText = p.price;
+  document.getElementById("detailModal").classList.remove("hidden");
+  selectedPid = id;
 }
 
 function addNewProduct(){
- let name = document.getElementById("prodName").value.trim();
- let price = Number(document.getElementById("prodPrice").value);
- let mrp = Number(document.getElementById("prodMrp").value);
- let image = document.getElementById("prodImg").value.trim();
+  let name = document.getElementById("prodName").value.trim();
+  let desc = document.getElementById("prodDesc").value.trim();
+  let price = Number(document.getElementById("prodPrice").value);
+  let mrp = Number(document.getElementById("prodMrp").value);
+  let image = document.getElementById("prodImg").value.trim();
 
- if(!name || !price || !image){
-   alert("Please fill all required product fields.");
-   return;
- }
+  if (!name || !price || !image) {
+    alert("Product Name, Price aur Image URL zaroor bhariye.");
+    return;
+  }
 
- let newId = products.length ? products[products.length - 1].id + 1 : 1;
- products.push({id: newId, name, price, mrp: mrp || price, image});
- localStorage.setItem("sale11_products", JSON.stringify(products));
- renderProducts();
- closeAdmin();
- alert("Product added successfully!");
+  products.push({
+    id: Date.now(),
+    name,
+    desc,
+    price,
+    mrp: mrp || price,
+    image
+  });
+
+  saveProducts();
+  renderProducts();
+  clearProductForm();
+  closeAdmin();
 }
 
-function addToCart(id){
- let p=products.find(x=>x.id===id);
- let x=cart.find(x=>x.id===id);
- if(x)x.qty++;
- else cart.push({...p,qty:1});
- save();
- openCart();
+function clearProductForm() {
+  document.getElementById("prodName").value = "";
+  document.getElementById("prodDesc").value = "";
+  document.getElementById("prodPrice").value = "";
+  document.getElementById("prodMrp").value = "";
+  document.getElementById("prodImg").value = "";
 }
 
-function save(){
- localStorage.setItem("sale11cart",JSON.stringify(cart));
- document.getElementById("cartCount").textContent=cart.reduce((a,x)=>a+x.qty,0);
+function addToCartFromDetail(){
+  if (selectedPid === null) return;
+  const product = products.find(x => x.id === selectedPid);
+  if (!product) return;
+
+  cart.push(product);
+  saveCart();
+  updateCartCount();
+  closeDetail();
+  alert("Product cart mein add ho gaya.");
+}
+
+function updateCartCount(){
+  document.getElementById("cartCount").innerText = cart.length;
 }
 
 function openCart(){
- document.getElementById("cartModal").classList.remove("hidden");
- renderCart();
+  renderCart();
+  document.getElementById("cartModal").classList.remove("hidden");
 }
 
 function closeCart(){
- document.getElementById("cartModal").classList.add("hidden");
+  document.getElementById("cartModal").classList.add("hidden");
 }
 
 function renderCart(){
- document.getElementById("cartItems").innerHTML=cart.length?cart.map(x=>`<div class="cartRow"><img src="${x.image}"><div><b>${x.name}</b><br>₹${x.price} × ${x.qty}<br><button onclick="removeItem(${x.id})">Remove</button></div></div>`).join(""):"<p>Your cart is empty.</p>";
- document.getElementById("cartTotal").textContent=cart.reduce((a,x)=>a+x.price*x.qty,0);
+  const box = document.getElementById("cartItems");
+
+  if (cart.length === 0) {
+    box.innerHTML = "<p>Cart abhi empty hai.</p>";
+    document.getElementById("cartTotal").innerText = "0";
+    return;
+  }
+
+  box.innerHTML = cart.map((p, index) => `
+    <div class="cart-row">
+      <img src="${p.image}" alt="">
+      <div>
+        <b>${escapeHtml(p.name)}</b>
+        <div>₹${p.price}</div>
+      </div>
+      <button onclick="removeFromCart(${index})">Remove</button>
+    </div>
+  `).join("");
+
+  const total = cart.reduce((sum, p) => sum + Number(p.price || 0), 0);
+  document.getElementById("cartTotal").innerText = total;
 }
 
-function removeItem(id){
- cart=cart.filter(x=>x.id!==id);
- save();
- renderCart();
+function removeFromCart(index){
+  cart.splice(index, 1);
+  saveCart();
+  updateCartCount();
+  renderCart();
 }
 
-function checkout(){
- if(!cart.length)return;
- document.getElementById("checkoutTotal").textContent=cart.reduce((a,x)=>a+x.price*x.qty,0);
- closeCart();
- document.getElementById("checkoutModal").classList.remove("hidden");
+function openAdmin(){
+  document.getElementById("adminModal").classList.remove("hidden");
 }
 
-function closeCheckout(){
- document.getElementById("checkoutModal").classList.add("hidden");
+function closeAdmin(){
+  document.getElementById("adminModal").classList.add("hidden");
 }
 
-function placeOrder(){
- let name=document.getElementById("name").value.trim(),
-     phone=document.getElementById("phone").value.trim(),
-     address=document.getElementById("address").value.trim(),
-     pin=document.getElementById("pincode").value.trim();
-
- if(!name||!phone||!address||!pin){
-  alert("Please fill all delivery details.");
-  return;
- }
-
- let total = cart.reduce((a,x)=>a+x.price*x.qty,0);
- let orderId = "S11-" + Date.now();
- let itemsList = cart.map(x => `• ${x.name} (Qty: ${x.qty}) - ₹${x.price * x.qty}`).join("\n");
-
- let message = `New Order: ${orderId}\n` +
-               `Name: ${name}\n` +
-               `Phone: ${phone}\n` +
-               `Address: ${address} - ${pin}\n\n` +
-               `Items:\n${itemsList}\n\n` +
-               `Total: ₹${total}`;
-
- let whatsappNumber = "918779165289";
-
- cart=[];
- save();
- closeCheckout();
-
- window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
+function closeDetail(){
+  document.getElementById("detailModal").classList.add("hidden");
 }
 
-renderProducts();
-save();
+document.addEventListener("DOMContentLoaded", renderProducts);

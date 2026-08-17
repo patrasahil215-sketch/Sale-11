@@ -1,60 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sale 11 - Store</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sale 11 - Store</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>Sale 11</h1>
-    <div class="actions">
-      <input type="text" id="search" placeholder="Search products..." oninput="renderProducts()">
-      <button onclick="openAdmin()" class="admin-btn">Admin Panel</button>
-      <button onclick="openCart()">Cart (<span id="cartCount">0</span>)</button>
-    </div>
-  </header>
-
-  <main>
-    <section id="products" class="grid"></section>
-  </main>
-
-  <div id="adminModal" class="modal hidden">
-    <div class="modal-content">
-      <h2>Add New Product</h2>
-      <input type="text" id="prodName" placeholder="Product Name">
-      <input type="number" id="prodPrice" placeholder="Price (₹)">
-      <input type="number" id="prodMrp" placeholder="MRP (₹)">
-      <input type="text" id="prodImg" placeholder="Image URL">
-      <button onclick="addNewProduct()" class="primary">Add Product</button>
-      <button onclick="closeAdmin()">Close</button>
-    </div>
+<header>
+  <h1>Sale 11</h1>
+  <div class="actions">
+    <button onclick="openAdmin()" class="admin-btn">Admin</button>
+    <button onclick="openCart()">Cart (<span id="cartCount">0</span>)</button>
   </div>
+</header>
 
-  <div id="cartModal" class="modal hidden">
-    <div class="modal-content">
-      <h2>Your Cart</h2>
-      <div id="cartItems"></div>
-      <p>Total: ₹<span id="cartTotal">0</span></p>
-      <button onclick="checkout()" class="primary">Proceed to Checkout</button>
-      <button onclick="closeCart()">Close</button>
-    </div>
+<main>
+  <section id="products" class="grid"></section>
+</main>
+
+<div id="detailModal" class="modal hidden">
+  <div class="modal-content">
+    <img id="detailImg" src="" alt="" class="detail-img">
+    <h2 id="detailName"></h2>
+    <p id="detailDesc"></p>
+    <p><b>Price: ₹<span id="detailPrice"></span></b></p>
+    <button onclick="addToCartFromDetail()" class="primary">Add to Cart</button>
+    <button onclick="closeDetail()">Close</button>
   </div>
+</div>
 
-  <div id="checkoutModal" class="modal hidden">
-    <div class="modal-content">
-      <h2>Delivery Details</h2>
-      <input type="text" id="name" placeholder="Full Name">
-      <input type="tel" id="phone" placeholder="Phone Number">
-      <textarea id="address" placeholder="Delivery Address"></textarea>
-      <input type="text" id="pincode" placeholder="Pincode">
-      <p>Total Amount: ₹<span id="checkoutTotal">0</span></p>
-      <button onclick="placeOrder()" class="primary">Confirm Order on WhatsApp</button>
-      <button onclick="closeCheckout()">Close</button>
-    </div>
+<div id="adminModal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Add Product (Meesho Style)</h2>
+    <input type="text" id="prodName" placeholder="Product Name">
+    <textarea id="prodDesc" placeholder="Full Product Description"></textarea>
+    <input type="number" id="prodPrice" placeholder="Price (₹)">
+    <input type="number" id="prodMrp" placeholder="MRP (₹)">
+    <input type="text" id="prodImg" placeholder="Image URL">
+    <button onclick="addNewProduct()" class="primary">Add Product</button>
+    <button onclick="closeAdmin()">Close</button>
   </div>
+</div>
 
-  <script src="app.js"></script>
+<div id="cartModal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Your Cart</h2>
+    <div id="cartItems"></div>
+    <h3>Total: ₹<span id="cartTotal">0</span></h3>
+    <button onclick="closeCart()">Close</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
