@@ -46,7 +46,7 @@
         /* Products Grid */
         .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
         .product-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; position: relative; display: flex; flex-direction: column; justify-content: space-between; }
-        .product-card img { width: 100%; height: 180px; object-fit: cover; border-radius: 6px; cursor: pointer; }
+        .product-card img { width: 100%; height: 180px; object-fit: cover; border-radius: 6px; cursor: pointer; background: #eee; }
         .product-card h3 { font-size: 14px; margin: 8px 0 4px 0; font-weight: 600; cursor: pointer; }
         .price { font-size: 15px; font-weight: 700; color: var(--primary-color); margin-bottom: 8px; }
         .mrp { font-size: 12px; text-decoration: line-through; color: #888; margin-left: 6px; }
@@ -73,8 +73,14 @@
         .stat-card h3 { font-size: 20px; color: var(--primary-color); margin-bottom: 5px; }
         .stat-card p { font-size: 12px; color: #888; }
 
+        /* Timeline & Tracking */
+        .timeline { display: flex; justify-content: space-between; margin: 15px 0; position: relative; font-size: 11px; text-align: center; }
+        .timeline-step { flex: 1; position: relative; color: #888; }
+        .timeline-step.active { color: var(--primary-color); font-weight: bold; }
+        .timeline-step i { display: block; font-size: 14px; margin-bottom: 4px; }
+
         /* Mobile Bottom Nav Bar */
-        .mobile-bottom-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border-color); display: none; justify-content: space-around; padding: 8px 0; z-index: 1500; }
+        .mobile-bottom-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border-color); justify-content: space-around; padding: 8px 0; z-index: 1500; }
         .mobile-nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text-color); cursor: pointer; }
         .mobile-nav-item i { font-size: 18px; color: var(--primary-color); margin-bottom: 2px; }
 
@@ -123,7 +129,7 @@
         <main class="container">
             <section class="flash-banner">
                 <h2>⚡ FLASH SALE LIVE!</h2>
-                <p>Massive discounts & reselling margins ending soon. Free Delivery on all orders!</p>
+                <p>Massive discounts & reselling margins ending soon. Free Delivery on orders above ₹499!</p>
             </section>
             <h2>Store Products</h2>
             <div class="products-grid" id="productsGrid"></div>
@@ -138,9 +144,10 @@
         </div>
         <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
             <button onclick="switchAdminTab('dashboard')" class="admin-tab-btn active" id="tabBtnDash">📊 Dashboard</button>
-            <button onclick="switchAdminTab('products')" class="admin-tab-btn" id="tabBtnProds">📦 Manage Products</button>
+            <button onclick="switchAdminTab('products')" class="admin-tab-btn" id="tabBtnProds">📦 Products</button>
             <button onclick="switchAdminTab('orders')" class="admin-tab-btn" id="tabBtnOrders">🛒 Orders</button>
             <button onclick="switchAdminTab('customers')" class="admin-tab-btn" id="tabBtnCust">👥 Customers</button>
+            <button onclick="switchAdminTab('settings')" class="admin-tab-btn" id="tabBtnSett">⚙️ Settings</button>
         </div>
 
         <div id="adminTabDashboard">
@@ -156,6 +163,8 @@
             <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px;">
                 <h3 id="adminFormTitle">➕ Add New Product</h3>
                 <input type="hidden" id="editProductIndex" value="-1">
+                <input type="hidden" id="adminProdImgBase64" value="">
+
                 <input type="text" id="adminProdName" placeholder="Product Name *" class="input-box">
                 <input type="number" id="adminProdPrice" placeholder="Selling Price (₹) *" class="input-box">
                 <input type="number" id="adminProdMrp" placeholder="MRP Price (₹) *" class="input-box">
@@ -169,10 +178,17 @@
                     <option value="Best Sellers">Best Sellers</option>
                 </select>
                 <input type="number" id="adminProdStock" placeholder="Stock Quantity" class="input-box" value="10">
-                <input type="text" id="adminProdImg" placeholder="Image URL *" class="input-box">
-                <input type="text" id="adminProdImages" placeholder="Extra Image URLs (comma separated)" class="input-box">
+
+                <!-- Direct Gallery Image Upload -->
+                <label style="font-size:12px; font-weight:bold; display:block; margin-top:8px;">📁 Upload Product Image from Gallery / Camera *</label>
+                <input type="file" id="adminProdFileInput" accept="image/*" class="input-box" onchange="handleImageFileSelect(event)">
+                <div id="imagePreviewContainer" style="display:none; margin:10px 0; text-align:center;">
+                    <img id="imagePreview" src="" style="max-height:150px; border-radius:6px; border:1px solid #ccc; object-fit:contain;">
+                    <p style="font-size:11px; color:green; margin-top:3px;">✓ Image Ready</p>
+                </div>
+
                 <textarea id="adminProdDesc" placeholder="Product Description" class="input-box" style="height:60px;"></textarea>
-                <button onclick="saveAdminProduct()" class="btn-primary" style="margin-top:10px;">Save Product</button>
+                <button id="adminSaveBtn" onclick="saveAdminProduct()" class="btn-primary" style="margin-top:10px;">Save Product</button>
             </div>
             <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <h3>📦 Existing Products</h3>
@@ -206,6 +222,22 @@
                 <div id="adminCustomersContainer" style="margin-top: 15px;"><p>No customers yet.</p></div>
             </div>
         </div>
+
+        <div id="adminTabSettings" style="display:none;">
+            <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); max-width: 500px;">
+                <h3>⚙️ Store & Delivery Settings</h3>
+                <label style="font-size:12px; display:block; margin-top:10px;">Delivery Charge (₹)</label>
+                <input type="number" id="stDeliveryCharge" class="input-box" value="50">
+                <label style="font-size:12px; display:block; margin-top:10px;">Free Delivery Above Amount (₹)</label>
+                <input type="number" id="stFreeLimit" class="input-box" value="499">
+                <label style="font-size:12px; display:block; margin-top:10px;">Cash on Delivery (COD)</label>
+                <select id="stCodToggle" class="input-box">
+                    <option value="Enabled">Enabled (ON)</option>
+                    <option value="Disabled">Disabled (OFF)</option>
+                </select>
+                <button onclick="saveAdminSettings()" class="btn-primary" style="margin-top:15px;">Save Settings</button>
+            </div>
+        </div>
     </div>
 
     <!-- Mobile Bottom Navigation -->
@@ -213,6 +245,7 @@
         <div class="mobile-nav-item" onclick="switchTab('store')"><i class="fas fa-home"><span>Home</span></i></div>
         <div class="mobile-nav-item" onclick="openWishlistModal()"><i class="fas fa-heart"><span>Wishlist</span></i></div>
         <div class="mobile-nav-item" onclick="openCartModal()"><i class="fas fa-shopping-cart"><span>Cart</span></i></div>
+        <div class="mobile-nav-item" onclick="openOrdersModal()"><i class="fas fa-box"><span>Orders</span></i></div>
         <div class="mobile-nav-item" onclick="openLoginModal()"><i class="fas fa-user"><span>Account</span></i></div>
     </div>
 
@@ -224,26 +257,89 @@
     <!-- Modals -->
     <div id="productDetailModal" class="modal"><div class="modal-content"><span class="close" onclick="closeProductDetailModal()">&times;</span><div id="productDetailContainer"></div></div></div>
     
-    <div id="cartModal" class="modal"><div class="modal-content"><span class="close" onclick="closeCartModal()">&times;</span><h2>Shopping Cart 🛒</h2><div id="cartItemsContainer" style="margin:10px 0; max-height:150px; overflow-y:auto;"><p>Cart is empty.</p></div><h3>Total: ₹<span id="cartTotalPrice">0</span></h3><button onclick="openCheckoutModal()" class="btn-primary" style="margin-top:10px;">Checkout</button></div></div>
+    <div id="cartModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCartModal()">&times;</span>
+            <h2>Shopping Cart 🛒</h2>
+            <div id="cartItemsContainer" style="margin:10px 0; max-height:150px; overflow-y:auto;"><p>Cart is empty.</p></div>
+            <div style="border-top:1px solid var(--border-color); padding-top:8px; margin-top:8px; font-size:13px;">
+                <p>Subtotal: ₹<span id="cartSubtotal">0</span></p>
+                <p>Delivery: ₹<span id="cartDeliveryCalc">0</span></p>
+                <h3>Final Total: ₹<span id="cartTotalPrice">0</span></h3>
+            </div>
+            <button onclick="openCheckoutModal()" class="btn-primary" style="margin-top:10px;">Proceed to Checkout</button>
+        </div>
+    </div>
 
-    <div id="checkoutModal" class="modal"><div class="modal-content"><span class="close" onclick="closeCheckoutModal()">&times;</span><h2>Checkout & Delivery</h2><input type="text" id="checkoutName" placeholder="Full Name *" class="input-box"><input type="tel" id="checkoutPhone" placeholder="Mobile Number *" class="input-box"><input type="text" id="checkoutAddress" placeholder="Full Address *" class="input-box"><input type="text" id="checkoutCity" placeholder="City *" class="input-box"><input type="text" id="checkoutPincode" placeholder="Pincode *" class="input-box"><h3 style="margin-top:10px;">Payment Method</h3><label><input type="radio" name="payment" value="COD" checked> Cash on Delivery (COD)</label><label style="display:block; margin-top:5px;"><input type="radio" name="payment" value="UPI"> Online UPI / QR Code</label><button onclick="placeOrder()" class="btn-primary" style="margin-top:10px;">Place Order</button></div></div>
+    <div id="checkoutModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCheckoutModal()">&times;</span>
+            <h2>Checkout & Delivery</h2>
+            <input type="text" id="checkoutName" placeholder="Full Name *" class="input-box">
+            <input type="tel" id="checkoutPhone" placeholder="Mobile Number *" class="input-box">
+            <input type="text" id="checkoutAddress" placeholder="House No, Street, Area *" class="input-box">
+            <input type="text" id="checkoutCity" placeholder="City *" class="input-box">
+            
+            <!-- Pincode Verification Section -->
+            <div style="display:flex; gap:5px; margin:8px 0;">
+                <input type="text" id="checkoutPincode" placeholder="Pincode *" class="input-box" style="margin:0;">
+                <button type="button" onclick="checkPincode()" class="btn-secondary" style="margin:0; width:120px;">Check Pincode</button>
+            </div>
+            <p id="pincodeStatusMsg" style="font-size:12px; margin-bottom:5px;"></p>
+
+            <h3 style="margin-top:10px;">Payment Method</h3>
+            <div id="codOptionWrapper">
+                <label style="display:block; margin:6px 0;"><input type="radio" name="payment" value="COD" checked> Cash on Delivery (COD)</label>
+            </div>
+            <label style="display:block; margin:6px 0;"><input type="radio" name="payment" value="UPI"> UPI / QR Code Payment</label>
+            <label style="display:block; margin:6px 0;"><input type="radio" name="payment" value="Online"> Online Payment Gateway</label>
+
+            <!-- UPI QR Section -->
+            <div id="upiScannerBox" style="display:none; text-align:center; margin:10px 0; background:var(--bg-color); padding:10px; border-radius:6px; border:1px solid var(--border-color);">
+                <p style="font-size:12px; margin-bottom:5px;">Scan QR to Pay via GPay / PhonePe / Paytm</p>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=upi://pay?pa=sale11store@upi&pn=Sale11" alt="UPI QR" style="width:100px; height:100px;">
+                <input type="text" id="checkoutUtr" placeholder="Enter UPI Reference / UTR Number *" class="input-box" style="margin-top:8px;">
+            </div>
+
+            <!-- Detailed Bill Summary -->
+            <div style="background:var(--bg-color); padding:10px; border-radius:6px; margin:10px 0; font-size:13px; border:1px solid var(--border-color);">
+                <p>Product Price: ₹<span id="summaryProductPrice">0</span></p>
+                <p>Delivery Charge: ₹<span id="summaryDeliveryCharge">0</span></p>
+                <p>Estimated Delivery: <strong id="summaryEstDelivery" style="color:var(--primary-color);">--</strong></p>
+                <hr style="margin:6px 0;">
+                <h3 style="color:var(--primary-color);">Final Payable: ₹<span id="summaryFinalAmount">0</span></h3>
+            </div>
+
+            <button onclick="placeOrder()" class="btn-primary">Place Order Now</button>
+        </div>
+    </div>
+
+    <!-- Customer Orders Modal with Timeline -->
+    <div id="ordersModal" class="modal">
+        <div class="modal-content" style="max-width:550px;">
+            <span class="close" onclick="closeOrdersModal()">&times;</span>
+            <h2>My Orders & Tracking 📦</h2>
+            <div id="ordersContainer" style="margin-top:10px; max-height:350px; overflow-y:auto;"><p>No orders placed yet.</p></div>
+        </div>
+    </div>
 
     <div id="supportModal" class="modal"><div class="modal-content"><span class="close" onclick="closeSupportModal()">&times;</span><h2>Support ☎️</h2><p style="font-size:13px; margin:10px 0;">WhatsApp / Call: +91 9876543210<br>Email: support@sale11store.com</p></div></div>
 
     <div id="wishlistModal" class="modal"><div class="modal-content"><span class="close" onclick="closeWishlistModal()">&times;</span><h2>Wishlist ❤️</h2><div id="wishlistItemsContainer"><p>Wishlist is empty.</p></div></div></div>
 
-    <div id="loginModal" class="modal"><div class="modal-content"><span class="close" onclick="closeLoginModal()">&times;</span><div id="authContainer"><h2>My Account Login</h2><input type="text" id="userNameInput" placeholder="Name" class="input-box"><input type="tel" id="userPhoneInput" placeholder="Phone" class="input-box"><button onclick="handleLogin()" class="btn-primary" style="margin-top:10px;">Login</button></div><div id="profileContainer" style="display:none;"><h2>My Profile</h2><p id="displayUserName"></p><p id="displayUserPhone"></p><button onclick="handleLogout()" class="btn-primary" style="background:#e53935; margin-top:10px;">Logout</button></div></div></div>
+    <div id="loginModal" class="modal"><div class="modal-content"><span class="close" onclick="closeLoginModal()">&times;</span><div id="authContainer"><h2>My Account Login</h2><input type="text" id="userNameInput" placeholder="Name" class="input-box"><input type="tel" id="userPhoneInput" placeholder="Phone" class="input-box"><button onclick="handleLogin()" class="btn-primary" style="margin-top:10px;">Login</button></div><div id="profileContainer" style="display:none;"><h2>My Profile</h2><p id="displayUserName"></p><p id="displayUserPhone"></p><button onclick="openOrdersModal(); closeLoginModal();" class="btn-secondary" style="margin-top:10px;">View My Orders 📦</button><button onclick="handleLogout()" class="btn-primary" style="background:#e53935; margin-top:8px;">Logout</button></div></div></div>
 
     <!-- Script Logic -->
     <script>
         let products = JSON.parse(localStorage.getItem('sale11_products')) || [
-            { name: 'Classic Kurti', price: 499, mrp: 999, resellPrice: 750, category: 'Fashion', stock: 15, rating: 4.5, img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400', images: [], description: 'Comfortable daily wear cotton kurti.' },
-            { name: 'Smart Watch', price: 1299, mrp: 2999, resellPrice: 1650, category: 'Electronics', stock: 10, rating: 4.7, img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400', images: [], description: 'Fitness tracker smartwatch with heart rate monitor.' }
+            { name: 'Classic Kurti', price: 499, mrp: 999, resellPrice: 750, category: 'Fashion', stock: 15, rating: 4.5, img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400', description: 'Comfortable daily wear cotton kurti.' },
+            { name: 'Smart Watch', price: 1299, mrp: 2999, resellPrice: 1650, category: 'Electronics', stock: 10, rating: 4.7, img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400', description: 'Fitness tracker smartwatch with heart rate monitor.' }
         ];
         let orders = JSON.parse(localStorage.getItem('sale11_orders')) || [];
         let customers = JSON.parse(localStorage.getItem('sale11_customers')) || [];
         let cart = JSON.parse(localStorage.getItem('sale11_cart')) || [];
         let wishlist = JSON.parse(localStorage.getItem('sale11_wishlist')) || [];
+        let settings = JSON.parse(localStorage.getItem('sale11_settings')) || { deliveryCharge: 50, freeLimit: 499, codEnabled: 'Enabled' };
 
         document.addEventListener('DOMContentLoaded', () => {
             renderProducts();
@@ -287,6 +383,9 @@
         function openAdminDashboard() {
             document.getElementById('customerStoreView').style.display = 'none';
             document.getElementById('adminDashboardView').style.display = 'block';
+            document.getElementById('stDeliveryCharge').value = settings.deliveryCharge;
+            document.getElementById('stFreeLimit').value = settings.freeLimit;
+            document.getElementById('stCodToggle').value = settings.codEnabled;
             updateStats();
             renderAdminProducts();
             renderAdminOrders();
@@ -302,14 +401,14 @@
         }
 
         function switchAdminTab(tabName) {
-            ['dashboard', 'products', 'orders', 'customers'].forEach(t => {
+            ['dashboard', 'products', 'orders', 'customers', 'settings'].forEach(t => {
                 let el = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
                 if(el) el.style.display = (t === tabName) ? 'block' : 'none';
             });
         }
 
         function updateStats() {
-            document.getElementById('statRevenue').innerText = orders.reduce((s, o) => s + o.totalAmount, 0);
+            document.getElementById('statRevenue').innerText = orders.reduce((s, o) => s + (o.finalAmount || 0), 0);
             document.getElementById('statOrders').innerText = orders.length;
             document.getElementById('statProds').innerText = products.length;
             document.getElementById('statCusts').innerText = customers.length;
@@ -318,13 +417,13 @@
         function renderProducts(list = products) {
             const grid = document.getElementById('productsGrid');
             grid.innerHTML = list.length === 0 ? '<p>No products found.</p>' : '';
-            list.forEach((p, idx) => {
+            list.forEach((p) => {
                 let realIdx = products.indexOf(p);
                 let discount = p.mrp > p.price ? Math.round(((p.mrp - p.price)/p.mrp)*100) : 0;
                 grid.innerHTML += `
                     <div class="product-card">
                         <button class="wishlist-btn ${wishlist.some(w => w.name === p.name) ? 'active' : ''}" onclick="toggleWishlist('${p.name}', ${p.price}, this)"><i class="fas fa-heart"></i></button>
-                        <img src="${p.img}" alt="${p.name}" onclick="openProductDetail(${realIdx})">
+                        <img src="${p.img}" alt="${p.name}" onclick="openProductDetail(${realIdx})" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
                         <h3 onclick="openProductDetail(${realIdx})">${p.name}</h3>
                         <span class="resell-badge">Resell: ₹${p.resellPrice || p.price + 200}</span>
                         <p class="price">₹${p.price} <span class="mrp">₹${p.mrp}</span> <span style="font-size:11px; color:green; float:right;">${discount}% OFF</span></p>
@@ -339,20 +438,19 @@
             });
         }
 
-        // Product Details View
         function openProductDetail(idx) {
             let p = products[idx];
             let modal = document.getElementById('productDetailModal');
             let container = document.getElementById('productDetailContainer');
             container.innerHTML = `
                 <span class="close" onclick="closeProductDetailModal()">&times;</span>
-                <img src="${p.img}" style="width:100%; height:220px; object-fit:contain; border-radius:6px;">
+                <img src="${p.img}" style="width:100%; height:220px; object-fit:contain; border-radius:6px;" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
                 <h2 style="margin-top:10px;">${p.name}</h2>
                 <p class="price" style="font-size:18px; margin:5px 0;">₹${p.price} <span class="mrp">₹${p.mrp}</span></p>
                 <span class="resell-badge">Reselling Price: ₹${p.resellPrice || p.price + 200}</span>
                 <p style="font-size:13px; margin:8px 0;"><strong>Category:</strong> ${p.category}</p>
                 <p style="font-size:13px; margin:8px 0;">${p.description || 'High quality reselling product.'}</p>
-                <p style="font-size:12px; color:green; font-weight:600; margin:10px 0;">✓ Cash on Delivery Available | ✓ Easy Returns</p>
+                <p style="font-size:12px; color:green; font-weight:600; margin:10px 0;">✓ Cash on Delivery Available | ✓ Easy Returns within 7 Days</p>
                 <button class="btn-primary" onclick="addToCart('${p.name}', ${p.price}); closeProductDetailModal();">Add to Cart</button>
             `;
             modal.style.display = 'flex';
@@ -390,19 +488,74 @@
 
         function openCartModal() { document.getElementById('cartModal').style.display = 'flex'; renderCartItems(); }
         function closeCartModal() { document.getElementById('cartModal').style.display = 'none'; }
+        
         function renderCartItems() {
             const container = document.getElementById('cartItemsContainer');
             container.innerHTML = cart.length === 0 ? '<p>Cart is empty.</p>' : '';
-            let total = 0;
+            let subtotal = 0;
             cart.forEach((item, i) => {
-                total += item.price;
+                subtotal += item.price;
                 container.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${item.name} - ₹${item.price}</span><button onclick="cart.splice(${i},1);localStorage.setItem('sale11_cart',JSON.stringify(cart));updateCartCount();renderCartItems();" style="color:red;border:none;background:none;cursor:pointer;">❌</button></div>`;
             });
-            document.getElementById('cartTotalPrice').innerText = total;
+            
+            let delivery = subtotal >= Number(settings.freeLimit) || subtotal === 0 ? 0 : Number(settings.deliveryCharge);
+            document.getElementById('cartSubtotal').innerText = subtotal;
+            document.getElementById('cartDeliveryCalc').innerText = delivery;
+            document.getElementById('cartTotalPrice').innerText = subtotal + delivery;
         }
 
-        function openCheckoutModal() { if(cart.length === 0){alert('Cart is empty!');return;} closeCartModal(); document.getElementById('checkoutModal').style.display = 'flex'; }
+        function openCheckoutModal() { 
+            if(cart.length === 0){ alert('Cart is empty!'); return; } 
+            closeCartModal(); 
+            
+            let codWrapper = document.getElementById('codOptionWrapper');
+            if(settings.codEnabled === 'Disabled') {
+                codWrapper.innerHTML = '<p style="color:#e53935; font-size:12px;">Cash on Delivery is currently unavailable.</p>';
+            } else {
+                codWrapper.innerHTML = '<label style="display:block; margin:6px 0;"><input type="radio" name="payment" value="COD" checked> Cash on Delivery (COD)</label>';
+            }
+
+            let subtotal = cart.reduce((s, i) => s + i.price, 0);
+            let delivery = subtotal >= Number(settings.freeLimit) ? 0 : Number(settings.deliveryCharge);
+            
+            document.getElementById('summaryProductPrice').innerText = subtotal;
+            document.getElementById('summaryDeliveryCharge').innerText = delivery;
+            document.getElementById('summaryFinalAmount').innerText = subtotal + delivery;
+            document.getElementById('summaryEstDelivery').innerText = getEstimatedDeliveryDate();
+
+            document.getElementById('checkoutModal').style.display = 'flex'; 
+        }
         function closeCheckoutModal() { document.getElementById('checkoutModal').style.display = 'none'; }
+
+        function checkPincode() {
+            let pin = document.getElementById('checkoutPincode').value.trim();
+            let msg = document.getElementById('pincodeStatusMsg');
+            if(pin.length === 6 && !isNaN(pin)) {
+                msg.style.color = 'green';
+                msg.innerText = '✓ Delivery Available in this area (Estimated 3-5 days)';
+            } else {
+                msg.style.color = 'red';
+                msg.innerText = '✕ Please enter a valid 6-digit Pincode';
+            }
+        }
+
+        function getEstimatedDeliveryDate() {
+            let d1 = new Date();
+            let d2 = new Date();
+            d1.setDate(d1.getDate() + 3);
+            d2.setDate(d2.getDate() + 6);
+            let options = { month: 'short', day: 'numeric' };
+            return `${d1.toLocaleDateString('en-US', options)} - ${d2.toLocaleDateString('en-US', options)}`;
+        }
+
+        document.addEventListener('change', function(e) {
+            if(e.target.name === 'payment') {
+                let upiBox = document.getElementById('upiScannerBox');
+                if(upiBox) {
+                    upiBox.style.display = e.target.value === 'UPI' ? 'block' : 'none';
+                }
+            }
+        });
 
         function placeOrder() {
             let name = document.getElementById('checkoutName').value.trim();
@@ -410,24 +563,102 @@
             let address = document.getElementById('checkoutAddress').value.trim();
             let city = document.getElementById('checkoutCity').value.trim();
             let pincode = document.getElementById('checkoutPincode').value.trim();
-            let payment = document.querySelector('input[name="payment"]:checked').value;
+            let paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+            let utr = document.getElementById('checkoutUtr') ? document.getElementById('checkoutUtr').value.trim() : '';
 
             if(name && phone && address && city && pincode) {
-                let total = cart.reduce((s, i) => s + i.price, 0);
-                orders.push({ id: 'ORD' + Math.floor(100000 + Math.random()*900000), customerName: name, phone, address: `${address}, ${city} - ${pincode}`, items: [...cart], totalAmount: total, payment, date: new Date().toLocaleDateString(), status: 'Pending' });
+                let subtotal = cart.reduce((s, i) => s + i.price, 0);
+                let delivery = subtotal >= Number(settings.freeLimit) ? 0 : Number(settings.deliveryCharge);
+                let finalAmount = subtotal + delivery;
+
+                let payStatus = paymentMethod === 'COD' ? 'COD Pending' : (paymentMethod === 'UPI' ? 'Pending (Verification)' : 'Paid');
+
+                let orderDetails = {
+                    id: 'ORD' + Math.floor(100000 + Math.random()*900000),
+                    customerName: name,
+                    phone: phone,
+                    address: `${address}, ${city} - ${pincode}`,
+                    pincode: pincode,
+                    items: [...cart],
+                    productPrice: subtotal,
+                    deliveryCharge: delivery,
+                    finalAmount: finalAmount,
+                    paymentMethod: paymentMethod,
+                    paymentStatus: payStatus,
+                    utrReference: utr || 'N/A',
+                    estDelivery: getEstimatedDeliveryDate(),
+                    date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    orderStatus: 'Pending'
+                };
+
+                orders.push(orderDetails);
                 localStorage.setItem('sale11_orders', JSON.stringify(orders));
 
                 if(!customers.find(c => c.phone === phone)) {
-                    customers.push({name, phone, ordersCount: 1, totalSpent: total});
-                    localStorage.setItem('sale11_customers', JSON.stringify(customers));
+                    customers.push({name, phone, address, ordersCount: 1, totalSpent: finalAmount});
+                } else {
+                    let c = customers.find(x => x.phone === phone);
+                    c.ordersCount += 1;
+                    c.totalSpent += finalAmount;
                 }
+                localStorage.setItem('sale11_customers', JSON.stringify(customers));
 
                 alert('🎉 Order Placed Successfully!');
                 cart = [];
                 localStorage.removeItem('sale11_cart');
                 updateCartCount();
                 closeCheckoutModal();
-            } else { alert('Please fill all required checkout fields.'); }
+            } else { 
+                alert('Please fill all required checkout and address fields.'); 
+            }
+        }
+
+        function openOrdersModal() {
+            let modal = document.getElementById('ordersModal');
+            let container = document.getElementById('ordersContainer');
+            container.innerHTML = orders.length === 0 ? '<p>No orders placed yet.</p>' : '';
+
+            orders.forEach(o => {
+                let statuses = ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered'];
+                let currentIdx = statuses.indexOf(o.orderStatus);
+                if(currentIdx === -1) currentIdx = 0;
+
+                let timelineHtml = '<div class="timeline">';
+                statuses.forEach((st, idx) => {
+                    let activeClass = idx <= currentIdx ? 'active' : '';
+                    let iconClass = idx <= currentIdx ? 'fa-check-circle' : 'fa-circle';
+                    timelineHtml += `<div class="timeline-step ${activeClass}"><i class="fas ${iconClass}"></i>${st}</div>`;
+                });
+                timelineHtml += '</div>';
+
+                container.innerHTML += `
+                    <div style="background:var(--bg-color); padding:12px; margin-bottom:12px; border-radius:6px; border-left:4px solid var(--primary-color);">
+                        <p><strong>Order ID:</strong> ${o.id} | <strong>Date:</strong> ${o.date}</p>
+                        <p><strong>Product(s):</strong> ${o.items.map(i => i.name).join(', ')}</p>
+                        <p><strong>Amount:</strong> ₹${o.finalAmount} (${o.paymentMethod}) - Pay Status: <span style="color:${o.paymentStatus==='Paid'?'green':'orange'};">${o.paymentStatus}</span></p>
+                        <p><strong>Estimated Delivery:</strong> ${o.estDelivery}</p>
+                        <p><strong>Order Status:</strong> <span style="color:var(--primary-color); font-weight:bold;">${o.orderStatus}</span></p>
+                        ${timelineHtml}
+                    </div>
+                `;
+            });
+            modal.style.display = 'flex';
+        }
+        function closeOrdersModal() { document.getElementById('ordersModal').style.display = 'none'; }
+
+        // Handle Image File Upload directly from Phone Gallery / Storage
+        function handleImageFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64Image = e.target.result;
+                    document.getElementById('adminProdImgBase64').value = base64Image;
+                    document.getElementById('imagePreview').src = base64Image;
+                    document.getElementById('imagePreviewContainer').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
         }
 
         // Admin Management
@@ -439,19 +670,24 @@
             let resellPrice = Number(document.getElementById('adminProdResell').value) || price + 200;
             let category = document.getElementById('adminProdCat').value;
             let stock = Number(document.getElementById('adminProdStock').value) || 10;
-            let img = document.getElementById('adminProdImg').value.trim() || 'https://via.placeholder.com/150';
+            let img = document.getElementById('adminProdImgBase64').value.trim() || (editIdx !== -1 ? products[editIdx].img : 'https://via.placeholder.com/150');
             let description = document.getElementById('adminProdDesc').value.trim();
 
             if(name && price && mrp) {
                 let pData = {name, price, mrp, resellPrice, category, stock, img, description, rating: 4.5};
-                if(editIdx === -1) products.push(pData);
-                else products[editIdx] = pData;
+                if(editIdx === -1) {
+                    products.push(pData);
+                } else {
+                    products[editIdx] = pData;
+                }
 
                 localStorage.setItem('sale11_products', JSON.stringify(products));
                 renderAdminProducts();
                 resetAdminForm();
-                alert('Product saved successfully!');
-            } else { alert('Fill name, price and MRP.'); }
+                alert('✅ Product saved successfully!');
+            } else { 
+                alert('Fill name, price, MRP and upload an image.'); 
+            }
         }
 
         function renderAdminProducts() {
@@ -459,13 +695,13 @@
             tbody.innerHTML = '';
             products.forEach((p, idx) => {
                 tbody.innerHTML += `<tr>
-                    <td style="padding:8px;"><img src="${p.img}" width="35" height="35" style="border-radius:4px;object-fit:cover;"></td>
+                    <td style="padding:8px;"><img src="${p.img}" width="35" height="35" style="border-radius:4px;object-fit:cover;" onerror="this.src='https://via.placeholder.com/35?text=No+Img'"></td>
                     <td style="padding:8px;">${p.name}</td>
                     <td style="padding:8px;">₹${p.price}</td>
                     <td style="padding:8px;">${p.stock}</td>
                     <td style="padding:8px;">
-                        <button onclick="editProd(${idx})" style="background:#1976d2;color:#fff;border:none;padding:3px 6px;border-radius:3px;">Edit</button>
-                        <button onclick="products.splice(${idx},1);localStorage.setItem('sale11_products',JSON.stringify(products));renderAdminProducts();" style="background:#e53935;color:#fff;border:none;padding:3px 6px;border-radius:3px;">Del</button>
+                        <button onclick="editProd(${idx})" style="background:#1976d2;color:#fff;border:none;padding:3px 6px;border-radius:3px; cursor:pointer;">Edit</button>
+                        <button onclick="products.splice(${idx},1);localStorage.setItem('sale11_products',JSON.stringify(products));renderAdminProducts();" style="background:#e53935;color:#fff;border:none;padding:3px 6px;border-radius:3px; cursor:pointer;">Del</button>
                     </td>
                 </tr>`;
             });
@@ -480,7 +716,9 @@
             document.getElementById('adminProdResell').value = p.resellPrice;
             document.getElementById('adminProdCat').value = p.category;
             document.getElementById('adminProdStock').value = p.stock;
-            document.getElementById('adminProdImg').value = p.img;
+            document.getElementById('adminProdImgBase64').value = p.img;
+            document.getElementById('imagePreview').src = p.img;
+            document.getElementById('imagePreviewContainer').style.display = 'block';
             document.getElementById('adminProdDesc').value = p.description || '';
             document.getElementById('adminFormTitle').innerText = 'Edit Product';
             document.getElementById('adminSaveBtn').innerText = 'Update Product';
@@ -493,7 +731,9 @@
             document.getElementById('adminProdMrp').value = '';
             document.getElementById('adminProdResell').value = '';
             document.getElementById('adminProdStock').value = '10';
-            document.getElementById('adminProdImg').value = '';
+            document.getElementById('adminProdImgBase64').value = '';
+            document.getElementById('adminProdFileInput').value = '';
+            document.getElementById('imagePreviewContainer').style.display = 'none';
             document.getElementById('adminProdDesc').value = '';
             document.getElementById('adminFormTitle').innerText = 'Add New Product';
             document.getElementById('adminSaveBtn').innerText = 'Save Product';
@@ -503,16 +743,37 @@
             let container = document.getElementById('adminOrdersContainer');
             container.innerHTML = orders.length === 0 ? '<p>No orders yet.</p>' : '';
             orders.forEach((o, i) => {
-                container.innerHTML += `<div style="background:var(--bg-color);padding:10px;margin-bottom:8px;border-radius:5px;">
-                    <p><strong>${o.id}</strong> - ${o.customerName} (${o.phone})</p>
-                    <p>Items: ${o.items.map(i=>i.name).join(', ')} (₹${o.totalAmount}) - <b>${o.status}</b></p>
-                    <select class="input-box" style="width:150px;margin-top:5px;" onchange="orders[${i}].status=this.value;localStorage.setItem('sale11_orders',JSON.stringify(orders));alert('Status updated!');">
-                        <option value="Pending" ${o.status==='Pending'?'selected':''}>Pending</option>
-                        <option value="Confirmed" ${o.status==='Confirmed'?'selected':''}>Confirmed</option>
-                        <option value="Shipped" ${o.status==='Shipped'?'selected':''}>Shipped</option>
-                        <option value="Delivered" ${o.status==='Delivered'?'selected':''}>Delivered</option>
-                        <option value="Cancelled" ${o.status==='Cancelled'?'selected':''}>Cancelled</option>
-                    </select>
+                container.innerHTML += `<div style="background:var(--bg-color);padding:12px;margin-bottom:10px;border-radius:6px;border:1px solid var(--border-color);font-size:13px;">
+                    <p><strong>Order ID:</strong> ${o.id} | <strong>Date:</strong> ${o.date}</p>
+                    <p><strong>Customer:</strong> ${o.customerName} (${o.phone})</p>
+                    <p><strong>Address:</strong> ${o.address} (Pincode: ${o.pincode})</p>
+                    <p><strong>Product(s):</strong> ${o.items.map(it=>it.name).join(', ')}</p>
+                    <p><strong>Price Breakdown:</strong> Product: ₹${o.productPrice} + Delivery: ₹${o.deliveryCharge} = <b>Final: ₹${o.finalAmount}</b></p>
+                    <p><strong>Payment:</strong> ${o.paymentMethod} | Status: <b style="color:orange;">${o.paymentStatus}</b> ${o.utrReference !== 'N/A' ? '| UTR: <b>'+o.utrReference+'</b>' : ''}</p>
+                    
+                    <div style="display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;">
+                        <div>
+                            <label style="font-size:11px; display:block;">Order Status:</label>
+                            <select class="input-box" style="width:140px; margin:0; padding:4px;" onchange="orders[${i}].orderStatus=this.value;localStorage.setItem('sale11_orders',JSON.stringify(orders));alert('Order status updated!');">
+                                <option value="Pending" ${o.orderStatus==='Pending'?'selected':''}>Pending</option>
+                                <option value="Confirmed" ${o.orderStatus==='Confirmed'?'selected':''}>Confirmed</option>
+                                <option value="Shipped" ${o.orderStatus==='Shipped'?'selected':''}>Shipped</option>
+                                <option value="Out for Delivery" ${o.orderStatus==='Out for Delivery'?'selected':''}>Out for Delivery</option>
+                                <option value="Delivered" ${o.orderStatus==='Delivered'?'selected':''}>Delivered</option>
+                                <option value="Cancelled" ${o.orderStatus==='Cancelled'?'selected':''}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:11px; display:block;">Payment Status:</label>
+                            <select class="input-box" style="width:140px; margin:0; padding:4px;" onchange="orders[${i}].paymentStatus=this.value;localStorage.setItem('sale11_orders',JSON.stringify(orders));alert('Payment status updated!');">
+                                <option value="Pending" ${o.paymentStatus==='Pending'?'selected':''}>Pending</option>
+                                <option value="Paid" ${o.paymentStatus==='Paid'?'selected':''}>Paid</option>
+                                <option value="Failed" ${o.paymentStatus==='Failed'?'selected':''}>Failed</option>
+                                <option value="COD Pending" ${o.paymentStatus==='COD Pending'?'selected':''}>COD Pending</option>
+                                <option value="Refunded" ${o.paymentStatus==='Refunded'?'selected':''}>Refunded</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>`;
             });
         }
@@ -523,6 +784,14 @@
             customers.forEach(c => {
                 container.innerHTML += `<div style="background:var(--bg-color);padding:8px;margin-bottom:5px;border-radius:4px;"><strong>${c.name}</strong> (${c.phone}) - Orders: ${c.ordersCount}, Spent: ₹${c.totalSpent}</div>`;
             });
+        }
+
+        function saveAdminSettings() {
+            settings.deliveryCharge = Number(document.getElementById('stDeliveryCharge').value);
+            settings.freeLimit = Number(document.getElementById('stFreeLimit').value);
+            settings.codEnabled = document.getElementById('stCodToggle').value;
+            localStorage.setItem('sale11_settings', JSON.stringify(settings));
+            alert('Settings saved successfully!');
         }
 
         function openSupportModal() { document.getElementById('supportModal').style.display = 'flex'; }
