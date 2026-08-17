@@ -1,14 +1,22 @@
 let products = JSON.parse(localStorage.getItem('sale11_products')) || [
-    { name: 'Classic Kurti', price: 499, mrp: 999, img: 'https://via.placeholder.com/150' },
-    { name: 'Smart Watch', price: 1299, mrp: 2999, img: 'https://via.placeholder.com/150' }
+    { name: 'Classic Kurti', price: 499, mrp: 999, category: 'Fashion', img: 'https://via.placeholder.com/150' },
+    { name: 'Smart Watch', price: 1299, mrp: 2999, category: 'Electronics', img: 'https://via.placeholder.com/150' },
+    { name: 'Bedsheet Set', price: 699, mrp: 1499, category: 'Home', img: 'https://via.placeholder.com/150' }
 ];
 
+let currentCategory = 'All';
 renderProducts();
 
-function renderProducts() {
+function renderProducts(filteredList = products) {
     const grid = document.getElementById('productsGrid');
     grid.innerHTML = '';
-    products.forEach((prod, index) => {
+    
+    if(filteredList.length === 0) {
+        grid.innerHTML = '<p>No products found in this category.</p>';
+        return;
+    }
+
+    filteredList.forEach((prod, index) => {
         grid.innerHTML += `
             <div class="product-card">
                 <button class="wishlist-btn" onclick="toggleWishlist('${prod.name}', ${prod.price}, this)"><i class="fas fa-heart"></i></button>
@@ -19,6 +27,26 @@ function renderProducts() {
             </div>
         `;
     });
+}
+
+function filterCategory(category) {
+    currentCategory = category;
+    
+    // Update active button style
+    let buttons = document.getElementsByClassName('cat-btn');
+    for(let btn of buttons) {
+        btn.classList.remove('active');
+        if(btn.innerText.includes(category) || (category === 'All' && btn.innerText === 'All')) {
+            btn.classList.add('active');
+        }
+    }
+
+    if(category === 'All') {
+        renderProducts(products);
+    } else {
+        let filtered = products.filter(p => p.category === category);
+        renderProducts(filtered);
+    }
 }
 
 // Cart & Coupon System
@@ -81,7 +109,7 @@ function applyCoupon() {
         document.getElementById('couponMsg').innerText = '🎉 Coupon Applied! Flat ₹50 OFF';
         renderCartItems();
     } else {
-        alert('Invalid Coupon Code. Try SALE11');
+        alert('Invalid Code. Try SALE11');
     }
 }
 
@@ -119,7 +147,7 @@ function placeOrder() {
         updateCartCount();
         closeCheckoutModal();
     } else {
-        alert('Please fill in all delivery details.');
+        alert('Please fill all details.');
     }
 }
 
@@ -154,19 +182,20 @@ function addNewProduct() {
     const name = document.getElementById('adminProdName').value;
     const price = Number(document.getElementById('adminProdPrice').value);
     const mrp = Number(document.getElementById('adminProdMrp').value);
+    const category = document.getElementById('adminProdCat').value;
     const img = document.getElementById('adminProdImg').value || 'https://via.placeholder.com/150';
 
     if(name && price && mrp) {
-        products.push({ name, price, mrp, img });
+        products.push({ name, price, mrp, category, img });
         localStorage.setItem('sale11_products', JSON.stringify(products));
-        renderProducts();
+        filterCategory(currentCategory);
         renderAdminProductList();
-        alert('Product added successfully!');
+        alert('Product added!');
         document.getElementById('adminProdName').value = '';
         document.getElementById('adminProdPrice').value = '';
         document.getElementById('adminProdMrp').value = '';
         document.getElementById('adminProdImg').value = '';
-    } else { alert('Please fill product details.'); }
+    } else { alert('Fill all product fields.'); }
 }
 function renderAdminProductList() {
     const listContainer = document.getElementById('adminProductList');
@@ -174,7 +203,7 @@ function renderAdminProductList() {
     products.forEach((prod, index) => {
         listContainer.innerHTML += `
             <div style="display:flex; justify-content:space-between; align-items:center; padding: 4px 0; border-bottom: 1px solid #eee;">
-                <span>${prod.name} (₹${prod.price})</span>
+                <span>${prod.name} (${prod.category})</span>
                 <button onclick="deleteProduct(${index})" style="background:none; border:none; color:red; cursor:pointer;">Delete</button>
             </div>
         `;
@@ -183,18 +212,16 @@ function renderAdminProductList() {
 function deleteProduct(index) {
     products.splice(index, 1);
     localStorage.setItem('sale11_products', JSON.stringify(products));
-    renderProducts();
+    filterCategory(currentCategory);
     renderAdminProductList();
 }
 
-// Search, Wishlist & Login
+// Search & Wishlist
 function filterProducts() {
     let input = document.getElementById('searchInput').value.toLowerCase();
-    let cards = document.getElementsByClassName('product-card');
-    for (let i = 0; i < cards.length; i++) {
-        let title = cards[i].getElementsByTagName('h3')[0].innerText.toLowerCase();
-        cards[i].style.display = title.includes(input) ? "" : "none";
-    }
+    let baseList = currentCategory === 'All' ? products : products.filter(p => p.category === currentCategory);
+    let filtered = baseList.filter(p => p.name.toLowerCase().includes(input));
+    renderProducts(filtered);
 }
 
 let wishlist = JSON.parse(localStorage.getItem('sale11_wishlist')) || [];

@@ -14,34 +14,32 @@
         <div class="logo">Sale 11</div>
         <div class="search-bar">
             <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Search for products..." onkeyup="filterProducts()">
+            <input type="text" id="searchInput" placeholder="Search products..." onkeyup="filterProducts()">
         </div>
         <div class="nav-icons">
-            <div class="nav-item" onclick="openAdminModal()">
-                <i class="fas fa-user-shield"></i>
-                <span>Admin</span>
-            </div>
-            <div class="nav-item" onclick="openLoginModal()">
-                <i class="fas fa-user"></i>
-                <span>Account</span>
-            </div>
-            <div class="nav-item" onclick="openWishlistModal()">
-                <i class="fas fa-heart"></i>
-                <span>Wishlist</span>
-            </div>
+            <div class="nav-item" onclick="openAdminModal()"><i class="fas fa-user-shield"></i><span>Admin</span></div>
+            <div class="nav-item" onclick="openLoginModal()"><i class="fas fa-user"></i><span>Account</span></div>
+            <div class="nav-item" onclick="openWishlistModal()"><i class="fas fa-heart"></i><span>Wishlist</span></div>
             <div class="nav-item" onclick="openCartModal()">
-                <i class="fas fa-shopping-cart"></i>
-                <span>Cart</span>
+                <i class="fas fa-shopping-cart"></i><span>Cart</span>
                 <span id="cartCountBadge" class="badge">0</span>
             </div>
         </div>
     </header>
 
+    <!-- Category Filter Bar -->
+    <div class="category-bar">
+        <button onclick="filterCategory('All')" class="cat-btn active">All</button>
+        <button onclick="filterCategory('Fashion')" class="cat-btn">Fashion</button>
+        <button onclick="filterCategory('Electronics')" class="cat-btn">Electronics</button>
+        <button onclick="filterCategory('Home')" class="cat-btn">Home & Kitchen</button>
+    </div>
+
     <!-- Main Content / Products Grid -->
     <main class="container">
         <section class="banner">
-            <h1>Phase 5: Orders Tracking & Coupons Active</h1>
-            <p>Track your orders live and apply discount coupons!</p>
+            <h1>Phase 6: Category Filter Active</h1>
+            <p>Browse products by categories easily!</p>
         </section>
 
         <h2>Store Products</h2>
@@ -59,7 +57,7 @@
                 <p>Your cart is empty.</p>
             </div>
             <div style="margin: 10px 0; display: flex; gap: 5px;">
-                <input type="text" id="couponInput" placeholder="Enter Coupon (e.g. SALE11)" class="input-box" style="margin:0;">
+                <input type="text" id="couponInput" placeholder="Enter Coupon (SALE11)" class="input-box" style="margin:0;">
                 <button onclick="applyCoupon()" class="btn-secondary" style="padding: 8px;">Apply</button>
             </div>
             <p id="couponMsg" style="font-size: 12px; color: green; margin-bottom: 5px;"></p>
@@ -105,6 +103,11 @@
                 <input type="text" id="adminProdName" placeholder="Product Name" class="input-box">
                 <input type="number" id="adminProdPrice" placeholder="Selling Price (₹)" class="input-box">
                 <input type="number" id="adminProdMrp" placeholder="MRP Price (₹)" class="input-box">
+                <select id="adminProdCat" class="input-box" style="padding:10px;">
+                    <option value="Fashion">Fashion</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Home">Home & Kitchen</option>
+                </select>
                 <input type="text" id="adminProdImg" placeholder="Image URL" class="input-box">
                 <button onclick="addNewProduct()" class="btn-primary">Add Product</button>
             </div>
