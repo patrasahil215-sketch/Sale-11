@@ -1,52 +1,50 @@
-// --- Navigation & Modal Open/Close Controls ---
-
-function openSupportModal() {
-    let modal = document.getElementById('supportModal');
-    if(modal) modal.style.display = 'flex';
-}
-function closeSupportModal() {
-    let modal = document.getElementById('supportModal');
-    if(modal) modal.style.display = 'none';
-}
-
-function openCartModal() {
-    let modal = document.getElementById('cartModal');
-    if(modal) {
-        modal.style.display = 'flex';
-        renderCartItems();
+// Theme Toggle Function
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    let icon = document.getElementById('darkModeIcon');
+    if (document.body.classList.contains('dark-mode')) {
+        localStorage.setItem('sale11_theme', 'dark');
+        if(icon) icon.className = "fas fa-sun";
+    } else {
+        localStorage.setItem('sale11_theme', 'light');
+        if(icon) icon.className = "fas fa-moon";
     }
 }
-function closeCartModal() {
-    let modal = document.getElementById('cartModal');
-    if(modal) modal.style.display = 'none';
-}
 
-function openWishlistModal() {
-    let modal = document.getElementById('wishlistModal');
-    if(modal) {
+// Admin Access & Security Modal Function
+function checkAdminAccess() {
+    let isAdminLoggedIn = sessionStorage.getItem('sale11_admin_auth');
+    let modal = document.getElementById('adminLoginModal');
+    
+    if(isAdminLoggedIn === 'true') {
+        openAdminDashboard();
+    } else if(modal) {
         modal.style.display = 'flex';
-        const container = document.getElementById('wishlistItemsContainer');
-        if(container) {
-            container.innerHTML = wishlist.length === 0 ? '<p>Your wishlist is empty.</p>' : '';
-            wishlist.forEach(item => { 
-                container.innerHTML += `<div style="padding:6px 0; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between;"><span>${item.name} - ₹${item.price}</span></div>`; 
-            });
+    } else {
+        // Fallback agar modal missing ho
+        let pass = prompt('Enter Admin Password (default: admin123):');
+        if(pass === 'admin123') {
+            sessionStorage.setItem('sale11_admin_auth', 'true');
+            openAdminDashboard();
+        } else if(pass !== null) {
+            alert('Incorrect Password!');
         }
     }
 }
-function closeWishlistModal() {
-    let modal = document.getElementById('wishlistModal');
+
+function closeAdminLoginModal() {
+    let modal = document.getElementById('adminLoginModal');
     if(modal) modal.style.display = 'none';
 }
 
-function openLoginModal() {
-    let modal = document.getElementById('loginModal');
-    if(modal) {
-        modal.style.display = 'flex';
-        checkLoginState();
+function verifyAdminPassword() {
+    let passElem = document.getElementById('adminPasswordInput');
+    let pass = passElem ? passElem.value : '';
+    if(pass === 'admin123') {
+        sessionStorage.setItem('sale11_admin_auth', 'true');
+        closeAdminLoginModal();
+        openAdminDashboard();
+    } else {
+        alert('Incorrect Admin Password! (Default is admin123)');
     }
-}
-function closeLoginModal() {
-    let modal = document.getElementById('loginModal');
-    if(modal) modal.style.display = 'none';
 }
