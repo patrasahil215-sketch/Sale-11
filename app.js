@@ -1,21 +1,17 @@
-// openAdminModal function ko yeh update dein:
-function openAdminModal() {
-    document.getElementById('adminModal').style.display = 'block';
-    renderAdminProductList();
-    updateAdminStats();
+// Check saved theme on load
+if (localStorage.getItem('sale11_theme') === 'dark') {
+    document.body.classList.add('dark-mode');
+    document.getElementById('darkModeIcon').className = "fas fa-sun";
 }
 
-function updateAdminStats() {
-    let totalOrders = orders.length;
-    let totalRevenue = 0;
-    orders.forEach(ord => {
-        ord.items.forEach(item => {
-            totalRevenue += item.price;
-        });
-    });
-    let totalProducts = products.length;
-
-    document.getElementById('adminTotalOrders').innerText = totalOrders;
-    document.getElementById('adminTotalRevenue').innerText = '₹' + totalRevenue;
-    document.getElementById('adminTotalProds').innerText = totalProducts;
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    let icon = document.getElementById('darkModeIcon');
+    if (document.body.classList.contains('dark-mode')) {
+        localStorage.setItem('sale11_theme', 'dark');
+        icon.className = "fas fa-sun";
+    } else {
+        localStorage.setItem('sale11_theme', 'light');
+        icon.className = "fas fa-moon";
+    }
 }
