@@ -1,3192 +1,10087 @@
-
-     
 /* =========================================================
-   SALE 11 - COMPLETE STORE + ADMIN SYSTEM
+   SALE 11
+   app.js — PART 1 / 5
+   Core Data + Storage + Helpers + Product Data
    ========================================================= */
 
-// ================= STORAGE KEYS =================
+"use strict";
 
-const PRODUCTS_KEY = "sale11_products";
-const ORDERS_KEY = "sale11_orders";
-const CUSTOMERS_KEY = "sale11_customers";
-const SETTINGS_KEY = "sale11_settings";
-const CART_KEY = "sale11_cart";
-const WISHLIST_KEY = "sale11_wishlist";
-const USER_KEY = "sale11_current_user";
 
-// ================= DEFAULT SETTINGS =================
+/* =========================================================
+   1. SHORT DOM HELPER
+   ========================================================= */
 
-const defaultSettings = {
-    deliveryCharge: 50,
-    freeDeliveryLimit: 499,
-    cod: "Enabled"
+function $(id) {
+    return document.getElementById(id);
+}
+
+
+/* =========================================================
+   2. STORAGE KEYS
+   ========================================================= */
+
+const KEYS = {
+    products: "sale11_products",
+    orders: "sale11_orders",
+    customers: "sale11_customers",
+    categories: "sale11_categories",
+    settings: "sale11_settings",
+    cart: "sale11_cart",
+    wishlist: "sale11_wishlist",
+    currentUser: "sale11_current_user",
+    adminAuth: "sale11_admin_auth"
 };
 
-// ================= DEFAULT PRODUCTS =================
 
-const defaultProducts = [
-    {
-        id: "P1001",
-        name: "Sample Fashion Product",
-        category: "Fashion",
-        price: 399,
-        mrp: 699,
-        resellPrice: 300,
-        stock: 10,
-        image: "",
-        description: "Sample product. You can edit or delete this product.",
-        meeshoLink: "",
-        sizes: "",
-        colors: ""
-    }
+/* =========================================================
+   3. DEFAULT CATEGORIES
+   ========================================================= */
+
+const DEFAULT_CATEGORIES = [
+    "Fashion",
+    "Electronics",
+    "Home & Kitchen",
+    "Beauty",
+    "Kids",
+    "Best Sellers"
 ];
 
-// ================= SAFE HTML =================
 
-function escapeHtml(text) {
-    if (text === null || text === undefined) return "";
+/* =========================================================
+   4. DEFAULT SETTINGS
+   ========================================================= */
 
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+const DEFAULT_SETTINGS = {
+    storeName: "Sale 11",
+    supportPhone: "",
+    deliveryCharge: 49,
+    freeDeliveryAbove: 499,
+    upiId: "",
+    codEnabled: true,
+    upiEnabled: false,
+    currency: "₹"
+};
+
+
+/* =========================================================
+   5. ADMIN CONFIG
+   ========================================================= */
+
+const ADMIN_CONFIG = {
+    mobile: "7089297902",
+    password: "S@hil1235"
+};
+
+let adminAuth = null;
+
+function saveAdminAuth() {
+    try {
+        if (adminAuth && adminAuth.loggedIn) {
+            sessionStorage.setItem(KEYS.adminAuth, JSON.stringify(adminAuth));
+        } else {
+            sessionStorage.removeItem(KEYS.adminAuth);
+        }
+    } catch (error) {
+        console.error("Sale 11: could not save admin auth", error);
+    }
 }
 
-// ================= PRODUCTS =================
-
-function getProducts() {
+function loadAdminAuth() {
     try {
-        const data = localStorage.getItem(PRODUCTS_KEY);
+        const raw = sessionStorage.getItem(KEYS.adminAuth);
+        if (!raw) { adminAuth = null; return; }
+        const parsed = JSON.parse(raw);
+        adminAuth = parsed && parsed.loggedIn ? parsed : null;
+    } catch (error) {
+        adminAuth = null;
+        sessionStorage.removeItem(KEYS.adminAuth);
+    }
+}
 
-        if (!data) {
-            localStorage.setItem(
-                PRODUCTS_KEY,
-                JSON.stringify(defaultProducts)
-            );
+let currentDashboardPeriod = "all";
 
-            return [...defaultProducts];
+function getAdminPeriod() {
+    return currentDashboardPeriod || "all";
+}
+
+function setAdminPeriod(period) {
+    const value = String(period || "all");
+    currentDashboardPeriod =
+        value === "7" ? "7days" :
+        value === "30" ? "30days" :
+        value === "today" ? "today" :
+        "all";
+    renderAdminDashboard();
+}
+
+
+
+/* =========================================================
+   6. GLOBAL STATE
+   ========================================================= */
+
+let products = [];
+let orders = [];
+let customers = [];
+let categories = [];
+let settings = {};
+
+let cart = [];
+let wishlist = [];
+
+let currentCustomer = null;
+let selectedProduct = null;
+
+let selectedProductImageIndex = 0;
+let selectedProductSize = "";
+let selectedProductColor = "";
+let selectedProductQuantity = 1;
+
+let adminProductPage = 1;
+let adminOrderPage = 1;
+
+const ADMIN_PRODUCTS_PER_PAGE = 10;
+const ADMIN_ORDERS_PER_PAGE = 10;
+
+
+/* =========================================================
+   7. SAFE JSON READ
+   ========================================================= */
+
+function readStorage(key, fallback) {
+
+    try {
+
+        const value = localStorage.getItem(key);
+
+        if (!value) {
+            return fallback;
         }
 
-        return JSON.parse(data) || [];
-    } catch {
-        return [];
+        const parsed = JSON.parse(value);
+
+        return parsed ?? fallback;
+
+    } catch (error) {
+
+        console.warn(
+            "Storage read error:",
+            key,
+            error
+        );
+
+        return fallback;
     }
 }
 
-function saveProducts(products) {
-    localStorage.setItem(
-        PRODUCTS_KEY,
-        JSON.stringify(products)
-    );
-}
 
-// ================= ORDERS =================
+/* =========================================================
+   8. SAFE JSON WRITE
+   ========================================================= */
 
-function getOrders() {
+function writeStorage(key, value) {
+
     try {
-        return JSON.parse(localStorage.getItem(ORDERS_KEY)) || [];
-    } catch {
-        return [];
+
+        localStorage.setItem(
+            key,
+            JSON.stringify(value)
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Storage write error:",
+            key,
+            error
+        );
+
+        showToast(
+            "Storage full. Please reduce image size.",
+            "error"
+        );
+
+        return false;
     }
 }
 
-function saveOrders(orders) {
-    localStorage.setItem(
-        ORDERS_KEY,
-        JSON.stringify(orders)
-    );
-}
 
-// ================= CUSTOMERS =================
+/* =========================================================
+   9. LOAD ALL DATA
+   ========================================================= */
 
-function getCustomers() {
-    try {
-        return JSON.parse(localStorage.getItem(CUSTOMERS_KEY)) || [];
-    } catch {
-        return [];
-    }
-}
+function loadAllData() {
 
-function saveCustomers(customers) {
-    localStorage.setItem(
-        CUSTOMERS_KEY,
-        JSON.stringify(customers)
-    );
-}
+    products =
+        readStorage(
+            KEYS.products,
+            []
+        );
 
-// ================= CART =================
+    orders =
+        readStorage(
+            KEYS.orders,
+            []
+        );
 
-function getCart() {
-    try {
-        return JSON.parse(localStorage.getItem(CART_KEY)) || [];
-    } catch {
-        return [];
-    }
-}
+    customers =
+        readStorage(
+            KEYS.customers,
+            []
+        );
 
-function saveCart(cart) {
-    localStorage.setItem(
-        CART_KEY,
-        JSON.stringify(cart)
-    );
-}
+    categories =
+        readStorage(
+            KEYS.categories,
+            [...DEFAULT_CATEGORIES]
+        );
 
-// ================= WISHLIST =================
-
-function getWishlist() {
-    try {
-        return JSON.parse(localStorage.getItem(WISHLIST_KEY)) || [];
-    } catch {
-        return [];
-    }
-}
-
-function saveWishlist(list) {
-    localStorage.setItem(
-        WISHLIST_KEY,
-        JSON.stringify(list)
-    );
-}
-
-// ================= SETTINGS =================
-
-function getSettings() {
-    try {
-        return {
-            ...defaultSettings,
-            ...(JSON.parse(
-                localStorage.getItem(SETTINGS_KEY)
-            ) || {})
+    settings =
+        {
+            ...DEFAULT_SETTINGS,
+            ...readStorage(
+                KEYS.settings,
+                {}
+            )
         };
-    } catch {
-        return { ...defaultSettings };
-    }
+
+    cart =
+        readStorage(
+            KEYS.cart,
+            []
+        );
+
+    wishlist =
+        readStorage(
+            KEYS.wishlist,
+            []
+        );
+
+    normalizeAllProducts();
 }
 
-function saveSettings(settings) {
-    localStorage.setItem(
-        SETTINGS_KEY,
-        JSON.stringify(settings)
+
+/* =========================================================
+   10. SAVE PRODUCTS
+   ========================================================= */
+
+function saveProducts() {
+
+    return writeStorage(
+        KEYS.products,
+        products
     );
 }
 
-// ================= PAGE SWITCH =================
 
-function switchTab(tab) {
+/* =========================================================
+   11. SAVE ORDERS
+   ========================================================= */
 
-    const store =
-        document.getElementById("customerStoreView");
+function saveOrders() {
 
-    const admin =
-        document.getElementById("adminDashboardView");
-
-    if (tab === "admin") {
-
-        if (store) store.style.display = "none";
-        if (admin) admin.style.display = "block";
-
-    } else {
-
-        if (store) store.style.display = "block";
-        if (admin) admin.style.display = "none";
-    }
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
+    return writeStorage(
+        KEYS.orders,
+        orders
+    );
 }
 
-// ================= ADMIN LOGIN =================
 
-function checkAdminAccess() {
+/* =========================================================
+   12. SAVE CUSTOMERS
+   ========================================================= */
 
-    const loggedIn =
-        sessionStorage.getItem("sale11_admin_auth");
+function saveCustomers() {
 
-    if (loggedIn === "true") {
-        openAdminDashboard();
-        return;
+    return writeStorage(
+        KEYS.customers,
+        customers
+    );
+}
+
+
+/* =========================================================
+   13. SAVE CATEGORIES
+   ========================================================= */
+
+function saveCategories() {
+
+    return writeStorage(
+        KEYS.categories,
+        categories
+    );
+}
+
+
+/* =========================================================
+   14. SAVE SETTINGS
+   ========================================================= */
+
+function saveSettings() {
+
+    return writeStorage(
+        KEYS.settings,
+        settings
+    );
+}
+
+
+/* =========================================================
+   15. SAVE CART
+   ========================================================= */
+
+function saveCart() {
+
+    return writeStorage(
+        KEYS.cart,
+        cart
+    );
+}
+
+
+/* =========================================================
+   16. SAVE WISHLIST
+   ========================================================= */
+
+function saveWishlist() {
+
+    return writeStorage(
+        KEYS.wishlist,
+        wishlist
+    );
+}
+
+
+/* =========================================================
+   17. STRING HELPER
+   ========================================================= */
+
+function safeString(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return "";
     }
 
-    const password =
-        prompt("🔐 Enter Admin Password:");
+    return String(value);
+}
 
-    if (password === null) return;
+
+/* =========================================================
+   18. NUMBER HELPER
+   ========================================================= */
+
+function numberValue(value) {
+
+    const number =
+        Number(value);
+
+    return Number.isFinite(number)
+        ? number
+        : 0;
+}
+
+
+/* =========================================================
+   19. CURRENCY FORMAT
+   ========================================================= */
+
+function formatCurrency(value) {
+
+    const amount =
+        numberValue(value);
+
+    return (
+        settings.currency || "₹"
+    ) +
+        amount.toLocaleString(
+            "en-IN",
+            {
+                maximumFractionDigits: 2
+            }
+        );
+}
+
+
+/* =========================================================
+   20. HTML ESCAPE
+   ========================================================= */
+
+function escapeHTML(value) {
+
+    return safeString(value)
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+}
+
+
+/* =========================================================
+   21. ATTRIBUTE ESCAPE
+   ========================================================= */
+
+function escapeAttribute(value) {
+
+    return escapeHTML(value);
+}
+
+
+/* =========================================================
+   22. SLUGIFY
+   ========================================================= */
+
+function slugify(value) {
+
+    return safeString(value)
+        .toLowerCase()
+        .trim()
+        .replace(
+            /[^a-z0-9]+/g,
+            "-"
+        )
+        .replace(
+            /^-+|-+$/g,
+            ""
+        );
+}
+
+
+/* =========================================================
+   23. GENERATE ID
+   ========================================================= */
+
+function generateId(prefix = "ID") {
+
+    return (
+        prefix +
+        "_" +
+        Date.now() +
+        "_" +
+        Math.random()
+            .toString(36)
+            .slice(2, 8)
+    );
+}
+
+
+/* =========================================================
+   24. GENERATE ORDER ID
+   ========================================================= */
+
+function generateOrderId() {
+
+    const date =
+        new Date();
+
+    const year =
+        date.getFullYear();
+
+    const month =
+        String(
+            date.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const day =
+        String(
+            date.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
+
+    const random =
+        Math.floor(
+            1000 +
+            Math.random() * 9000
+        );
+
+    return (
+        "S11-" +
+        year +
+        month +
+        day +
+        "-" +
+        random
+    );
+}
+
+
+/* =========================================================
+   25. DATE FORMAT
+   ========================================================= */
+
+function formatDate(value) {
+
+    if (!value) {
+        return "-";
+    }
+
+    const date =
+        new Date(value);
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "-";
+    }
+
+    return date.toLocaleDateString(
+        "en-IN",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    );
+}
+
+
+/* =========================================================
+   26. DATE + TIME FORMAT
+   ========================================================= */
+
+function formatDateTime(value) {
+
+    if (!value) {
+        return "-";
+    }
+
+    const date =
+        new Date(value);
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "-";
+    }
+
+    return date.toLocaleString(
+        "en-IN",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+}
+
+
+/* =========================================================
+   27. PARSE COMMA LIST
+   ========================================================= */
+
+function parseList(value) {
+
+    if (Array.isArray(value)) {
+
+        return value
+            .map(item =>
+                safeString(item).trim()
+            )
+            .filter(Boolean);
+    }
+
+    return safeString(value)
+        .split(",")
+        .map(item =>
+            item.trim()
+        )
+        .filter(Boolean);
+}
+
+
+/* =========================================================
+   28. IMAGE VALIDATION
+   ========================================================= */
+
+function isValidImageData(value) {
+
+    if (!value) {
+        return false;
+    }
+
+    const image =
+        safeString(value);
+
+    return (
+        image.startsWith("data:image/") ||
+        image.startsWith("https://") ||
+        image.startsWith("http://") ||
+        image.startsWith("/")
+    );
+}
+
+
+/* =========================================================
+   29. PRODUCT NORMALIZER
+   ========================================================= */
+
+function normalizeProduct(product) {
+
+    const item =
+        product || {};
+
+    const images =
+        Array.isArray(
+            item.images
+        )
+            ? item.images
+                .filter(
+                    image =>
+                        isValidImageData(
+                            image
+                        )
+                )
+                .slice(0, 6)
+            : [];
 
     /*
-      IMPORTANT:
-      This is only a client-side demo password.
-      Change the password below.
+       पुराने product में सिर्फ image
+       field हो तो उसे भी support करेंगे.
     */
 
-    if (password === "CHANGE_THIS_ADMIN_PASSWORD") {
+    if (
+        !images.length &&
+        isValidImageData(
+            item.image
+        )
+    ) {
+        images.push(
+            item.image
+        );
+    }
+
+    return {
+
+        id:
+            item.id ||
+            generateId("P"),
+
+        name:
+            safeString(
+                item.name
+            ),
+
+        sku:
+            safeString(
+                item.sku
+            ),
+
+        category:
+            safeString(
+                item.category
+            ),
+
+        description:
+            safeString(
+                item.description
+            ),
+
+        details:
+            safeString(
+                item.details
+            ),
+
+        features:
+            Array.isArray(
+                item.features
+            )
+                ? item.features
+                : parseList(
+                    item.features
+                ),
+
+        price:
+            numberValue(
+                item.price
+            ),
+
+        mrp:
+            numberValue(
+                item.mrp
+            ),
+
+        costPrice:
+            numberValue(
+                item.costPrice ??
+                item.resellPrice
+            ),
+
+        resellPrice:
+            numberValue(
+                item.resellPrice ??
+                item.costPrice
+            ),
+
+        discount:
+            numberValue(
+                item.discount
+            ),
+
+        stock:
+            Math.max(
+                0,
+                Math.floor(
+                    numberValue(
+                        item.stock
+                    )
+                )
+            ),
+
+        sizes:
+            parseList(
+                item.sizes
+            ),
+
+        colors:
+            parseList(
+                item.colors
+            ),
+
+        images,
+
+        image:
+            images[0] || "",
+
+        active:
+            item.active !== false,
+
+        createdAt:
+            item.createdAt ||
+            new Date().toISOString(),
+
+        updatedAt:
+            item.updatedAt ||
+            new Date().toISOString()
+    };
+}
+
+
+/* =========================================================
+   30. NORMALIZE ALL PRODUCTS
+   ========================================================= */
+
+function normalizeAllProducts() {
+
+    products =
+        products.map(
+            normalizeProduct
+        );
+
+    /*
+       Storage में normalized data
+       save कर देते हैं.
+    */
+
+    writeStorage(
+        KEYS.products,
+        products
+    );
+}
+
+
+/* =========================================================
+   31. FIND PRODUCT
+   ========================================================= */
+
+function findProduct(productId) {
+
+    return (
+        products.find(
+            product =>
+                String(
+                    product.id
+                ) ===
+                String(
+                    productId
+                )
+        ) || null
+    );
+}
+
+
+/* =========================================================
+   32. GET ACTIVE PRODUCTS
+   ========================================================= */
+
+function getActiveProducts() {
+
+    return products.filter(
+        product =>
+            product.active !== false
+    );
+}
+
+
+/* =========================================================
+   33. GET CATEGORY NAME
+   ========================================================= */
+
+function getCategoryName(category) {
+
+    if (
+        category &&
+        typeof category === "object"
+    ) {
+
+        return safeString(
+            category.name
+        );
+    }
+
+    return safeString(
+        category
+    );
+}
+
+
+/* =========================================================
+   34. GET STOCK TEXT
+   ========================================================= */
+
+function getStockText(product) {
+
+    if (!product) {
+        return "Out of Stock";
+    }
+
+    const stock =
+        numberValue(
+            product.stock
+        );
+
+    if (stock <= 0) {
+        return "Out of Stock";
+    }
+
+    if (stock <= 5) {
+        return `Only ${stock} left`;
+    }
+
+    return `${stock} in stock`;
+}
+
+
+/* =========================================================
+   35. GET STOCK CLASS
+   ========================================================= */
+
+function getStockClass(product) {
+
+    if (!product) {
+        return "stock-out";
+    }
+
+    const stock =
+        numberValue(
+            product.stock
+        );
+
+    if (stock <= 0) {
+        return "stock-out";
+    }
+
+    if (stock <= 5) {
+        return "stock-low";
+    }
+
+    return "stock-text";
+}
+
+
+/* =========================================================
+   36. GET DISCOUNT PERCENT
+   ========================================================= */
+
+function getDiscountPercent(product) {
+
+    if (!product) {
+        return 0;
+    }
+
+    const mrp =
+        numberValue(
+            product.mrp
+        );
+
+    const price =
+        numberValue(
+            product.price
+        );
+
+    if (
+        mrp <= 0 ||
+        price <= 0 ||
+        price >= mrp
+    ) {
+        return 0;
+    }
+
+    return Math.round(
+        (
+            (mrp - price) /
+            mrp
+        ) * 100
+    );
+}
+
+
+/* =========================================================
+   37. GET CUSTOMER
+   ========================================================= */
+
+function getCurrentCustomer() {
+
+    const mobile =
+        localStorage.getItem(
+            KEYS.currentUser
+        );
+
+    if (!mobile) {
+        return null;
+    }
+
+    return (
+        customers.find(
+            customer =>
+                String(
+                    customer.mobile
+                ) ===
+                String(
+                    mobile
+                )
+        ) || null
+    );
+}
+
+
+/* =========================================================
+   38. GET ORDERS
+   ========================================================= */
+
+function getOrders() {
+
+    return orders;
+}
+
+
+/* =========================================================
+   39. GET CUSTOMERS
+   ========================================================= */
+
+function getCustomers() {
+
+    return customers;
+}
+
+
+/* =========================================================
+   40. GET PRODUCTS
+   ========================================================= */
+
+function getProducts() {
+
+    return products;
+}
+
+
+/* =========================================================
+   41. GET SETTINGS
+   ========================================================= */
+
+function getSettings() {
+
+    return {
+        ...DEFAULT_SETTINGS,
+        ...settings
+    };
+}
+
+
+/* =========================================================
+   42. GET CART COUNT
+   ========================================================= */
+
+function getCartCount() {
+
+    return cart.reduce(
+        (
+            total,
+            item
+        ) => {
+
+            return (
+                total +
+                numberValue(
+                    item.quantity
+                )
+            );
+        },
+        0
+    );
+}
+
+
+/* =========================================================
+   43. SET TEXT SAFELY
+   ========================================================= */
+
+function setText(
+    id,
+    value
+) {
+
+    const element =
+        $(id);
+
+    if (element) {
+
+        element.textContent =
+            safeString(
+                value
+            );
+    }
+}
+
+
+/* =========================================================
+   44. SET HTML SAFELY
+   ========================================================= */
+
+function setHTML(
+    id,
+    value
+) {
+
+    const element =
+        $(id);
+
+    if (element) {
+
+        element.innerHTML =
+            value || "";
+    }
+}
+
+
+/* =========================================================
+   45. SET INPUT VALUE
+   ========================================================= */
+
+function setInputValue(
+    id,
+    value
+) {
+
+    const element =
+        $(id);
+
+    if (element) {
+
+        element.value =
+            value ?? "";
+    }
+}
+
+
+/* =========================================================
+   46. GET INPUT VALUE
+   ========================================================= */
+
+function getInputValue(id) {
+
+    const element =
+        $(id);
+
+    return element
+        ? element.value.trim()
+        : "";
+}
+
+
+/* =========================================================
+   47. GET CHECKED VALUE
+   ========================================================= */
+
+function getCheckedValue(
+    name
+) {
+
+    const element =
+        document.querySelector(
+            `input[name="${name}"]:checked`
+        );
+
+    return element
+        ? element.value
+        : "";
+}
+
+
+/* =========================================================
+   48. ADMIN LOGIN STATE
+   ========================================================= */
+
+
+
+/* =========================================================
+   49. SET ADMIN LOGIN STATE
+   ========================================================= */
+
+function setAdminLoginState(
+    loggedIn
+) {
+
+    if (loggedIn) {
 
         sessionStorage.setItem(
-            "sale11_admin_auth",
+            KEYS.adminAuth,
             "true"
         );
 
-        openAdminDashboard();
-
-        alert("✅ Welcome to Sale 11 Admin!");
-
     } else {
 
-        alert("❌ Incorrect Password!");
+        sessionStorage.removeItem(
+            KEYS.adminAuth
+        );
     }
 }
 
-function logoutAdmin() {
 
-    sessionStorage.removeItem(
-        "sale11_admin_auth"
+/* =========================================================
+   50. CUSTOMER LOGIN STATE
+   ========================================================= */
+
+function isCustomerLoggedIn() {
+
+    return Boolean(
+        getCurrentCustomer()
     );
-
-    switchTab("store");
 }
 
-// ================= ADMIN DASHBOARD =================
 
-function openAdminDashboard() {
+/* =========================================================
+   51. NORMALIZE CUSTOMER
+   ========================================================= */
 
-    switchTab("admin");
+function normalizeCustomer(
+    customer
+) {
 
-    switchAdminTab("dashboard");
+    const item =
+        customer || {};
 
-    updateAdminDashboard();
-}
-
-function switchAdminTab(tab) {
-
-    const tabs = {
-        dashboard: "adminTabDashboard",
-        products: "adminTabProducts",
-        orders: "adminTabOrders",
-        customers: "adminTabCustomers",
-        settings: "adminTabSettings"
-    };
-
-    Object.keys(tabs).forEach(key => {
-
-        const el =
-            document.getElementById(tabs[key]);
-
-        if (el) {
-            el.style.display =
-                key === tab ? "block" : "none";
-        }
-    });
-
-    const buttons = {
-        dashboard: "tabBtnDash",
-        products: "tabBtnProds",
-        orders: "tabBtnOrders",
-        customers: "tabBtnCust",
-        settings: "tabBtnSett"
-    };
-
-    Object.keys(buttons).forEach(key => {
-
-        const btn =
-            document.getElementById(buttons[key]);
-
-        if (btn) {
-            btn.classList.toggle(
-                "active",
-                key === tab
-            );
-        }
-    });
-
-    if (tab === "dashboard")
-        updateAdminDashboard();
-
-    if (tab === "products")
-        renderAdminProducts();
-
-    if (tab === "orders")
-        renderAdminOrders();
-
-    if (tab === "customers")
-        renderAdminCustomers();
-
-    if (tab === "settings")
-        loadAdminSettings();
-}
-
-// ================= ADMIN DASHBOARD STATS =================
-
-function updateAdminDashboard() {
-
-    const products = getProducts();
-    const orders = getOrders();
-    const customers = getCustomers();
-
-    const revenue = orders.reduce(
-        (sum, order) =>
-            sum + Number(order.total || 0),
-        0
-    );
-
-    const statRevenue =
-        document.getElementById("statRevenue");
-
-    const statOrders =
-        document.getElementById("statOrders");
-
-    const statProds =
-        document.getElementById("statProds");
-
-    const statCusts =
-        document.getElementById("statCusts");
-
-    if (statRevenue)
-        statRevenue.innerText = revenue;
-
-    if (statOrders)
-        statOrders.innerText = orders.length;
-
-    if (statProds)
-        statProds.innerText = products.length;
-
-    if (statCusts)
-        statCusts.innerText = customers.length;
-
-    const oldRevenue =
-        document.getElementById("adminTotalRevenue");
-
-    const oldOrders =
-        document.getElementById("adminTotalOrders");
-
-    const oldProducts =
-        document.getElementById("adminTotalProds");
-
-    if (oldRevenue)
-        oldRevenue.innerText = "₹" + revenue;
-
-    if (oldOrders)
-        oldOrders.innerText = orders.length;
-
-    if (oldProducts)
-        oldProducts.innerText = products.length;
-}
-
-// ================= PRODUCTS DISPLAY =================
-
-let currentCategory = "All";
-
-function renderProducts() {
-
-    const grid =
-        document.getElementById("productsGrid");
-
-    if (!grid) return;
-
-    const products = getProducts();
-
-    let filtered = products;
-
-    if (
-        currentCategory !== "All"
-    ) {
-        filtered = products.filter(
-            product =>
-                product.category === currentCategory
-        );
-    }
-
-    const searchInput =
-        document.getElementById("searchInput");
-
-    const search =
-        searchInput
-            ? searchInput.value.toLowerCase().trim()
-            : "";
-
-    if (search) {
-
-        filtered = filtered.filter(product =>
-            String(product.name)
-                .toLowerCase()
-                .includes(search)
-        );
-    }
-
-    if (!filtered.length) {
-
-        grid.innerHTML = `
-            <div style="grid-column:1/-1;text-align:center;padding:30px;">
-                <h3>😔 No products found</h3>
-                <p>Try another category or search.</p>
-            </div>
-        `;
-
-        return;
-    }
-
-    const wishlist = getWishlist();
-
-    grid.innerHTML = filtered.map(product => {
-
-        const liked =
-            wishlist.includes(product.id);
-
-        return `
-        <div class="product-card">
-
-            <button
-                class="wishlist-btn ${liked ? "active" : ""}"
-                onclick="toggleWishlist('${product.id}')">
-                ${liked ? "❤️" : "♡"}
-            </button>
-
-            ${
-                product.image
-                ?
-                `<img
-                    src="${product.image}"
-                    alt="${escapeHtml(product.name)}"
-                    onclick="openProductDetail('${product.id}')">`
-                :
-                `
-                <div
-                    onclick="openProductDetail('${product.id}')"
-                    style="
-                        height:180px;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        background:#eee;
-                        border-radius:6px;
-                        font-size:45px;
-                        cursor:pointer;">
-                    📦
-                </div>
-                `
-            }
-
-            <div>
-
-                <span class="resell-badge">
-                    Reselling Product
-                </span>
-
-                <h3
-                    onclick="openProductDetail('${product.id}')">
-                    ${escapeHtml(product.name)}
-                </h3>
-
-                <div class="price">
-                    ₹${Number(product.price || 0)}
-                    <span class="mrp">
-                        ₹${Number(product.mrp || 0)}
-                    </span>
-                </div>
-
-                <p style="font-size:11px;color:#777;">
-                    ${escapeHtml(product.category || "")}
-                </p>
-
-                <p style="font-size:11px;color:#555;">
-                    Stock: ${Number(product.stock || 0)}
-                </p>
-
-            </div>
-
-            <button
-                class="btn-primary"
-                onclick="addToCart('${product.id}')"
-                ${Number(product.stock || 0) <= 0 ? "disabled" : ""}>
-                ${
-                    Number(product.stock || 0) <= 0
-                    ? "Out of Stock"
-                    : "Add to Cart"
-                }
-            </button>
-
-        </div>
-        `;
-    }).join("");
-}
-
-// ================= CATEGORY FILTER =================
-
-function filterCategory(category) {
-
-    currentCategory = category;
-
-    document
-        .querySelectorAll(".cat-btn")
-        .forEach(btn => {
-
-            btn.classList.remove("active");
-
-            if (
-                btn.innerText.trim()
-                    .toLowerCase()
-                    .includes(
-                        category
-                            .replace("All", "All")
-                            .toLowerCase()
-                    )
-            ) {
-                btn.classList.add("active");
-            }
-        });
-
-    renderProducts();
-}
-
-// ================= SEARCH =================
-
-function filterProductsSearch() {
-    renderProducts();
-}
-
-function showSearchSuggestions() {
-    renderProducts();
-}
-
-// ================= PRODUCT DETAIL =================
-
-function openProductDetail(productId) {
-
-    const product =
-        getProducts().find(
-            p => p.id === productId
-        );
-
-    if (!product) return;
-
-    const modal =
-        document.getElementById(
-            "productDetailModal"
-        );
-
-    const container =
-        document.getElementById(
-            "productDetailContainer"
-        );
-
-    if (!modal || !container) return;
-
-    container.innerHTML = `
-
-        ${
-            product.image
-            ?
-            `<img
-                src="${product.image}"
-                style="
-                    width:100%;
-                    max-height:300px;
-                    object-fit:contain;
-                    border-radius:8px;">`
-            :
-            `<div style="
-                height:220px;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                font-size:70px;
-                background:#eee;
-                border-radius:8px;">
-                📦
-            </div>`
-        }
-
-        <h2 style="margin-top:15px;">
-            ${escapeHtml(product.name)}
-        </h2>
-
-        <p style="color:#777;margin:8px 0;">
-            ${escapeHtml(product.category || "")}
-        </p>
-
-        <h2 style="color:var(--primary-color);">
-            ₹${Number(product.price || 0)}
-            <del style="
-                color:#888;
-                font-size:14px;">
-                ₹${Number(product.mrp || 0)}
-            </del>
-        </h2>
-
-        ${
-            product.resellPrice
-            ?
-            `<p style="margin-top:8px;">
-                💰 Reselling Price:
-                <strong>₹${Number(product.resellPrice)}</strong>
-            </p>`
-            : ""
-        }
-
-        <p style="
-            font-size:13px;
-            margin:12px 0;
-            line-height:1.5;">
-            ${escapeHtml(
-                product.description ||
-                "No description available."
-            )}
-        </p>
-
-        <p style="font-size:13px;">
-            📦 Stock:
-            <strong>${Number(product.stock || 0)}</strong>
-        </p>
-
-        ${
-            product.sizes
-            ?
-            `<p style="font-size:13px;">
-                Size: ${escapeHtml(product.sizes)}
-            </p>`
-            : ""
-        }
-
-        ${
-            product.colors
-            ?
-            `<p style="font-size:13px;">
-                Colors: ${escapeHtml(product.colors)}
-            </p>`
-            : ""
-        }
-
-        <button
-            class="btn-primary"
-            style="margin-top:15px;"
-            onclick="addToCart('${product.id}');closeProductDetailModal();">
-            🛒 Add to Cart
-        </button>
-    `;
-
-    modal.style.display = "flex";
-}
-
-function closeProductDetailModal() {
-
-    const modal =
-        document.getElementById(
-            "productDetailModal"
-        );
-
-    if (modal)
-        modal.style.display = "none";
-}
-
-// ================= ADMIN PRODUCT SAVE =================
-
-function saveAdminProduct() {
-
-    const name =
-        document.getElementById("adminProdName")
-        ?.value.trim();
-
-    const price =
-        Number(
-            document.getElementById("adminProdPrice")
-            ?.value
-        );
-
-    const mrp =
-        Number(
-            document.getElementById("adminProdMrp")
-            ?.value
-        );
-
-    const resellPrice =
-        Number(
-            document.getElementById("adminProdResell")
-            ?.value || 0
-        );
-
-    const category =
-        document.getElementById("adminProdCat")
-        ?.value || "Fashion";
-
-    const stock =
-        Number(
-            document.getElementById("adminProdStock")
-            ?.value || 0
-        );
-
-    const description =
-        document.getElementById("adminProdDesc")
-        ?.value.trim() || "";
-
-    const imageInput =
-        document.getElementById(
-            "adminProdFileInput"
-        );
-
-    const existingImage =
-        document.getElementById(
-            "adminProdImgBase64"
-        )?.value || "";
-
-    if (!name || price <= 0 || mrp <= 0) {
-
-        alert(
-            "⚠️ Product Name, Selling Price और MRP भरना जरूरी है."
-        );
-
-        return;
-    }
-
-    const products = getProducts();
-
-    const editIndex =
-        Number(
-            document.getElementById(
-                "editProductIndex"
-            )?.value || -1
-        );
-
-    const product = {
+    return {
 
         id:
-            editIndex >= 0
-            ? products[editIndex].id
-            : "P" + Date.now(),
+            item.id ||
+            generateId("C"),
 
-        name,
-        category,
-        price,
-        mrp,
-        resellPrice,
-        stock,
-        description,
-        image: existingImage,
-        meeshoLink: "",
-        sizes: "",
-        colors: ""
+        name:
+            safeString(
+                item.name
+            ),
+
+        mobile:
+            safeString(
+                item.mobile
+            ),
+
+        email:
+            safeString(
+                item.email
+            ),
+
+        address:
+            item.address || {},
+
+        orders:
+            Array.isArray(
+                item.orders
+            )
+                ? item.orders
+                : [],
+
+        createdAt:
+            item.createdAt ||
+            new Date().toISOString(),
+
+        updatedAt:
+            new Date().toISOString()
     };
+}
 
-    const finishSave = () => {
 
-        if (editIndex >= 0) {
+/* =========================================================
+   52. NORMALIZE ALL CUSTOMERS
+   ========================================================= */
 
-            products[editIndex] =
-                product;
+function normalizeAllCustomers() {
 
-        } else {
-
-            products.push(product);
-        }
-
-        saveProducts(products);
-
-        alert(
-            editIndex >= 0
-            ? "✅ Product updated!"
-            : "✅ Product added!"
+    customers =
+        customers.map(
+            normalizeCustomer
         );
 
-        clearProductForm();
+    saveCustomers();
+}
 
-        renderAdminProducts();
 
-        renderProducts();
+/* =========================================================
+   53. GET CUSTOMER BY MOBILE
+   ========================================================= */
 
-        updateAdminDashboard();
-    };
+function findCustomerByMobile(
+    mobile
+) {
 
-    if (
-        imageInput &&
-        imageInput.files &&
-        imageInput.files[0]
-    ) {
+    const value =
+        safeString(
+            mobile
+        ).replace(
+            /\D/g,
+            ""
+        );
 
-        const reader =
-            new FileReader();
+    return (
+        customers.find(
+            customer =>
+                safeString(
+                    customer.mobile
+                ).replace(
+                    /\D/g,
+                    ""
+                ) === value
+        ) || null
+    );
+}
 
-        reader.onload = function(event) {
 
-            product.image =
-                event.target.result;
+/* =========================================================
+   54. CREATE CUSTOMER
+   ========================================================= */
 
-            const hidden =
-                document.getElementById(
-                    "adminProdImgBase64"
-                );
+function createCustomer(
+    data
+) {
 
-            if (hidden)
-                hidden.value =
-                    product.image;
+    const customer =
+        normalizeCustomer(
+            data
+        );
 
-            finishSave();
-        };
+    customers.push(
+        customer
+    );
 
-        reader.readAsDataURL(
-            imageInput.files[0]
+    saveCustomers();
+
+    return customer;
+}
+
+
+/* =========================================================
+   55. CURRENT USER MOBILE
+   ========================================================= */
+
+function getCurrentUserMobile() {
+
+    return (
+        localStorage.getItem(
+            KEYS.currentUser
+        ) || ""
+    );
+}
+
+
+/* =========================================================
+   56. SET CURRENT USER
+   ========================================================= */
+
+function setCurrentUser(
+    mobile
+) {
+
+    if (mobile) {
+
+        localStorage.setItem(
+            KEYS.currentUser,
+            safeString(
+                mobile
+            )
         );
 
     } else {
 
-        finishSave();
+        localStorage.removeItem(
+            KEYS.currentUser
+        );
     }
 }
 
-// ================= IMAGE PREVIEW =================
 
-function handleImageFileSelect(event) {
+/* =========================================================
+   57. INITIALIZE DEFAULT DATA
+   ========================================================= */
 
-    const file =
-        event.target.files?.[0];
-
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-
-        alert("Please select an image.");
-
-        event.target.value = "";
-
-        return;
-    }
-
-    const reader =
-        new FileReader();
-
-    reader.onload = function(e) {
-
-        const preview =
-            document.getElementById(
-                "imagePreview"
-            );
-
-        const container =
-            document.getElementById(
-                "imagePreviewContainer"
-            );
-
-        const hidden =
-            document.getElementById(
-                "adminProdImgBase64"
-            );
-
-        if (preview)
-            preview.src =
-                e.target.result;
-
-        if (container)
-            container.style.display =
-                "block";
-
-        if (hidden)
-            hidden.value =
-                e.target.result;
-    };
-
-    reader.readAsDataURL(file);
-}
-
-// ================= ADMIN PRODUCT LIST =================
-
-function renderAdminProducts() {
-
-    const tbody =
-        document.getElementById(
-            "adminProductsTableBody"
-        );
-
-    if (!tbody) return;
-
-    const products =
-        getProducts();
-
-    if (!products.length) {
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5"
-                    style="padding:15px;text-align:center;">
-                    No products.
-                </td>
-            </tr>
-        `;
-
-        return;
-    }
-
-    tbody.innerHTML =
-        products.map((p, index) => `
-
-        <tr style="
-            border-bottom:1px solid var(--border-color);">
-
-            <td style="padding:8px;">
-
-                ${
-                    p.image
-                    ?
-                    `<img
-                        src="${p.image}"
-                        style="
-                            width:50px;
-                            height:50px;
-                            object-fit:cover;
-                            border-radius:5px;">`
-                    :
-                    "📦"
-                }
-
-            </td>
-
-            <td style="padding:8px;">
-                ${escapeHtml(p.name)}
-            </td>
-
-            <td style="padding:8px;">
-                ₹${Number(p.price || 0)}
-            </td>
-
-            <td style="padding:8px;">
-                ${Number(p.stock || 0)}
-            </td>
-
-            <td style="padding:8px;">
-
-                <button
-                    onclick="editAdminProduct(${index})"
-                    class="btn-secondary">
-                    Edit
-                </button>
-
-                <button
-                    onclick="deleteAdminProduct(${index})"
-                    class="btn-secondary">
-                    Delete
-                </button>
-
-            </td>
-
-        </tr>
-
-    `).join("");
-}
-
-// ================= EDIT PRODUCT =================
-
-function editAdminProduct(index) {
-
-    const products =
-        getProducts();
-
-    const p =
-        products[index];
-
-    if (!p) return;
-
-    const setValue =
-        (id, value) => {
-
-            const el =
-                document.getElementById(id);
-
-            if (el)
-                el.value =
-                    value ?? "";
-        };
-
-    setValue(
-        "editProductIndex",
-        index
-    );
-
-    setValue(
-        "adminProdName",
-        p.name
-    );
-
-    setValue(
-        "adminProdPrice",
-        p.price
-    );
-
-    setValue(
-        "adminProdMrp",
-        p.mrp
-    );
-
-    setValue(
-        "adminProdResell",
-        p.resellPrice
-    );
-
-    setValue(
-        "adminProdCat",
-        p.category
-    );
-
-    setValue(
-        "adminProdStock",
-        p.stock
-    );
-
-    setValue(
-        "adminProdDesc",
-        p.description
-    );
-
-    setValue(
-        "adminProdImgBase64",
-        p.image
-    );
-
-    const preview =
-        document.getElementById(
-            "imagePreview"
-        );
-
-    const container =
-        document.getElementById(
-            "imagePreviewContainer"
-        );
+function initializeDefaultData() {
 
     if (
-        p.image &&
-        preview &&
-        container
+        !Array.isArray(
+            categories
+        ) ||
+        !categories.length
     ) {
 
-        preview.src =
-            p.image;
+        categories =
+            [...DEFAULT_CATEGORIES];
 
-        container.style.display =
-            "block";
+        saveCategories();
     }
 
-    const title =
-        document.getElementById(
-            "adminFormTitle"
-        );
+    if (
+        !settings ||
+        typeof settings !== "object"
+    ) {
 
-    const saveBtn =
-        document.getElementById(
-            "adminSaveBtn"
-        );
+        settings =
+            {
+                ...DEFAULT_SETTINGS
+            };
 
-    if (title)
-        title.innerText =
-            "✏️ Edit Product";
+        saveSettings();
+    }
 
-    if (saveBtn)
-        saveBtn.innerText =
-            "Update Product";
-
-    switchAdminTab("products");
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
+    normalizeAllCustomers();
 }
 
-// ================= DELETE PRODUCT =================
 
-function deleteAdminProduct(index) {
+/* =========================================================
+   58. IMAGE FILE VALIDATION
+   ========================================================= */
 
-    const products =
-        getProducts();
+function validateImageFile(
+    file
+) {
 
-    if (!products[index]) return;
+    if (!file) {
+        return false;
+    }
 
     if (
-        !confirm(
-            `Delete "${products[index].name}"?`
+        !file.type ||
+        !file.type.startsWith(
+            "image/"
         )
-    ) return;
-
-    const deletedId =
-        products[index].id;
-
-    products.splice(index, 1);
-
-    saveProducts(products);
-
-    const cart =
-        getCart().filter(
-            item =>
-                item.id !== deletedId
-        );
-
-    saveCart(cart);
-
-    const wishlist =
-        getWishlist().filter(
-            id =>
-                id !== deletedId
-        );
-
-    saveWishlist(wishlist);
-
-    renderAdminProducts();
-
-    renderProducts();
-
-    updateCartBadge();
-
-    updateAdminDashboard();
-
-    alert("✅ Product deleted.");
-}
-
-// ================= CLEAR PRODUCT FORM =================
-
-function clearProductForm() {
-
-    const ids = [
-        "adminProdName",
-        "adminProdPrice",
-        "adminProdMrp",
-        "adminProdResell",
-        "adminProdDesc",
-        "adminProdImgBase64"
-    ];
-
-    ids.forEach(id => {
-
-        const el =
-            document.getElementById(id);
-
-        if (el)
-            el.value = "";
-    });
-
-    const stock =
-        document.getElementById(
-            "adminProdStock"
-        );
-
-    if (stock)
-        stock.value = 10;
-
-    const edit =
-        document.getElementById(
-            "editProductIndex"
-        );
-
-    if (edit)
-        edit.value = -1;
-
-    const preview =
-        document.getElementById(
-            "imagePreview"
-        );
-
-    if (preview)
-        preview.src = "";
-
-    const previewContainer =
-        document.getElementById(
-            "imagePreviewContainer"
-        );
-
-    if (previewContainer)
-        previewContainer.style.display =
-            "none";
-
-    const fileInput =
-        document.getElementById(
-            "adminProdFileInput"
-        );
-
-    if (fileInput)
-        fileInput.value = "";
-
-    const title =
-        document.getElementById(
-            "adminFormTitle"
-        );
-
-    const saveBtn =
-        document.getElementById(
-            "adminSaveBtn"
-        );
-
-    if (title)
-        title.innerText =
-            "➕ Add New Product";
-
-    if (saveBtn)
-        saveBtn.innerText =
-            "Save Product";
-}
-
-// ================= CART =================
-
-function addToCart(productId) {
-
-    const product =
-        getProducts().find(
-            p => p.id === productId
-        );
-
-    if (!product) return;
-
-    if (
-        Number(product.stock || 0) <= 0
     ) {
 
-        alert(
-            "❌ Product is out of stock."
+        showToast(
+            "Please select an image file.",
+            "error"
         );
 
-        return;
+        return false;
     }
 
-    const cart =
-        getCart();
+    /*
+       Maximum 5 MB per image.
+    */
 
-    const existing =
-        cart.find(
-            item =>
-                item.id === productId
+    if (
+        file.size >
+        5 * 1024 * 1024
+    ) {
+
+        showToast(
+            "Each image must be below 5 MB.",
+            "error"
         );
 
-    if (existing) {
-
-        if (
-            Number(existing.quantity) >=
-            Number(product.stock)
-        ) {
-
-            alert(
-                "⚠️ Maximum available stock reached."
-            );
-
-            return;
-        }
-
-        existing.quantity += 1;
-
-    } else {
-
-        cart.push({
-            id: productId,
-            quantity: 1
-        });
+        return false;
     }
 
-    saveCart(cart);
-
-    updateCartBadge();
-
-    alert("✅ Added to cart!");
+    return true;
 }
+
+
+/* =========================================================
+   59. READ IMAGE AS DATA URL
+   ========================================================= */
+
+function readImageAsDataURL(
+    file
+) {
+
+    return new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+
+            const reader =
+                new FileReader();
+
+            reader.onload =
+                event => {
+
+                    resolve(
+                        event.target.result
+                    );
+                };
+
+            reader.onerror =
+                () => {
+
+                    reject(
+                        new Error(
+                            "Image could not be read."
+                        )
+                    );
+                };
+
+            reader.readAsDataURL(
+                file
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   60. CREATE EMPTY PRODUCT
+   ========================================================= */
+
+function createEmptyProduct() {
+
+    return {
+
+        id:
+            generateId("P"),
+
+        name: "",
+
+        sku: "",
+
+        category: "",
+
+        description: "",
+
+        details: "",
+
+        features: [],
+
+        price: 0,
+
+        mrp: 0,
+
+        costPrice: 0,
+
+        resellPrice: 0,
+
+        discount: 0,
+
+        stock: 0,
+
+        sizes: [],
+
+        colors: [],
+
+        images: [],
+
+        image: "",
+
+        active: true,
+
+        createdAt:
+            new Date().toISOString(),
+
+        updatedAt:
+            new Date().toISOString()
+    };
+}
+
+
+/* =========================================================
+   61. UPDATE CART BADGE
+   ========================================================= */
 
 function updateCartBadge() {
 
     const count =
-        getCart().reduce(
-            (total, item) =>
-                total +
-                Number(
-                    item.quantity || 0
-                ),
-            0
-        );
+        getCartCount();
 
-    const badge =
-        document.getElementById(
-            "cartCountBadge"
-        );
+    document
+        .querySelectorAll(
+            ".cart-badge"
+        )
+        .forEach(
+            badge => {
 
-    if (badge)
-        badge.innerText =
-            count;
+                badge.textContent =
+                    String(
+                        count
+                    );
+
+                badge.style.display =
+                    count > 0
+                        ? ""
+                        : "none";
+            }
+        );
 }
 
-function changeCartQuantity(
-    productId,
-    change
+
+/* =========================================================
+   62. UPDATE WISHLIST COUNT
+   ========================================================= */
+
+function updateWishlistCount() {
+
+    document
+        .querySelectorAll(
+            "[data-wishlist-count]"
+        )
+        .forEach(
+            element => {
+
+                element.textContent =
+                    String(
+                        wishlist.length
+                    );
+            }
+        );
+}
+
+
+/* =========================================================
+   63. SIMPLE TOAST
+   ========================================================= */
+
+function showToast(
+    message,
+    type = "info"
 ) {
 
-    const cart =
-        getCart();
-
-    const products =
-        getProducts();
-
-    const item =
-        cart.find(
-            x => x.id === productId
-        );
-
-    const product =
-        products.find(
-            x => x.id === productId
-        );
-
-    if (!item || !product) return;
-
-    item.quantity =
-        Number(item.quantity) +
-        Number(change);
-
-    if (item.quantity <= 0) {
-
-        const newCart =
-            cart.filter(
-                x =>
-                    x.id !== productId
-            );
-
-        saveCart(newCart);
-
-    } else {
-
-        if (
-            item.quantity >
-            Number(product.stock)
-        ) {
-
-            item.quantity =
-                Number(product.stock);
-
-            alert(
-                "⚠️ Maximum stock reached."
-            );
-        }
-
-        saveCart(cart);
-    }
-
-    renderCart();
-
-    updateCartBadge();
-}
-
-function renderCart() {
-
     const container =
-        document.getElementById(
-            "cartItemsContainer"
+        $("toastContainer");
+
+    if (!container) {
+
+        console.log(
+            `[${type}]`,
+            message
         );
-
-    if (!container) return;
-
-    const cart =
-        getCart();
-
-    const products =
-        getProducts();
-
-    if (!cart.length) {
-
-        container.innerHTML =
-            "<p>Cart is empty.</p>";
-
-        updateCartTotals();
 
         return;
     }
 
+    const toast =
+        document.createElement(
+            "div"
+        );
+
+    toast.className =
+        `toast ${type}`;
+
+    toast.textContent =
+        safeString(
+            message
+        );
+
+    container.appendChild(
+        toast
+    );
+
+    setTimeout(
+        () => {
+
+            toast.classList.add(
+                "hide"
+            );
+
+            setTimeout(
+                () => {
+
+                    toast.remove();
+
+                },
+                250
+            );
+
+        },
+        3000
+    );
+}
+
+
+/* =========================================================
+   64. CONFIRM ACTION
+   ========================================================= */
+
+function confirmAction(
+    message,
+    callback
+) {
+
+    if (
+        window.confirm(
+            message
+        )
+    ) {
+
+        if (
+            typeof callback ===
+            "function"
+        ) {
+
+            callback();
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+
+/* =========================================================
+   65. INITIAL DATA LOAD
+   ========================================================= */
+
+loadAllData();
+
+initializeDefaultData();
+
+updateCartBadge();
+
+updateWishlistCount();
+
+
+/* =========================================================
+   PART 1 END
+   ========================================================= */
+   /* =========================================================
+   SALE 11
+   app.js — PART 2 / 5
+   Store + Categories + Products + Product Details + Wishlist
+   ========================================================= */
+
+
+/* =========================================================
+   1. PRODUCT IMAGE
+   ========================================================= */
+
+function getProductImage(
+    product,
+    index = 0
+) {
+
+    if (!product) {
+        return "";
+    }
+
+    const images =
+        Array.isArray(product.images)
+            ? product.images
+            : [];
+
+    if (
+        images[index] &&
+        isValidImageData(
+            images[index]
+        )
+    ) {
+        return images[index];
+    }
+
+    if (
+        images[0] &&
+        isValidImageData(
+            images[0]
+        )
+    ) {
+        return images[0];
+    }
+
+    if (
+        product.image &&
+        isValidImageData(
+            product.image
+        )
+    ) {
+        return product.image;
+    }
+
+    return "";
+}
+
+
+/* =========================================================
+   2. PRODUCT IMAGE HTML
+   ========================================================= */
+
+function productImageHTML(
+    product,
+    className = "product-image"
+) {
+
+    const image =
+        getProductImage(
+            product
+        );
+
+    if (!image) {
+
+        return `
+            <div class="product-image-placeholder">
+                <span>🛍️</span>
+            </div>
+        `;
+    }
+
+    return `
+        <img
+            class="${className}"
+            src="${escapeAttribute(image)}"
+            alt="${escapeAttribute(product.name)}"
+            loading="lazy"
+        >
+    `;
+}
+
+
+/* =========================================================
+   3. RENDER CATEGORY BAR
+   ========================================================= */
+
+function renderCategories(
+    selectedCategory = "All"
+) {
+
+    const container =
+        document.querySelector(
+            ".category-scroll"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    const allCategories = [
+        "All",
+        ...categories
+            .filter(Boolean)
+            .filter(
+                category =>
+                    category !== "All"
+            )
+    ];
+
     container.innerHTML =
-        cart.map(item => {
+        allCategories
+            .map(
+                category => {
 
-            const product =
-                products.find(
-                    p =>
-                        p.id === item.id
-                );
+                    const active =
+                        category ===
+                        selectedCategory
+                            ? "active"
+                            : "";
 
-            if (!product)
-                return "";
+                    return `
+                        <button
+                            type="button"
+                            class="category-btn ${active}"
+                            data-category="${escapeAttribute(category)}"
+                        >
+                            ${escapeHTML(category)}
+                        </button>
+                    `;
+                }
+            )
+            .join("");
+}
 
-            return `
-                <div style="
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    gap:10px;
-                    padding:10px 0;
-                    border-bottom:1px solid var(--border-color);">
 
-                    <div style="flex:1;">
+/* =========================================================
+   4. CURRENT CATEGORY
+   ========================================================= */
 
-                        <strong>
-                            ${escapeHtml(product.name)}
-                        </strong>
+let currentCategory = "All";
 
-                        <div style="
-                            font-size:12px;
-                            margin-top:4px;">
-                            ₹${Number(product.price || 0)}
-                        </div>
 
-                        <div style="
-                            display:flex;
-                            align-items:center;
-                            gap:7px;
-                            margin-top:5px;">
+/* =========================================================
+   5. CURRENT SEARCH
+   ========================================================= */
 
-                            <button
-                                onclick="changeCartQuantity('${product.id}',-1)"
-                                class="btn-secondary"
-                                style="width:auto;margin:0;">
-                                −
-                            </button>
+let currentSearch = "";
 
-                            <strong>
-                                ${Number(item.quantity || 1)}
-                            </strong>
 
-                            <button
-                                onclick="changeCartQuantity('${product.id}',1)"
-                                class="btn-secondary"
-                                style="width:auto;margin:0;">
-                                +
-                            </button>
+/* =========================================================
+   6. CURRENT SORT
+   ========================================================= */
 
-                        </div>
+let currentSort = "default";
 
-                    </div>
+
+/* =========================================================
+   7. FILTER PRODUCTS
+   ========================================================= */
+
+function getFilteredProducts() {
+
+    let result =
+        getActiveProducts();
+
+    if (
+        currentCategory &&
+        currentCategory !== "All"
+    ) {
+
+        result =
+            result.filter(
+                product =>
+                    safeString(
+                        product.category
+                    ).toLowerCase() ===
+                    safeString(
+                        currentCategory
+                    ).toLowerCase()
+            );
+    }
+
+    if (currentSearch) {
+
+        const query =
+            currentSearch
+                .toLowerCase()
+                .trim();
+
+        result =
+            result.filter(
+                product => {
+
+                    const text = [
+                        product.name,
+                        product.category,
+                        product.description,
+                        product.details,
+                        product.sku,
+                        ...(product.features || [])
+                    ]
+                        .join(" ")
+                        .toLowerCase();
+
+                    return text.includes(
+                        query
+                    );
+                }
+            );
+    }
+
+    result =
+        [...result];
+
+    switch (currentSort) {
+
+        case "price-low":
+            result.sort(
+                (a, b) =>
+                    numberValue(a.price) -
+                    numberValue(b.price)
+            );
+            break;
+
+        case "price-high":
+            result.sort(
+                (a, b) =>
+                    numberValue(b.price) -
+                    numberValue(a.price)
+            );
+            break;
+
+        case "newest":
+            result.sort(
+                (a, b) =>
+                    new Date(
+                        b.createdAt || 0
+                    ) -
+                    new Date(
+                        a.createdAt || 0
+                    )
+            );
+            break;
+
+        case "name":
+            result.sort(
+                (a, b) =>
+                    safeString(a.name)
+                        .localeCompare(
+                            safeString(b.name)
+                        )
+            );
+            break;
+
+        default:
+            break;
+    }
+
+    return result;
+}
+
+
+/* =========================================================
+   8. PRODUCT CARD
+   ========================================================= */
+
+function createProductCard(
+    product
+) {
+
+    if (!product) {
+        return "";
+    }
+
+    const price =
+        numberValue(
+            product.price
+        );
+
+    const mrp =
+        numberValue(
+            product.mrp
+        );
+
+    const discount =
+        getDiscountPercent(
+            product
+        );
+
+    const stock =
+        numberValue(
+            product.stock
+        );
+
+    const isWishlisted =
+        wishlist.includes(
+            product.id
+        );
+
+    const outOfStock =
+        stock <= 0;
+
+    const image =
+        getProductImage(
+            product
+        );
+
+    return `
+        <article
+            class="product-card"
+            data-product-id="${escapeAttribute(product.id)}"
+        >
+
+            <div class="product-image-wrap">
+
+                ${
+                    image
+                        ? `
+                            <img
+                                class="product-image"
+                                src="${escapeAttribute(image)}"
+                                alt="${escapeAttribute(product.name)}"
+                                loading="lazy"
+                                data-action="product-detail"
+                                data-id="${escapeAttribute(product.id)}"
+                            >
+                        `
+                        : `
+                            <div
+                                class="product-image-placeholder"
+                                data-action="product-detail"
+                                data-id="${escapeAttribute(product.id)}"
+                            >
+                                <span>🛍️</span>
+                            </div>
+                        `
+                }
+
+                <button
+                    type="button"
+                    class="product-wishlist-btn ${isWishlisted ? "active" : ""}"
+                    data-action="wishlist"
+                    data-id="${escapeAttribute(product.id)}"
+                    aria-label="Wishlist"
+                >
+                    ${isWishlisted ? "♥" : "♡"}
+                </button>
+
+                ${
+                    discount > 0
+                        ? `
+                            <span class="product-discount">
+                                ${discount}% OFF
+                            </span>
+                        `
+                        : ""
+                }
+
+            </div>
+
+
+            <div class="product-card-body">
+
+                <div class="product-category">
+                    ${escapeHTML(
+                        product.category || "Product"
+                    )}
+                </div>
+
+                <h3
+                    class="product-name"
+                    data-action="product-detail"
+                    data-id="${escapeAttribute(product.id)}"
+                >
+                    ${escapeHTML(
+                        product.name || "Unnamed Product"
+                    )}
+                </h3>
+
+
+                <div class="product-price-row">
+
+                    <span class="product-price">
+                        ${formatCurrency(price)}
+                    </span>
+
+                    ${
+                        mrp > price
+                            ? `
+                                <span class="product-mrp">
+                                    ${formatCurrency(mrp)}
+                                </span>
+                            `
+                            : ""
+                    }
+
+                </div>
+
+
+                <div class="product-meta">
+
+                    <span class="${getStockClass(product)}">
+                        ${escapeHTML(
+                            getStockText(product)
+                        )}
+                    </span>
+
+                    ${
+                        product.sku
+                            ? `
+                                <span>
+                                    SKU:
+                                    ${escapeHTML(
+                                        product.sku
+                                    )}
+                                </span>
+                            `
+                            : ""
+                    }
+
+                </div>
+
+
+                <div class="product-actions">
 
                     <button
-                        onclick="removeFromCart('${product.id}')"
-                        class="btn-secondary"
-                        style="width:auto;">
-                        Remove
+                        type="button"
+                        class="product-buy-btn"
+                        data-action="product-detail"
+                        data-id="${escapeAttribute(product.id)}"
+                        ${outOfStock ? "disabled" : ""}
+                    >
+                        ${
+                            outOfStock
+                                ? "Out of Stock"
+                                : "View Product"
+                        }
                     </button>
 
                 </div>
-            `;
 
-        }).join("");
+            </div>
 
-    updateCartTotals();
+        </article>
+    `;
 }
 
-function removeFromCart(productId) {
 
-    const cart =
-        getCart().filter(
-            item =>
-                item.id !== productId
-        );
+/* =========================================================
+   9. RENDER PRODUCTS
+   ========================================================= */
 
-    saveCart(cart);
+function renderProducts() {
 
-    renderCart();
+    const grid =
+        $("productsGrid");
 
-    updateCartBadge();
-}
-
-function updateCartTotals() {
-
-    const cart =
-        getCart();
-
-    const products =
-        getProducts();
-
-    const settings =
-        getSettings();
-
-    const subtotal =
-        cart.reduce(
-            (total, item) => {
-
-                const product =
-                    products.find(
-                        p =>
-                            p.id === item.id
-                    );
-
-                return total +
-                    (
-                        Number(
-                            product?.price || 0
-                        ) *
-                        Number(
-                            item.quantity || 0
-                        )
-                    );
-
-            },
-            0
-        );
-
-    const delivery =
-        subtotal === 0
-        ? 0
-        : subtotal >=
-            Number(
-                settings.freeDeliveryLimit
-            )
-            ? 0
-            : Number(
-                settings.deliveryCharge
-            );
-
-    const subtotalEl =
-        document.getElementById(
-            "cartSubtotal"
-        );
-
-    const deliveryEl =
-        document.getElementById(
-            "cartDeliveryCalc"
-        );
-
-    const totalEl =
-        document.getElementById(
-            "cartTotalPrice"
-        );
-
-    if (subtotalEl)
-        subtotalEl.innerText =
-            subtotal;
-
-    if (deliveryEl)
-        deliveryEl.innerText =
-            delivery;
-
-    if (totalEl)
-        totalEl.innerText =
-            subtotal + delivery;
-}
-
-// ================= CART MODAL =================
-
-function openCartModal() {
-
-    const modal =
-        document.getElementById(
-            "cartModal"
-        );
-
-    if (!modal) return;
-
-    modal.style.display =
-        "flex";
-
-    renderCart();
-}
-
-function closeCartModal() {
-
-    const modal =
-        document.getElementById(
-            "cartModal"
-        );
-
-    if (modal)
-        modal.style.display =
-            "none";
-}
-
-// ================= WISHLIST =================
-
-function toggleWishlist(productId) {
-
-    let wishlist =
-        getWishlist();
-
-    if (
-        wishlist.includes(productId)
-    ) {
-
-        wishlist =
-            wishlist.filter(
-                id =>
-                    id !== productId
-            );
-
-        alert("Removed from wishlist.");
-
-    } else {
-
-        wishlist.push(productId);
-
-        alert("❤️ Added to wishlist!");
+    if (!grid) {
+        return;
     }
 
-    saveWishlist(wishlist);
+    const filtered =
+        getFilteredProducts();
+
+    if (!filtered.length) {
+
+        grid.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">
+                    🛍️
+                </div>
+
+                <h3>
+                    No products found
+                </h3>
+
+                <p>
+                    Try another category or search.
+                </p>
+            </div>
+        `;
+
+        return;
+    }
+
+    grid.innerHTML =
+        filtered
+            .map(
+                product =>
+                    createProductCard(
+                        product
+                    )
+            )
+            .join("");
+}
+
+
+/* =========================================================
+   10. SHOW CATEGORY
+   ========================================================= */
+
+function selectCategory(
+    category
+) {
+
+    currentCategory =
+        category || "All";
+
+    renderCategories(
+        currentCategory
+    );
 
     renderProducts();
 
-    renderWishlist();
-}
-
-function openWishlistModal() {
-
-    const modal =
-        document.getElementById(
-            "wishlistModal"
+    const productsSection =
+        document.querySelector(
+            ".products-section"
         );
 
-    if (!modal) return;
+    if (
+        productsSection &&
+        category !== "All"
+    ) {
 
-    modal.style.display =
-        "flex";
-
-    renderWishlist();
+        productsSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
 }
 
-function closeWishlistModal() {
 
-    const modal =
-        document.getElementById(
-            "wishlistModal"
+/* =========================================================
+   11. SEARCH PRODUCTS
+   ========================================================= */
+
+function searchProducts(
+    value
+) {
+
+    currentSearch =
+        safeString(
+            value
         );
 
-    if (modal)
-        modal.style.display =
+    renderProducts();
+}
+
+
+/* =========================================================
+   12. SORT PRODUCTS
+   ========================================================= */
+
+function sortProducts(
+    value
+) {
+
+    currentSort =
+        safeString(
+            value
+        );
+
+    renderProducts();
+}
+
+
+/* =========================================================
+   13. PRODUCT DETAIL
+   ========================================================= */
+
+function openProductDetail(
+    productId
+) {
+
+    const product =
+        findProduct(
+            productId
+        );
+
+    if (!product) {
+
+        showToast(
+            "Product not found.",
+            "error"
+        );
+
+        return;
+    }
+
+    selectedProduct =
+        product;
+
+    selectedProductImageIndex = 0;
+
+    selectedProductSize =
+        product.sizes &&
+        product.sizes.length
+            ? product.sizes[0]
+            : "";
+
+    selectedProductColor =
+        product.colors &&
+        product.colors.length
+            ? product.colors[0]
+            : "";
+
+    selectedProductQuantity = 1;
+
+    renderProductDetail();
+
+    openModal(
+        "productDetailModal"
+    );
+}
+
+
+/* =========================================================
+   14. RENDER PRODUCT DETAIL
+   ========================================================= */
+
+function renderProductDetail() {
+
+    const product =
+        selectedProduct;
+
+    if (!product) {
+        return;
+    }
+
+    const mainImage =
+        $("productMainImage");
+
+    const thumbs =
+        $("productThumbs");
+
+    const title =
+        $("productDetailTitle");
+
+    const category =
+        $("productDetailCategory");
+
+    const price =
+        $("productDetailPrice");
+
+    const mrp =
+        $("productDetailMrp");
+
+    const discount =
+        $("productDetailDiscount");
+
+    const stock =
+        $("productDetailStock");
+
+    const description =
+        $("productDetailDescription");
+
+    const details =
+        $("productDetailDetails");
+
+    if (title) {
+
+        title.textContent =
+            product.name ||
+            "Product";
+    }
+
+    if (category) {
+
+        category.textContent =
+            product.category ||
+            "";
+    }
+
+    if (price) {
+
+        price.textContent =
+            formatCurrency(
+                product.price
+            );
+    }
+
+    if (mrp) {
+
+        if (
+            numberValue(
+                product.mrp
+            ) >
+            numberValue(
+                product.price
+            )
+        ) {
+
+            mrp.textContent =
+                formatCurrency(
+                    product.mrp
+                );
+
+            mrp.style.display =
+                "";
+
+        } else {
+
+            mrp.textContent =
+                "";
+
+            mrp.style.display =
+                "none";
+        }
+    }
+
+    if (discount) {
+
+        const percent =
+            getDiscountPercent(
+                product
+            );
+
+        discount.textContent =
+            percent > 0
+                ? `${percent}% OFF`
+                : "";
+
+        discount.style.display =
+            percent > 0
+                ? ""
+                : "none";
+    }
+
+    if (stock) {
+
+        stock.textContent =
+            getStockText(
+                product
+            );
+
+        stock.className =
+            `detail-stock ${getStockClass(product)}`;
+    }
+
+    if (description) {
+
+        description.textContent =
+            product.description ||
+            "No description available.";
+    }
+
+    if (details) {
+
+        const features =
+            Array.isArray(
+                product.features
+            )
+                ? product.features
+                : [];
+
+        details.innerHTML =
+            product.details
+                ? `
+                    <p>
+                        ${escapeHTML(
+                            product.details
+                        )}
+                    </p>
+                `
+                : "";
+
+        if (features.length) {
+
+            details.innerHTML += `
+                <ul>
+                    ${features
+                        .map(
+                            feature =>
+                                `<li>${escapeHTML(feature)}</li>`
+                        )
+                        .join("")}
+                </ul>
+            `;
+        }
+    }
+
+    renderProductMainImage();
+
+    renderProductThumbs();
+
+    renderProductSizes();
+
+    renderProductColors();
+
+    updateProductQuantityUI();
+}
+
+
+/* =========================================================
+   15. RENDER MAIN PRODUCT IMAGE
+   ========================================================= */
+
+function renderProductMainImage() {
+
+    const element =
+        $("productMainImage");
+
+    if (!element || !selectedProduct) {
+        return;
+    }
+
+    const image =
+        getProductImage(
+            selectedProduct,
+            selectedProductImageIndex
+        );
+
+    if (image) {
+
+        element.src =
+            image;
+
+        element.alt =
+            selectedProduct.name || "Product";
+
+        element.style.display =
+            "";
+    } else {
+
+        element.removeAttribute(
+            "src"
+        );
+
+        element.alt =
+            "No product image";
+
+        element.style.display =
             "none";
+    }
 }
 
-function renderWishlist() {
+
+/* =========================================================
+   16. PRODUCT THUMBNAILS
+   ========================================================= */
+
+function renderProductThumbs() {
 
     const container =
-        document.getElementById(
-            "wishlistItemsContainer"
-        );
+        $("productThumbs");
 
-    if (!container) return;
+    if (!container || !selectedProduct) {
+        return;
+    }
 
-    const wishlist =
-        getWishlist();
+    const images =
+        Array.isArray(
+            selectedProduct.images
+        )
+            ? selectedProduct.images
+                .filter(
+                    isValidImageData
+                )
+                .slice(0, 6)
+            : [];
 
-    const products =
-        getProducts();
-
-    const items =
-        wishlist
-            .map(
-                id =>
-                    products.find(
-                        p => p.id === id
-                    )
-            )
-            .filter(Boolean);
-
-    if (!items.length) {
+    if (!images.length) {
 
         container.innerHTML =
-            "<p>Your wishlist is empty.</p>";
+            "";
 
         return;
     }
 
     container.innerHTML =
-        items.map(product => `
+        images
+            .map(
+                (
+                    image,
+                    index
+                ) => {
 
-        <div style="
-            padding:10px 0;
-            border-bottom:1px solid var(--border-color);">
+                    const active =
+                        index ===
+                        selectedProductImageIndex
+                            ? "active"
+                            : "";
 
-            <strong>
-                ${escapeHtml(product.name)}
-            </strong>
-
-            <p style="
-                color:var(--primary-color);
-                margin:5px 0;">
-                ₹${Number(product.price || 0)}
-            </p>
-
-            <button
-                class="btn-primary"
-                onclick="addToCart('${product.id}')">
-                Add to Cart
-            </button>
-
-            <button
-                class="btn-secondary"
-                onclick="toggleWishlist('${product.id}')">
-                Remove ❤️
-            </button>
-
-        </div>
-
-    `).join("");
+                    return `
+                        <button
+                            type="button"
+                            class="product-thumb ${active}"
+                            data-image-index="${index}"
+                            data-product-image="true"
+                        >
+                            <img
+                                src="${escapeAttribute(image)}"
+                                alt="${escapeAttribute(selectedProduct.name)}"
+                            >
+                        </button>
+                    `;
+                }
+            )
+            .join("");
 }
 
-// ================= LOGIN =================
 
-function openLoginModal() {
+/* =========================================================
+   17. SELECT PRODUCT IMAGE
+   ========================================================= */
 
-    const modal =
-        document.getElementById(
-            "loginModal"
-        );
+function selectProductImage(
+    index
+) {
 
-    if (!modal) {
-
-        alert(
-            "Login section is not available in this HTML."
-        );
-
+    if (!selectedProduct) {
         return;
     }
 
-    modal.style.display =
-        "flex";
+    const images =
+        Array.isArray(
+            selectedProduct.images
+        )
+            ? selectedProduct.images
+            : [];
 
-    updateAccountUI();
-}
-
-function closeLoginModal() {
-
-    const modal =
-        document.getElementById(
-            "loginModal"
-        );
-
-    if (modal)
-        modal.style.display =
-            "none";
-}
-
-function handleLogin() {
-
-    const name =
-        document.getElementById(
-            "userNameInput"
-        )?.value.trim();
-
-    const phone =
-        document.getElementById(
-            "userPhoneInput"
-        )?.value.trim();
-
-    if (!name) {
-
-        alert(
-            "Please enter your name."
-        );
-
-        return;
-    }
+    const numericIndex =
+        Number(index);
 
     if (
-        !/^[6-9]\d{9}$/.test(phone)
+        !Number.isInteger(
+            numericIndex
+        ) ||
+        !images[numericIndex]
     ) {
+        return;
+    }
 
-        alert(
-            "📱 Enter a valid 10-digit mobile number."
-        );
+    selectedProductImageIndex =
+        numericIndex;
+
+    renderProductMainImage();
+
+    renderProductThumbs();
+}
+
+
+/* =========================================================
+   18. RENDER SIZE OPTIONS
+   ========================================================= */
+
+function renderProductSizes() {
+
+    const container =
+        $("productSizeOptions");
+
+    if (!container || !selectedProduct) {
+        return;
+    }
+
+    const sizes =
+        Array.isArray(
+            selectedProduct.sizes
+        )
+            ? selectedProduct.sizes
+            : [];
+
+    if (!sizes.length) {
+
+        container.innerHTML =
+            "";
 
         return;
     }
 
-    const customer = {
-        id: "C" + Date.now(),
-        name,
-        phone
+    container.innerHTML =
+        sizes
+            .map(
+                size => {
+
+                    const active =
+                        size ===
+                        selectedProductSize
+                            ? "active"
+                            : "";
+
+                    return `
+                        <button
+                            type="button"
+                            class="size-chip option-chip ${active}"
+                            data-size="${escapeAttribute(size)}"
+                        >
+                            ${escapeHTML(size)}
+                        </button>
+                    `;
+                }
+            )
+            .join("");
+}
+
+
+/* =========================================================
+   19. SELECT SIZE
+   ========================================================= */
+
+function selectProductSize(
+    size
+) {
+
+    selectedProductSize =
+        safeString(
+            size
+        );
+
+    renderProductSizes();
+}
+
+
+/* =========================================================
+   20. RENDER COLOR OPTIONS
+   ========================================================= */
+
+function renderProductColors() {
+
+    const container =
+        $("productColorOptions");
+
+    if (!container || !selectedProduct) {
+        return;
+    }
+
+    const colors =
+        Array.isArray(
+            selectedProduct.colors
+        )
+            ? selectedProduct.colors
+            : [];
+
+    if (!colors.length) {
+
+        container.innerHTML =
+            "";
+
+        return;
+    }
+
+    container.innerHTML =
+        colors
+            .map(
+                color => {
+
+                    const active =
+                        color ===
+                        selectedProductColor
+                            ? "active"
+                            : "";
+
+                    return `
+                        <button
+                            type="button"
+                            class="option-chip ${active}"
+                            data-color="${escapeAttribute(color)}"
+                        >
+                            ${escapeHTML(color)}
+                        </button>
+                    `;
+                }
+            )
+            .join("");
+}
+
+
+/* =========================================================
+   21. SELECT COLOR
+   ========================================================= */
+
+function selectProductColor(
+    color
+) {
+
+    selectedProductColor =
+        safeString(
+            color
+        );
+
+    renderProductColors();
+}
+
+
+/* =========================================================
+   22. QUANTITY UPDATE
+   ========================================================= */
+
+function updateProductQuantity(
+    change
+) {
+
+    if (!selectedProduct) {
+        return;
+    }
+
+    const stock =
+        Math.max(
+            0,
+            numberValue(
+                selectedProduct.stock
+            )
+        );
+
+    let quantity =
+        numberValue(
+            selectedProductQuantity
+        );
+
+    quantity +=
+        numberValue(
+            change
+        );
+
+    quantity =
+        Math.max(
+            1,
+            quantity
+        );
+
+    if (stock > 0) {
+
+        quantity =
+            Math.min(
+                quantity,
+                stock
+            );
+    }
+
+    selectedProductQuantity =
+        quantity;
+
+    updateProductQuantityUI();
+}
+
+
+/* =========================================================
+   23. SET PRODUCT QUANTITY
+   ========================================================= */
+
+function setProductQuantity(
+    value
+) {
+
+    if (!selectedProduct) {
+        return;
+    }
+
+    let quantity =
+        Math.floor(
+            numberValue(
+                value
+            )
+        );
+
+    quantity =
+        Math.max(
+            1,
+            quantity
+        );
+
+    const stock =
+        numberValue(
+            selectedProduct.stock
+        );
+
+    if (stock > 0) {
+
+        quantity =
+            Math.min(
+                quantity,
+                stock
+            );
+    }
+
+    selectedProductQuantity =
+        quantity;
+
+    updateProductQuantityUI();
+}
+
+
+/* =========================================================
+   24. UPDATE QUANTITY UI
+   ========================================================= */
+
+function updateProductQuantityUI() {
+
+    const input =
+        $("productQuantity");
+
+    if (input) {
+
+        input.value =
+            String(
+                selectedProductQuantity
+            );
+    }
+}
+
+
+/* =========================================================
+   25. GET SELECTED PRODUCT OPTIONS
+   ========================================================= */
+
+function getSelectedProductOptions() {
+
+    return {
+
+        size:
+            selectedProductSize || "",
+
+        color:
+            selectedProductColor || "",
+
+        quantity:
+            Math.max(
+                1,
+                numberValue(
+                    selectedProductQuantity
+                )
+            )
     };
+}
 
-    localStorage.setItem(
-        USER_KEY,
-        JSON.stringify(customer)
-    );
 
-    let customers =
-        getCustomers();
+/* =========================================================
+   26. ADD TO WISHLIST
+   ========================================================= */
+
+function toggleWishlist(
+    productId
+) {
+
+    const product =
+        findProduct(
+            productId
+        );
+
+    if (!product) {
+        return;
+    }
 
     const index =
-        customers.findIndex(
-            c =>
-                c.phone === phone
+        wishlist.indexOf(
+            productId
         );
 
     if (index >= 0) {
 
-        customers[index] =
-            customer;
+        wishlist.splice(
+            index,
+            1
+        );
+
+        showToast(
+            "Removed from wishlist.",
+            "info"
+        );
 
     } else {
 
-        customers.push(customer);
+        wishlist.push(
+            productId
+        );
+
+        showToast(
+            "Added to wishlist.",
+            "success"
+        );
     }
 
-    saveCustomers(customers);
+    saveWishlist();
 
-    alert(
-        "✅ Login successful!"
-    );
+    updateWishlistCount();
 
-    updateAccountUI();
-
-    updateAdminDashboard();
+    renderProducts();
 }
 
-function updateAccountUI() {
 
-    const userData =
-        localStorage.getItem(
-            USER_KEY
+/* =========================================================
+   27. IS WISHLISTED
+   ========================================================= */
+
+function isProductWishlisted(
+    productId
+) {
+
+    return wishlist.includes(
+        productId
+    );
+}
+
+
+/* =========================================================
+   28. REMOVE FROM WISHLIST
+   ========================================================= */
+
+function removeFromWishlist(
+    productId
+) {
+
+    const index =
+        wishlist.indexOf(
+            productId
         );
 
-    const auth =
-        document.getElementById(
-            "authContainer"
-        );
-
-    const profile =
-        document.getElementById(
-            "profileContainer"
-        );
-
-    if (!userData) {
-
-        if (auth)
-            auth.style.display =
-                "block";
-
-        if (profile)
-            profile.style.display =
-                "none";
-
+    if (index === -1) {
         return;
     }
 
-    try {
+    wishlist.splice(
+        index,
+        1
+    );
 
-        const user =
-            JSON.parse(userData);
+    saveWishlist();
 
-        if (auth)
-            auth.style.display =
-                "none";
+    updateWishlistCount();
 
-        if (profile)
-            profile.style.display =
-                "block";
+    renderProducts();
 
-        const name =
-            document.getElementById(
-                "displayUserName"
-            );
+    if (
+        typeof renderWishlist ===
+        "function"
+    ) {
 
-        const phone =
-            document.getElementById(
-                "displayUserPhone"
-            );
-
-        if (name)
-            name.innerText =
-                "Name: " + user.name;
-
-        if (phone)
-            phone.innerText =
-                "Mobile: " + user.phone;
-
-    } catch {
-
-        localStorage.removeItem(
-            USER_KEY
-        );
+        renderWishlist();
     }
 }
 
-function handleLogout() {
 
-    localStorage.removeItem(
-        USER_KEY
-    );
+/* =========================================================
+   29. GET WISHLIST PRODUCTS
+   ========================================================= */
 
-    updateAccountUI();
+function getWishlistProducts() {
 
-    alert(
-        "✅ You have been logged out."
-    );
+    return wishlist
+        .map(
+            productId =>
+                findProduct(
+                    productId
+                )
+        )
+        .filter(Boolean);
 }
 
-// ================= ORDERS MODAL =================
 
-function openOrdersModal() {
+/* =========================================================
+   30. RENDER WISHLIST
+   ========================================================= */
 
-    const modal =
-        document.getElementById(
-            "ordersModal"
-        );
-
-    if (!modal) {
-
-        alert(
-            "Orders section is not available in this HTML."
-        );
-
-        return;
-    }
-
-    modal.style.display =
-        "flex";
-
-    renderOrders();
-}
-
-function closeOrdersModal() {
-
-    const modal =
-        document.getElementById(
-            "ordersModal"
-        );
-
-    if (modal)
-        modal.style.display =
-            "none";
-}
-
-function renderOrders() {
+function renderWishlist() {
 
     const container =
-        document.getElementById(
-            "ordersContainer"
-        );
+        $("wishlistItems");
 
-    if (!container) return;
-
-    const userData =
-        localStorage.getItem(
-            USER_KEY
-        );
-
-    if (!userData) {
-
-        container.innerHTML =
-            "<p>Please login to view orders.</p>";
-
+    if (!container) {
         return;
     }
 
-    let user;
+    const items =
+        getWishlistProducts();
 
-    try {
-        user =
-            JSON.parse(userData);
-    } catch {
-        return;
-    }
+    if (!items.length) {
 
-    const orders =
-        getOrders().filter(
-            order =>
-                order.phone ===
-                user.phone
-        );
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">
+                    ♡
+                </div>
 
-    if (!orders.length) {
+                <h3>
+                    Your wishlist is empty
+                </h3>
 
-        container.innerHTML =
-            "<p>No orders placed yet.</p>";
+                <p>
+                    Products you save will appear here.
+                </p>
+            </div>
+        `;
 
         return;
     }
 
     container.innerHTML =
-        orders.map(order => `
+        items
+            .map(
+                product => {
 
-        <div style="
-            border:1px solid var(--border-color);
-            border-radius:8px;
-            padding:10px;
-            margin-bottom:10px;">
+                    const image =
+                        getProductImage(
+                            product
+                        );
 
-            <strong>
-                Order #${escapeHtml(order.id)}
-            </strong>
+                    return `
+                        <div
+                            class="cart-item"
+                            data-product-id="${escapeAttribute(product.id)}"
+                        >
 
-            <p style="font-size:12px;margin-top:5px;">
-                Date: ${escapeHtml(order.date)}
-            </p>
+                            <div class="cart-item-image">
 
-            <p style="font-size:12px;">
-                Status:
-                <strong>
-                    ${escapeHtml(order.status || "Placed")}
-                </strong>
-            </p>
+                                ${
+                                    image
+                                        ? `
+                                            <img
+                                                src="${escapeAttribute(image)}"
+                                                alt="${escapeAttribute(product.name)}"
+                                            >
+                                        `
+                                        : `
+                                            <div class="product-image-placeholder">
+                                                🛍️
+                                            </div>
+                                        `
+                                }
 
-            <p>
-                Total:
-                <strong>
-                    ₹${Number(order.total || 0)}
-                </strong>
-            </p>
+                            </div>
 
-            <button
-                class="btn-secondary"
-                onclick="openInvoice('${order.id}')">
-                View Invoice
-            </button>
+                            <div class="cart-item-info">
 
-        </div>
+                                <h4>
+                                    ${escapeHTML(
+                                        product.name
+                                    )}
+                                </h4>
 
-    `).join("");
+                                <div class="cart-item-price">
+                                    ${formatCurrency(
+                                        product.price
+                                    )}
+                                </div>
+
+                                <div class="cart-item-actions">
+
+                                    <button
+                                        type="button"
+                                        class="product-buy-btn"
+                                        data-action="product-detail"
+                                        data-id="${escapeAttribute(product.id)}"
+                                    >
+                                        View
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="table-action danger"
+                                        data-action="remove-wishlist"
+                                        data-id="${escapeAttribute(product.id)}"
+                                    >
+                                        Remove
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    `;
+                }
+            )
+            .join("");
 }
 
-// ================= CHECKOUT =================
 
-function openCheckoutModal() {
+/* =========================================================
+   31. ADD SELECTED PRODUCT TO CART
+   ========================================================= */
 
-    const cart =
-        getCart();
+function addSelectedProductToCart() {
 
-    if (!cart.length) {
+    if (!selectedProduct) {
 
-        alert(
-            "🛒 Your cart is empty."
+        showToast(
+            "Please select a product.",
+            "error"
         );
 
         return;
     }
 
-    const modal =
-        document.getElementById(
-            "checkoutModal"
+    const stock =
+        numberValue(
+            selectedProduct.stock
         );
 
-    if (!modal) return;
+    if (stock <= 0) {
 
-    const settings =
-        getSettings();
+        showToast(
+            "This product is out of stock.",
+            "error"
+        );
+
+        return;
+    }
+
+    const options =
+        getSelectedProductOptions();
+
+    const quantity =
+        options.quantity;
 
     if (
-        settings.cod !==
-        "Enabled"
+        quantity > stock
     ) {
 
-        alert(
-            "Cash on Delivery is currently disabled."
+        showToast(
+            "Selected quantity is not available.",
+            "error"
         );
 
         return;
     }
 
-    modal.style.display =
-        "flex";
-
-    const userData =
-        localStorage.getItem(
-            USER_KEY
+    const existing =
+        cart.find(
+            item =>
+                String(
+                    item.productId
+                ) ===
+                String(
+                    selectedProduct.id
+                ) &&
+                safeString(
+                    item.size
+                ) ===
+                safeString(
+                    options.size
+                ) &&
+                safeString(
+                    item.color
+                ) ===
+                safeString(
+                    options.color
+                )
         );
 
-    if (userData) {
+    if (existing) {
 
-        try {
-
-            const user =
-                JSON.parse(
-                    userData
-                );
-
-            const name =
-                document.getElementById(
-                    "checkoutName"
-                );
-
-            const phone =
-                document.getElementById(
-                    "checkoutPhone"
-                );
-
-            if (name)
-                name.value =
-                    user.name || "";
-
-            if (phone)
-                phone.value =
-                    user.phone || "";
-
-        } catch {}
-    }
-}
-
-function closeCheckoutModal() {
-
-    const modal =
-        document.getElementById(
-            "checkoutModal"
-        );
-
-    if (modal)
-        modal.style.display =
-            "none";
-}
-
-// ================= PLACE ORDER =================
-
-function placeOrder() {
-
-    const cart =
-        getCart();
-
-    if (!cart.length) {
-
-        alert(
-            "🛒 Your cart is empty."
-        );
-
-        return;
-    }
-
-    const name =
-        document.getElementById(
-            "checkoutName"
-        )?.value.trim();
-
-    const phone =
-        document.getElementById(
-            "checkoutPhone"
-        )?.value.trim();
-
-    const address =
-        document.getElementById(
-            "checkoutAddress"
-        )?.value.trim();
-
-    const city =
-        document.getElementById(
-            "checkoutCity"
-        )?.value.trim();
-
-    const pincode =
-        document.getElementById(
-            "checkoutPincode"
-        )?.value.trim();
-
-    if (
-        !name ||
-        !phone ||
-        !address ||
-        !city ||
-        !pincode
-    ) {
-
-        alert(
-            "⚠️ Please fill all delivery details."
-        );
-
-        return;
-    }
-
-    if (
-        !/^[6-9]\d{9}$/.test(phone)
-    ) {
-
-        alert(
-            "📱 Enter a valid mobile number."
-        );
-
-        return;
-    }
-
-    if (
-        !/^\d{6}$/.test(pincode)
-    ) {
-
-        alert(
-            "📍 Enter a valid 6-digit pincode."
-        );
-
-        return;
-    }
-
-    const products =
-        getProducts();
-
-    let subtotal = 0;
-
-    const orderItems = [];
-
-    for (const item of cart) {
-
-        const product =
-            products.find(
-                p =>
-                    p.id === item.id
-            );
-
-        if (!product) continue;
-
-        const quantity =
-            Number(
-                item.quantity || 1
-            );
+        const newQuantity =
+            numberValue(
+                existing.quantity
+            ) +
+            quantity;
 
         if (
-            quantity >
-            Number(product.stock || 0)
+            newQuantity >
+            stock
         ) {
 
-            alert(
-                `❌ Not enough stock for ${product.name}`
+            showToast(
+                "Maximum available stock reached.",
+                "warning"
             );
 
             return;
         }
 
-        subtotal +=
-            Number(product.price || 0) *
-            quantity;
+        existing.quantity =
+            newQuantity;
 
-        orderItems.push({
-            id: product.id,
-            name: product.name,
-            price: Number(product.price || 0),
-            quantity
+    } else {
+
+        cart.push({
+
+            id:
+                generateId("CART"),
+
+            productId:
+                selectedProduct.id,
+
+            name:
+                selectedProduct.name,
+
+            price:
+                numberValue(
+                    selectedProduct.price
+                ),
+
+            image:
+                getProductImage(
+                    selectedProduct
+                ),
+
+            size:
+                options.size,
+
+            color:
+                options.color,
+
+            quantity:
+                quantity
         });
     }
 
-    const settings =
-        getSettings();
-
-    const delivery =
-        subtotal >=
-        Number(
-            settings.freeDeliveryLimit
-        )
-        ? 0
-        : Number(
-            settings.deliveryCharge
-        );
-
-    const total =
-        subtotal + delivery;
-
-    const order = {
-
-        id:
-            "S11" +
-            Date.now(),
-
-        date:
-            new Date().toLocaleString(
-                "en-IN"
-            ),
-
-        customer:
-            name,
-
-        phone,
-
-        address:
-            `${address}, ${city} - ${pincode}`,
-
-        payment:
-            "Cash on Delivery",
-
-        items:
-            orderItems,
-
-        subtotal,
-
-        delivery,
-
-        total,
-
-        status:
-            "Order Placed"
-    };
-
-    const orders =
-        getOrders();
-
-    orders.unshift(order);
-
-    saveOrders(orders);
-
-    // Reduce stock
-
-    orderItems.forEach(item => {
-
-        const product =
-            products.find(
-                p =>
-                    p.id === item.id
-            );
-
-        if (product) {
-
-            product.stock =
-                Math.max(
-                    0,
-                    Number(product.stock) -
-                    Number(item.quantity)
-                );
-        }
-    });
-
-    saveProducts(products);
-
-    // Save customer
-
-    let customers =
-        getCustomers();
-
-    const existing =
-        customers.findIndex(
-            c =>
-                c.phone === phone
-        );
-
-    const customer = {
-        id:
-            existing >= 0
-            ? customers[existing].id
-            : "C" + Date.now(),
-
-        name,
-        phone
-    };
-
-    if (existing >= 0)
-        customers[existing] =
-            customer;
-    else
-        customers.push(customer);
-
-    saveCustomers(customers);
-
-    localStorage.setItem(
-        USER_KEY,
-        JSON.stringify(customer)
-    );
-
-    // Clear cart
-
-    saveCart([]);
+    saveCart();
 
     updateCartBadge();
 
-    renderProducts();
-
-    updateAdminDashboard();
-
-    closeCheckoutModal();
-
-    closeCartModal();
-
-    alert(
-        "🎉 Order placed successfully!\n\nOrder ID: " +
-        order.id
+    showToast(
+        "Product added to cart.",
+        "success"
     );
 
-    openInvoice(order.id);
+    closeModal(
+        "productDetailModal"
+    );
+
+    renderCart();
 }
 
-// ================= INVOICE =================
 
-function openInvoice(orderId) {
+/* =========================================================
+   32. DIRECT BUY
+   ========================================================= */
 
-    const order =
-        getOrders().find(
-            o =>
-                o.id === orderId
+function buySelectedProduct() {
+
+    if (!selectedProduct) {
+        return;
+    }
+
+    const stock =
+        numberValue(
+            selectedProduct.stock
         );
 
-    if (!order) return;
+    if (stock <= 0) {
+
+        showToast(
+            "This product is out of stock.",
+            "error"
+        );
+
+        return;
+    }
+
+    const options =
+        getSelectedProductOptions();
+
+    cart = [
+        {
+            id:
+                generateId("CART"),
+
+            productId:
+                selectedProduct.id,
+
+            name:
+                selectedProduct.name,
+
+            price:
+                numberValue(
+                    selectedProduct.price
+                ),
+
+            image:
+                getProductImage(
+                    selectedProduct
+                ),
+
+            size:
+                options.size,
+
+            color:
+                options.color,
+
+            quantity:
+                options.quantity
+        }
+    ];
+
+    saveCart();
+
+    updateCartBadge();
+
+    closeModal(
+        "productDetailModal"
+    );
+
+    renderCart();
+
+    openModal(
+        "cartModal"
+    );
+}
+
+
+/* =========================================================
+   33. OPEN WISHLIST
+   ========================================================= */
+
+function openWishlistModal() {
+
+    renderWishlist();
+
+    openModal(
+        "wishlistModal"
+    );
+}
+
+
+/* =========================================================
+   34. CATEGORY CLICK HANDLER
+   ========================================================= */
+
+function handleCategoryClick(
+    event
+) {
+
+    const button =
+        event.target.closest(
+            "[data-category]"
+        );
+
+    if (!button) {
+        return;
+    }
+
+    const category =
+        button.getAttribute(
+            "data-category"
+        );
+
+    selectCategory(
+        category
+    );
+}
+
+
+/* =========================================================
+   35. PRODUCT GRID CLICK HANDLER
+   ========================================================= */
+
+function handleProductGridClick(
+    event
+) {
+
+    const target =
+        event.target.closest(
+            "[data-action]"
+        );
+
+    if (!target) {
+        return;
+    }
+
+    const action =
+        target.getAttribute(
+            "data-action"
+        );
+
+    const productId =
+        target.getAttribute(
+            "data-id"
+        );
+
+    if (!productId) {
+        return;
+    }
+
+    switch (action) {
+
+        case "product-detail":
+
+            openProductDetail(
+                productId
+            );
+
+            break;
+
+        case "wishlist":
+
+            event.stopPropagation();
+
+            toggleWishlist(
+                productId
+            );
+
+            break;
+
+        case "remove-wishlist":
+
+            removeFromWishlist(
+                productId
+            );
+
+            break;
+
+        default:
+            break;
+    }
+}
+
+
+/* =========================================================
+   36. PRODUCT DETAIL CLICK HANDLER
+   ========================================================= */
+
+function handleProductDetailClick(
+    event
+) {
+
+    const imageButton =
+        event.target.closest(
+            "[data-product-image]"
+        );
+
+    if (imageButton) {
+
+        const index =
+            imageButton.getAttribute(
+                "data-image-index"
+            );
+
+        selectProductImage(
+            index
+        );
+
+        return;
+    }
+
+    const sizeButton =
+        event.target.closest(
+            "[data-size]"
+        );
+
+    if (sizeButton) {
+
+        selectProductSize(
+            sizeButton.getAttribute(
+                "data-size"
+            )
+        );
+
+        return;
+    }
+
+    const colorButton =
+        event.target.closest(
+            "[data-color]"
+        );
+
+    if (colorButton) {
+
+        selectProductColor(
+            colorButton.getAttribute(
+                "data-color"
+            )
+        );
+
+        return;
+    }
+}
+
+
+/* =========================================================
+   37. INITIAL STORE RENDER
+   ========================================================= */
+
+function initializeStoreView() {
+
+    renderCategories(
+        currentCategory
+    );
+
+    renderProducts();
+
+    renderWishlist();
+
+    updateCartBadge();
+
+    updateWishlistCount();
+}
+
+
+/* =========================================================
+   38. EVENT BINDING — CATEGORY
+   ========================================================= */
+
+function bindCategoryEvents() {
+
+    const container =
+        document.querySelector(
+            ".category-scroll"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    container.addEventListener(
+        "click",
+        handleCategoryClick
+    );
+}
+
+
+/* =========================================================
+   39. EVENT BINDING — PRODUCT GRID
+   ========================================================= */
+
+function bindProductGridEvents() {
+
+    const grid =
+        $("productsGrid");
+
+    if (!grid) {
+        return;
+    }
+
+    grid.addEventListener(
+        "click",
+        handleProductGridClick
+    );
+}
+
+
+/* =========================================================
+   40. EVENT BINDING — PRODUCT DETAIL
+   ========================================================= */
+
+function bindProductDetailEvents() {
 
     const modal =
-        document.getElementById(
-            "invoiceModal"
+        $("productDetailModal");
+
+    if (!modal) {
+        return;
+    }
+
+    modal.addEventListener(
+        "click",
+        handleProductDetailClick
+    );
+}
+
+
+/* =========================================================
+   41. SEARCH EVENT
+   ========================================================= */
+
+function bindSearchEvent() {
+
+    const searchInput =
+        document.querySelector(
+            ".search-box input"
         );
+
+    if (!searchInput) {
+        return;
+    }
+
+    searchInput.addEventListener(
+        "input",
+        event => {
+
+            searchProducts(
+                event.target.value
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   42. SORT EVENT
+   ========================================================= */
+
+function bindSortEvent() {
+
+    const sortSelect =
+        document.querySelector(
+            ".sort-area select"
+        );
+
+    if (!sortSelect) {
+        return;
+    }
+
+    sortSelect.addEventListener(
+        "change",
+        event => {
+
+            sortProducts(
+                event.target.value
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   43. INITIALIZE STORE EVENTS
+   ========================================================= */
+
+function bindStoreEvents() {
+
+    bindCategoryEvents();
+
+    bindProductGridEvents();
+
+    bindProductDetailEvents();
+
+    bindSearchEvent();
+
+    bindSortEvent();
+}
+
+
+/* =========================================================
+   44. PRODUCT IMAGE FILES HELPER
+   ========================================================= */
+
+async function readProductImageFiles(
+    fileList
+) {
+
+    if (!fileList) {
+        return [];
+    }
+
+    const files =
+        Array.from(
+            fileList
+        ).slice(0, 6);
+
+    const validFiles =
+        files.filter(
+            validateImageFile
+        );
+
+    if (
+        validFiles.length <
+        files.length
+    ) {
+
+        showToast(
+            "Some images were skipped.",
+            "warning"
+        );
+    }
+
+    const results =
+        [];
+
+    for (
+        const file
+        of validFiles
+    ) {
+
+        try {
+
+            const data =
+                await readImageAsDataURL(
+                    file
+                );
+
+            if (data) {
+
+                results.push(
+                    data
+                );
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Image read error:",
+                error
+            );
+        }
+    }
+
+    return results.slice(
+        0,
+        6
+    );
+}
+
+
+/* =========================================================
+   45. INITIALIZE PART 2
+   ========================================================= */
+
+function initializePart2() {
+
+    bindStoreEvents();
+
+    initializeStoreView();
+}
+
+
+/* =========================================================
+   PART 2 END
+   ========================================================= */
+   /* =========================================================
+   SALE 11
+   APP.JS — PART 3 / 5
+   CART + CHECKOUT + CUSTOMER + ORDERS
+   ========================================================= */
+
+/* =========================================================
+   MODAL HELPERS
+   ========================================================= */
+
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
 
     if (!modal) return;
 
-    const orderNo =
-        document.getElementById(
-            "invOrderNo"
+    modal.classList.add("active");
+    modal.setAttribute("aria-hidden", "false");
+
+    document.body.classList.add("modal-open");
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+
+    if (!modal) return;
+
+    modal.classList.remove("active");
+    modal.setAttribute("aria-hidden", "true");
+
+    if (!document.querySelector(".modal.active")) {
+        document.body.classList.remove("modal-open");
+    }
+}
+
+function closeAllModals() {
+    document.querySelectorAll(".modal.active").forEach(modal => {
+        modal.classList.remove("active");
+        modal.setAttribute("aria-hidden", "true");
+    });
+
+    document.body.classList.remove("modal-open");
+}
+
+
+/* =========================================================
+   CART CALCULATIONS
+   ========================================================= */
+
+function getCartItemProduct(item) {
+    return products.find(product => product.id === item.productId);
+}
+
+function getCartSubtotal() {
+    return cart.reduce((total, item) => {
+        const product = getCartItemProduct(item);
+
+        if (!product) return total;
+
+        const price = numberValue(item.price || product.price);
+
+        return total + (price * numberValue(item.quantity, 1));
+    }, 0);
+}
+
+function getCartQuantity() {
+    return cart.reduce((total, item) => {
+        return total + numberValue(item.quantity, 1);
+    }, 0);
+}
+
+function getDeliveryCharge(subtotal = getCartSubtotal()) {
+    if (subtotal <= 0) return 0;
+
+    if (
+        numberValue(settings.freeDeliveryAbove, 0) > 0 &&
+        subtotal >= numberValue(settings.freeDeliveryAbove, 0)
+    ) {
+        return 0;
+    }
+
+    return numberValue(settings.deliveryCharge, 0);
+}
+
+function getCartTotal() {
+    const subtotal = getCartSubtotal();
+    const delivery = getDeliveryCharge(subtotal);
+
+    return subtotal + delivery;
+}
+
+
+/* =========================================================
+   CART ITEM HTML
+   ========================================================= */
+
+function createCartItemHTML(item, index) {
+    const product = getCartItemProduct(item);
+
+    if (!product) return "";
+
+    const quantity = Math.max(1, numberValue(item.quantity, 1));
+    const price = numberValue(item.price || product.price);
+    const lineTotal = price * quantity;
+
+    const image = getProductImage(product);
+
+    const options = [];
+
+    if (item.size) {
+        options.push(`Size: ${escapeHTML(item.size)}`);
+    }
+
+    if (item.color) {
+        options.push(`Color: ${escapeHTML(item.color)}`);
+    }
+
+    return `
+        <div class="cart-item" data-cart-index="${index}">
+
+            <div class="cart-item-image">
+                ${
+                    image
+                        ? `<img src="${escapeHTML(image)}"
+                                alt="${escapeHTML(product.name)}">`
+                        : `<div class="product-image-placeholder">No Image</div>`
+                }
+            </div>
+
+            <div class="cart-item-info">
+
+                <div class="cart-item-title">
+                    ${escapeHTML(product.name)}
+                </div>
+
+                <div class="cart-item-price">
+                    ${formatCurrency(price)}
+                </div>
+
+                ${
+                    options.length
+                        ? `
+                            <div class="cart-item-options">
+                                ${options.join(" • ")}
+                            </div>
+                          `
+                        : ""
+                }
+
+                <div class="cart-item-actions">
+
+                    <div class="quantity-control">
+
+                        <button
+                            type="button"
+                            class="qty-btn cart-qty-minus"
+                            data-index="${index}">
+                            −
+                        </button>
+
+                        <input
+                            type="number"
+                            class="qty-input cart-qty-input"
+                            data-index="${index}"
+                            value="${quantity}"
+                            min="1"
+                            max="${Math.max(
+                                1,
+                                numberValue(product.stock, 999)
+                            )}">
+
+                        <button
+                            type="button"
+                            class="qty-btn cart-qty-plus"
+                            data-index="${index}">
+                            +
+                        </button>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="table-action cart-remove-btn"
+                        data-index="${index}">
+                        Remove
+                    </button>
+
+                </div>
+            </div>
+
+            <div class="cart-item-total">
+                ${formatCurrency(lineTotal)}
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+   RENDER CART
+   ========================================================= */
+
+function renderCart() {
+    const cartContainer = document.getElementById("cartItemsContainer");
+
+    if (!cartContainer) return;
+
+    if (!cart.length) {
+        cartContainer.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🛒</div>
+                <h3>Your cart is empty</h3>
+                <p>Add products to your cart to continue.</p>
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="closeModal('cartModal')">
+                    Continue Shopping
+                </button>
+            </div>
+        `;
+
+        updateCartSummary();
+
+        return;
+    }
+
+    cartContainer.innerHTML = cart
+        .map((item, index) => createCartItemHTML(item, index))
+        .join("");
+
+    updateCartSummary();
+
+    bindCartItemEvents();
+}
+
+
+/* =========================================================
+   CART SUMMARY
+   ========================================================= */
+
+function updateCartSummary() {
+    const subtotal = getCartSubtotal();
+    const delivery = getDeliveryCharge(subtotal);
+    const total = subtotal + delivery;
+
+    const subtotalEl = document.getElementById("cartSubtotal");
+    const deliveryEl = document.getElementById("cartDelivery");
+    const totalEl = document.getElementById("cartTotal");
+
+    if (subtotalEl) {
+        subtotalEl.textContent = formatCurrency(subtotal);
+    }
+
+    if (deliveryEl) {
+        deliveryEl.textContent =
+            delivery === 0
+                ? "FREE"
+                : formatCurrency(delivery);
+    }
+
+    if (totalEl) {
+        totalEl.textContent = formatCurrency(total);
+    }
+}
+
+
+/* =========================================================
+   CART EVENTS
+   ========================================================= */
+
+function bindCartItemEvents() {
+    document.querySelectorAll(".cart-qty-minus").forEach(button => {
+        button.addEventListener("click", () => {
+            const index = numberValue(button.dataset.index);
+
+            if (!cart[index]) return;
+
+            cart[index].quantity = Math.max(
+                1,
+                numberValue(cart[index].quantity, 1) - 1
+            );
+
+            saveCart();
+            renderCart();
+            updateCartBadge();
+        });
+    });
+
+    document.querySelectorAll(".cart-qty-plus").forEach(button => {
+        button.addEventListener("click", () => {
+            const index = numberValue(button.dataset.index);
+
+            if (!cart[index]) return;
+
+            const product = getCartItemProduct(cart[index]);
+
+            if (!product) return;
+
+            const maxStock = Math.max(
+                1,
+                numberValue(product.stock, 999)
+            );
+
+            cart[index].quantity = Math.min(
+                maxStock,
+                numberValue(cart[index].quantity, 1) + 1
+            );
+
+            saveCart();
+            renderCart();
+            updateCartBadge();
+        });
+    });
+
+    document.querySelectorAll(".cart-qty-input").forEach(input => {
+        input.addEventListener("change", () => {
+            const index = numberValue(input.dataset.index);
+
+            if (!cart[index]) return;
+
+            const product = getCartItemProduct(cart[index]);
+
+            if (!product) return;
+
+            const maxStock = Math.max(
+                1,
+                numberValue(product.stock, 999)
+            );
+
+            let quantity = numberValue(input.value, 1);
+
+            quantity = Math.max(1, quantity);
+            quantity = Math.min(maxStock, quantity);
+
+            cart[index].quantity = quantity;
+
+            saveCart();
+            renderCart();
+            updateCartBadge();
+        });
+    });
+
+    document.querySelectorAll(".cart-remove-btn").forEach(button => {
+        button.addEventListener("click", () => {
+            const index = numberValue(button.dataset.index);
+
+            if (!cart[index]) return;
+
+            cart.splice(index, 1);
+
+            saveCart();
+            renderCart();
+            updateCartBadge();
+
+            showToast("Product removed from cart.", "success");
+        });
+    });
+}
+
+
+/* =========================================================
+   OPEN CART
+   ========================================================= */
+
+function openCart() {
+    renderCart();
+    openModal("cartModal");
+}
+
+
+/* =========================================================
+   CHECKOUT LOGIN CHECK
+   ========================================================= */
+
+function proceedToCheckout() {
+    if (!cart.length) {
+        showToast("Your cart is empty.", "warning");
+        return;
+    }
+
+    if (!getCurrentCustomer()) {
+        closeModal("cartModal");
+
+        showCustomerLogin();
+
+        showToast(
+            "Please login before checkout.",
+            "info"
         );
 
-    const date =
-        document.getElementById(
-            "invDate"
+        return;
+    }
+
+    prepareCheckoutForm();
+
+    closeModal("cartModal");
+    openModal("checkoutModal");
+}
+
+
+/* =========================================================
+   CUSTOMER LOGIN
+   ========================================================= */
+
+function showCustomerLogin() {
+    const nameInput = document.getElementById("customerLoginName");
+    const mobileInput = document.getElementById("customerLoginMobile");
+
+    if (nameInput) {
+        nameInput.value = "";
+    }
+
+    if (mobileInput) {
+        mobileInput.value = "";
+    }
+
+    openModal("customerLoginModal");
+}
+
+
+/* =========================================================
+   CUSTOMER LOGIN SUBMIT
+   ========================================================= */
+
+function handleCustomerLogin(event) {
+    event.preventDefault();
+
+    const nameInput = document.getElementById("customerLoginName");
+    const mobileInput = document.getElementById("customerLoginMobile");
+
+    const name = String(
+        nameInput?.value || ""
+    ).trim();
+
+    const mobile = String(
+        mobileInput?.value || ""
+    ).replace(/\D/g, "");
+
+    if (!name) {
+        showToast("Please enter your name.", "warning");
+        nameInput?.focus();
+        return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+        showToast(
+            "Please enter a valid 10-digit mobile number.",
+            "warning"
         );
 
-    const customer =
-        document.getElementById(
-            "invCustomer"
-        );
+        mobileInput?.focus();
+        return;
+    }
 
-    const address =
-        document.getElementById(
-            "invAddress"
-        );
+    let customer = customers.find(
+        item => item.mobile === mobile
+    );
 
-    const items =
-        document.getElementById(
-            "invItemsList"
-        );
+    if (customer) {
+        customer.name = name;
 
-    const total =
-        document.getElementById(
-            "invTotal"
-        );
+        customer.updatedAt =
+            new Date().toISOString();
+    } else {
+        customer = normalizeCustomer({
+            id: generateId("CUS"),
+            name,
+            mobile,
+            email: "",
+            address: {},
+            ordersCount: 0,
+            totalSpent: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        });
 
-    if (orderNo)
-        orderNo.innerHTML =
-            "<strong>Order ID:</strong> " +
-            escapeHtml(order.id);
+        customers.push(customer);
+    }
 
-    if (date)
-        date.innerHTML =
-            "<strong>Date:</strong> " +
-            escapeHtml(order.date);
+    currentCustomer = customer;
 
-    if (customer)
-        customer.innerHTML =
-            "<strong>Customer:</strong> " +
-            escapeHtml(order.customer) +
-            "<br>Mobile: " +
-            escapeHtml(order.phone);
+    saveCustomers();
+    saveCurrentCustomer();
 
-    if (address)
-        address.innerHTML =
-            "<strong>Address:</strong> " +
-            escapeHtml(order.address) +
-            "<br><strong>Payment:</strong> " +
-            escapeHtml(order.payment);
+    closeModal("customerLoginModal");
 
-    if (items) {
+    updateCustomerUI();
 
-        items.innerHTML =
-            order.items.map(item => `
+    showToast(
+        `Welcome, ${name}!`,
+        "success"
+    );
 
-                <div style="
-                    display:flex;
-                    justify-content:space-between;
-                    padding:5px 0;">
+    if (cart.length) {
+        prepareCheckoutForm();
+        openModal("checkoutModal");
+    }
+}
 
-                    <span>
-                        ${escapeHtml(item.name)}
-                        × ${item.quantity}
-                    </span>
+
+/* =========================================================
+   PREPARE CHECKOUT FORM
+   ========================================================= */
+
+function prepareCheckoutForm() {
+    const customer = getCurrentCustomer();
+
+    if (!customer) return;
+
+    const fields = {
+        checkoutName: customer.name || "",
+        checkoutMobile: customer.mobile || "",
+        checkoutHouse: customer.address?.house || "",
+        checkoutArea: customer.address?.area || "",
+        checkoutLandmark: customer.address?.landmark || "",
+        checkoutCity: customer.address?.city || "",
+        checkoutState: customer.address?.state || "",
+        checkoutPincode: customer.address?.pincode || ""
+    };
+
+    Object.entries(fields).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+
+        if (element) {
+            element.value = value;
+        }
+    });
+
+    renderCheckoutSummary();
+}
+
+
+/* =========================================================
+   CHECKOUT SUMMARY
+   ========================================================= */
+
+function renderCheckoutSummary() {
+    const subtotal = getCartSubtotal();
+    const delivery = getDeliveryCharge(subtotal);
+    const total = subtotal + delivery;
+
+    const checkoutSubtotal =
+        document.getElementById("checkoutSubtotal");
+
+    const checkoutDelivery =
+        document.getElementById("checkoutDelivery");
+
+    const checkoutTotal =
+        document.getElementById("checkoutTotal");
+
+    if (checkoutSubtotal) {
+        checkoutSubtotal.textContent =
+            formatCurrency(subtotal);
+    }
+
+    if (checkoutDelivery) {
+        checkoutDelivery.textContent =
+            delivery === 0
+                ? "FREE"
+                : formatCurrency(delivery);
+    }
+
+    if (checkoutTotal) {
+        checkoutTotal.textContent =
+            formatCurrency(total);
+    }
+
+    const checkoutItems =
+        document.getElementById("checkoutItems");
+
+    if (!checkoutItems) return;
+
+    checkoutItems.innerHTML = cart.map(item => {
+        const product = getCartItemProduct(item);
+
+        if (!product) return "";
+
+        const quantity =
+            numberValue(item.quantity, 1);
+
+        const price =
+            numberValue(item.price || product.price);
+
+        return `
+            <div class="order-item">
+
+                <div class="order-item-image">
+                    ${
+                        getProductImage(product)
+                            ? `
+                                <img
+                                    src="${escapeHTML(
+                                        getProductImage(product)
+                                    )}"
+                                    alt="${escapeHTML(
+                                        product.name
+                                    )}">
+                              `
+                            : `
+                                <div class="product-image-placeholder">
+                                    No Image
+                                </div>
+                              `
+                    }
+                </div>
+
+                <div class="order-item-info">
 
                     <strong>
-                        ₹${item.price * item.quantity}
+                        ${escapeHTML(product.name)}
                     </strong>
+
+                    <span>
+                        Qty: ${quantity}
+                    </span>
+
+                    ${
+                        item.size
+                            ? `<span>Size: ${escapeHTML(item.size)}</span>`
+                            : ""
+                    }
+
+                    ${
+                        item.color
+                            ? `<span>Color: ${escapeHTML(item.color)}</span>`
+                            : ""
+                    }
 
                 </div>
 
-            `).join("");
+                <strong>
+                    ${formatCurrency(price * quantity)}
+                </strong>
+
+            </div>
+        `;
+    }).join("");
+}
+
+
+/* =========================================================
+   PAYMENT METHOD
+   ========================================================= */
+
+function getSelectedPaymentMethod() {
+    const selected = document.querySelector(
+        'input[name="paymentMethod"]:checked'
+    );
+
+    if (!selected) {
+        return "COD";
     }
 
-    if (total)
-        total.innerText =
-            "Total: ₹" +
-            Number(order.total || 0);
-
-    modal.style.display =
-        "flex";
+    return String(selected.value || "COD")
+        .toUpperCase();
 }
 
-function closeInvoiceModal() {
 
-    const modal =
-        document.getElementById(
-            "invoiceModal"
+/* =========================================================
+   CHECK PAYMENT OPTIONS
+   ========================================================= */
+
+function updatePaymentOptions() {
+    const codEnabled =
+        settings.codEnabled !== false;
+
+    const upiEnabled =
+        settings.upiEnabled === true;
+
+    const codInput = document.querySelector(
+        'input[name="paymentMethod"][value="COD"]'
+    );
+
+    const upiInput = document.querySelector(
+        'input[name="paymentMethod"][value="UPI"]'
+    );
+
+    if (codInput) {
+        codInput.disabled = !codEnabled;
+
+        if (!codEnabled && codInput.checked) {
+            codInput.checked = false;
+        }
+    }
+
+    if (upiInput) {
+        upiInput.disabled = !upiEnabled;
+
+        if (!upiEnabled && upiInput.checked) {
+            upiInput.checked = false;
+        }
+    }
+
+    const firstAvailable =
+        document.querySelector(
+            'input[name="paymentMethod"]:not(:disabled)'
         );
 
-    if (modal)
-        modal.style.display =
-            "none";
+    if (
+        firstAvailable &&
+        !document.querySelector(
+            'input[name="paymentMethod"]:checked'
+        )
+    ) {
+        firstAvailable.checked = true;
+    }
 }
 
-// ================= ADMIN ORDERS =================
+
+/* =========================================================
+   CHECKOUT FORM SUBMIT
+   ========================================================= */
+async function handleCheckoutSubmit(event) {
+    event.preventDefault();
+
+    if (!cart.length) {
+        showToast(
+            "Your cart is empty.",
+            "warning"
+        );
+
+        closeModal("checkoutModal");
+        return;
+    }
+
+    const customer = getCurrentCustomer();
+
+    if (!customer) {
+        closeModal("checkoutModal");
+        showCustomerLogin();
+        return;
+    }
+
+    const name =
+        document.getElementById("checkoutName")?.value.trim() || "";
+
+    const mobile =
+        document.getElementById("checkoutMobile")?.value
+            .replace(/\D/g, "") || "";
+
+    const address =
+        document.getElementById("checkoutAddress")?.value.trim() || "";
+
+    const landmark =
+        document.getElementById("checkoutLandmark")?.value.trim() || "";
+
+    const city =
+        document.getElementById("checkoutCity")?.value.trim() || "";
+
+    const state =
+        document.getElementById("checkoutState")?.value.trim() || "";
+
+    const pincode =
+        document.getElementById("checkoutPincode")?.value
+            .replace(/\D/g, "") || "";
+
+    const paymentMethod =
+        getSelectedPaymentMethod();
+
+    if (!name) {
+        showToast("Please enter your name.", "warning");
+        return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+        showToast(
+            "Please enter a valid mobile number.",
+            "warning"
+        );
+        return;
+    }
+
+    if (!address) {
+        showToast(
+            "Please enter your complete address.",
+            "warning"
+        );
+        return;
+    }
+
+    if (!city) {
+        showToast(
+            "Please enter your city.",
+            "warning"
+        );
+        return;
+    }
+
+    if (!state) {
+        showToast(
+            "Please enter your state.",
+            "warning"
+        );
+        return;
+    }
+
+    if (!/^\d{6}$/.test(pincode)) {
+        showToast(
+            "Please enter a valid 6-digit pincode.",
+            "warning"
+        );
+        return;
+    }
+
+    if (
+        paymentMethod === "COD" &&
+        settings.codEnabled === false
+    ) {
+        showToast(
+            "Cash on Delivery is currently disabled.",
+            "warning"
+        );
+        return;
+    }
+
+    if (
+        paymentMethod === "UPI" &&
+        settings.upiEnabled !== true
+    ) {
+        showToast(
+            "UPI is currently disabled.",
+            "warning"
+        );
+        return;
+    }
+
+    /* -----------------------------------------------------
+       CHECK STOCK BEFORE ORDER
+       ----------------------------------------------------- */
+
+    for (const item of cart) {
+        const product =
+            getCartItemProduct(item);
+
+        if (!product) {
+            showToast(
+                "One product is no longer available.",
+                "error"
+            );
+            return;
+        }
+
+        const requested =
+            numberValue(item.quantity, 1);
+
+        const stock =
+            numberValue(product.stock, 0);
+
+        if (stock < requested) {
+            showToast(
+                `${product.name} has only ${stock} item(s) left.`,
+                "warning"
+            );
+            return;
+        }
+
+        if (stock <= 0) {
+            showToast(
+                `${product.name} is out of stock.`,
+                "warning"
+            );
+            return;
+        }
+    }
+
+    const deliveryAddress = {
+        address,
+        landmark,
+        city,
+        state,
+        pincode,
+        fullAddress: [
+            address,
+            landmark,
+            city,
+            state,
+            pincode
+        ]
+            .filter(Boolean)
+            .join(", ")
+    };
+
+    const subtotal =
+        getCartSubtotal();
+
+    const deliveryCharge =
+        getDeliveryCharge(subtotal);
+
+    const total =
+        subtotal + deliveryCharge;
+
+    const orderId =
+        generateOrderId();
+
+    const orderItems =
+        cart.map(item => {
+            const product =
+                getCartItemProduct(item);
+
+            const quantity =
+                numberValue(item.quantity, 1);
+
+            const price =
+                numberValue(
+                    item.price || product.price
+                );
+
+            return {
+                productId: product.id,
+                sku: product.sku || "",
+                name: product.name,
+                image: getProductImage(product),
+                price,
+                quantity,
+                size: item.size || "",
+                color: item.color || "",
+                lineTotal: price * quantity
+            };
+        });
+
+    const now =
+        new Date().toISOString();
+
+    const order = {
+        id: orderId,
+        orderId,
+
+        customerId:
+            customer.id,
+
+        customerName:
+            name,
+
+        customerMobile:
+            mobile,
+
+        customer: {
+            id: customer.id,
+            name,
+            mobile,
+            email: customer.email || ""
+        },
+
+        address: deliveryAddress,
+
+        items: orderItems,
+
+        subtotal,
+
+        deliveryCharge,
+
+        total,
+
+        paymentMethod,
+
+        paymentStatus:
+            paymentMethod === "COD"
+                ? "Pending"
+                : "Pending",
+
+        status: "Pending",
+
+        createdAt: now,
+        updatedAt: now,
+
+        notes: "",
+
+        cancellationReason: ""
+    };
+
+    orders.unshift(order);
+
+    /* -----------------------------------------------------
+       UPDATE PRODUCT STOCK
+       ----------------------------------------------------- */
+
+    orderItems.forEach(orderItem => {
+        const product =
+            products.find(
+                item =>
+                    item.id === orderItem.productId
+            );
+
+        if (!product) return;
+
+        product.stock =
+            Math.max(
+                0,
+                numberValue(product.stock, 0) -
+                numberValue(orderItem.quantity, 1)
+            );
+
+        product.updatedAt = now;
+    });
+
+    /* -----------------------------------------------------
+       UPDATE CUSTOMER
+       ----------------------------------------------------- */
+
+    customer.name = name;
+    customer.mobile = mobile;
+    customer.address = address;
+
+    customer.ordersCount =
+        numberValue(customer.ordersCount, 0) + 1;
+
+    customer.totalSpent =
+        numberValue(customer.totalSpent, 0) + total;
+
+    customer.updatedAt = now;
+
+    currentCustomer = customer;
+
+    /* -----------------------------------------------------
+       SAVE EVERYTHING
+       ----------------------------------------------------- */
+
+    saveProducts();
+    saveOrders();
+    saveCustomers();
+    saveCurrentCustomer();
+
+    cart = [];
+
+    saveCart();
+
+    updateCartBadge();
+
+    closeModal("checkoutModal");
+
+    renderProducts();
+
+    showOrderSuccess(order);
+
+    showToast(
+        `Order ${orderId} placed successfully!`,
+        "success"
+    );
+}
+
+
+/* =========================================================
+   ORDER SUCCESS
+   ========================================================= */
+
+function showOrderSuccess(order) {
+    const message =
+        `Order ${order.orderId} has been placed successfully.`;
+
+    openAccountOrders();
+}
+
+
+/* =========================================================
+   CUSTOMER UI
+   ========================================================= */
+
+function updateCustomerUI() {
+    const customer =
+        getCurrentCustomer();
+
+    document
+        .querySelectorAll("[data-customer-name]")
+        .forEach(element => {
+            element.textContent =
+                customer?.name || "Account";
+        });
+
+    document
+        .querySelectorAll("[data-customer-mobile]")
+        .forEach(element => {
+            element.textContent =
+                customer?.mobile || "";
+        });
+
+    const accountName =
+        document.getElementById("accountName");
+
+    if (accountName) {
+        accountName.textContent =
+            customer?.name || "Guest";
+    }
+
+    const accountMobile =
+        document.getElementById("accountMobile");
+
+    if (accountMobile) {
+        accountMobile.textContent =
+            customer?.mobile || "";
+    }
+
+    const loginButtons =
+        document.querySelectorAll(
+            ".customer-login-btn"
+        );
+
+    loginButtons.forEach(button => {
+        button.textContent =
+            customer
+                ? "Account"
+                : "Login";
+    });
+}
+
+
+/* =========================================================
+   CUSTOMER ACCOUNT
+   ========================================================= */
+
+function openAccount() {
+    const customer =
+        getCurrentCustomer();
+
+    if (!customer) {
+        showCustomerLogin();
+        return;
+    }
+
+    renderAccount();
+
+    openModal("accountModal");
+}
+
+
+/* =========================================================
+   RENDER ACCOUNT
+   ========================================================= */
+
+function renderAccount() {
+    const customer =
+        getCurrentCustomer();
+
+    if (!customer) return;
+
+    const name =
+        document.getElementById("accountName");
+
+    const mobile =
+        document.getElementById("accountMobile");
+
+
+    if (name) {
+        name.textContent =
+            customer.name || "Customer";
+    }
+
+    if (mobile) {
+        mobile.textContent =
+            customer.mobile || "";
+    }
+
+    renderCustomerOrders();
+}
+
+
+/* =========================================================
+   CUSTOMER ORDERS
+   ========================================================= */
+
+function getCustomerOrders() {
+    const customer =
+        getCurrentCustomer();
+
+    if (!customer) return [];
+
+    return orders
+        .filter(order => {
+            return (
+                order.customerId === customer.id ||
+                order.customerMobile === customer.mobile
+            );
+        })
+        .sort(
+            (a, b) =>
+                new Date(b.createdAt) -
+                new Date(a.createdAt)
+        );
+}
+
+
+/* =========================================================
+   ORDER STATUS LABEL
+   ========================================================= */
+
+function getOrderStatusLabel(status) {
+    const labels = {
+        Pending: "Pending",
+        Confirmed: "Confirmed",
+        Packed: "Packed",
+        Shipped: "Shipped",
+        "Out for Delivery": "Out for Delivery",
+        Delivered: "Delivered",
+        Cancelled: "Cancelled"
+    };
+
+    return labels[status] || status || "Pending";
+}
+
+
+/* =========================================================
+   ORDER STATUS CLASS
+   ========================================================= */
+
+function getOrderStatusClass(status) {
+    return String(status || "Pending")
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+}
+
+
+/* =========================================================
+   CUSTOMER ORDER CARD
+   ========================================================= */
+
+function createCustomerOrderHTML(order) {
+    const firstItem =
+        order.items?.[0];
+
+    const moreItems =
+        Math.max(
+            0,
+            (order.items?.length || 0) - 1
+        );
+
+    const image =
+        firstItem?.image || "";
+
+    return `
+        <div
+            class="order-card"
+            data-order-id="${escapeHTML(order.id)}">
+
+            <div class="order-card-header">
+
+                <div>
+                    <div class="order-id">
+                        ${escapeHTML(order.orderId || order.id)}
+                    </div>
+
+                    <div class="customer-sub">
+                        ${formatDateTime(order.createdAt)}
+                    </div>
+                </div>
+
+                <span
+                    class="status-badge status-${escapeHTML(
+                        getOrderStatusClass(order.status)
+                    )}">
+                    ${escapeHTML(
+                        getOrderStatusLabel(order.status)
+                    )}
+                </span>
+
+            </div>
+
+            <div class="order-card-body">
+
+                <div class="order-items">
+
+                    <div class="order-item">
+
+                        <div class="order-item-image">
+
+                            ${
+                                image
+                                    ? `
+                                        <img
+                                            src="${escapeHTML(image)}"
+                                            alt="${escapeHTML(
+                                                firstItem?.name || "Product"
+                                            )}">
+                                      `
+                                    : `
+                                        <div class="product-image-placeholder">
+                                            No Image
+                                        </div>
+                                      `
+                            }
+
+                        </div>
+
+                        <div class="order-item-info">
+
+                            <strong>
+                                ${escapeHTML(
+                                    firstItem?.name ||
+                                    "Order"
+                                )}
+                            </strong>
+
+                            <span>
+                                Qty:
+                                ${numberValue(
+                                    firstItem?.quantity,
+                                    1
+                                )}
+                            </span>
+
+                            ${
+                                moreItems
+                                    ? `
+                                        <span>
+                                            + ${moreItems}
+                                            more item(s)
+                                        </span>
+                                      `
+                                    : ""
+                            }
+
+                        </div>
+
+                        <strong>
+                            ${formatCurrency(order.total)}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+                <div class="order-card-footer">
+
+                    <span>
+                        Payment:
+                        <strong>
+                            ${escapeHTML(
+                                order.paymentMethod
+                            )}
+                        </strong>
+                    </span>
+
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        onclick="openCustomerOrderDetails('${escapeHTML(
+                            order.id
+                        )}')">
+                        View Order
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+   RENDER CUSTOMER ORDERS
+   ========================================================= */
+
+function renderCustomerOrders() {
+    const container =
+        document.getElementById("customerOrdersList");
+
+    if (!container) return;
+
+    const customerOrders =
+        getCustomerOrders();
+
+    if (!customerOrders.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+
+                <div class="empty-state-icon">
+                    📦
+                </div>
+
+                <h3>No orders yet</h3>
+
+                <p>
+                    Your orders will appear here.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+    container.innerHTML =
+        customerOrders
+            .map(createCustomerOrderHTML)
+            .join("");
+}
+
+
+/* =========================================================
+   OPEN CUSTOMER ORDER DETAILS
+   ========================================================= */
+
+function openCustomerOrderDetails(orderId) {
+    const order =
+        orders.find(
+            item =>
+                item.id === orderId ||
+                item.orderId === orderId
+        );
+
+    if (!order) {
+        showToast(
+            "Order not found.",
+            "error"
+        );
+        return;
+    }
+
+    renderCustomerOrderDetails(order);
+
+    openModal("orderDetailsModal");
+}
+
+
+/* =========================================================
+   RENDER ORDER DETAILS
+   ========================================================= */
+
+function renderCustomerOrderDetails(order) {
+    const container =
+        document.getElementById(
+            "orderDetailsContent"
+        );
+
+    if (!container) return;
+
+    const status =
+        getOrderStatusLabel(order.status);
+
+    const itemsHTML =
+        (order.items || [])
+            .map(item => {
+                return `
+                    <div class="order-item">
+
+                        <div class="order-item-image">
+
+                            ${
+                                item.image
+                                    ? `
+                                        <img
+                                            src="${escapeHTML(item.image)}"
+                                            alt="${escapeHTML(item.name)}">
+                                      `
+                                    : `
+                                        <div class="product-image-placeholder">
+                                            No Image
+                                        </div>
+                                      `
+                            }
+
+                        </div>
+
+                        <div class="order-item-info">
+
+                            <strong>
+                                ${escapeHTML(item.name)}
+                            </strong>
+
+                            <span>
+                                Qty:
+                                ${numberValue(item.quantity, 1)}
+                            </span>
+
+                            ${
+                                item.size
+                                    ? `
+                                        <span>
+                                            Size:
+                                            ${escapeHTML(item.size)}
+                                        </span>
+                                      `
+                                    : ""
+                            }
+
+                            ${
+                                item.color
+                                    ? `
+                                        <span>
+                                            Color:
+                                            ${escapeHTML(item.color)}
+                                        </span>
+                                      `
+                                    : ""
+                            }
+
+                        </div>
+
+                        <strong>
+                            ${formatCurrency(
+                                numberValue(item.lineTotal, 0)
+                            )}
+                        </strong>
+
+                    </div>
+                `;
+            })
+            .join("");
+
+    container.innerHTML = `
+
+        <div class="order-summary-grid">
+
+            <div class="order-summary-card">
+
+                <span>Order ID</span>
+
+                <strong>
+                    ${escapeHTML(
+                        order.orderId || order.id
+                    )}
+                </strong>
+
+            </div>
+
+            <div class="order-summary-card">
+
+                <span>Date</span>
+
+                <strong>
+                    ${formatDateTime(order.createdAt)}
+                </strong>
+
+            </div>
+
+            <div class="order-summary-card">
+
+                <span>Status</span>
+
+                <strong>
+                    ${escapeHTML(status)}
+                </strong>
+
+            </div>
+
+            <div class="order-summary-card">
+
+                <span>Payment</span>
+
+                <strong>
+                    ${escapeHTML(
+                        order.paymentMethod
+                    )}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-header">
+                <h3>Order Items</h3>
+            </div>
+
+            <div class="order-items">
+                ${itemsHTML}
+            </div>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-header">
+                <h3>Delivery Address</h3>
+            </div>
+
+            <p>
+                ${escapeHTML(
+                    order.customerName || ""
+                )}
+            </p>
+
+            <p>
+                ${escapeHTML(
+                    order.customerMobile || ""
+                )}
+            </p>
+
+            <p>
+                ${escapeHTML(
+                    order.address?.fullAddress || ""
+                )}
+            </p>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-header">
+                <h3>Order Total</h3>
+            </div>
+
+            <div class="cart-summary">
+
+                <div class="cart-summary-row">
+                    <span>Subtotal</span>
+                    <strong>
+                        ${formatCurrency(
+                            order.subtotal
+                        )}
+                    </strong>
+                </div>
+
+                <div class="cart-summary-row">
+                    <span>Delivery</span>
+                    <strong>
+                        ${
+                            numberValue(
+                                order.deliveryCharge,
+                                0
+                            ) === 0
+                                ? "FREE"
+                                : formatCurrency(
+                                    order.deliveryCharge
+                                )
+                        }
+                    </strong>
+                </div>
+
+                <div class="cart-summary-row cart-total">
+                    <span>Total</span>
+                    <strong>
+                        ${formatCurrency(order.total)}
+                    </strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="order-tracker">
+
+            ${renderOrderTracker(order.status)}
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+   ORDER TRACKER
+   ========================================================= */
+
+function renderOrderTracker(currentStatus) {
+    const steps = [
+        "Pending",
+        "Confirmed",
+        "Packed",
+        "Shipped",
+        "Out for Delivery",
+        "Delivered"
+    ];
+
+    if (currentStatus === "Cancelled") {
+        return `
+            <div class="tracker-step active">
+                <div class="tracker-step-circle">×</div>
+                <div class="tracker-step-label">
+                    Cancelled
+                </div>
+            </div>
+        `;
+    }
+
+    const currentIndex =
+        steps.indexOf(currentStatus);
+
+    return steps
+        .map((step, index) => {
+
+            const active =
+                currentIndex >= index;
+
+            return `
+                <div class="tracker-step ${
+                    active ? "active" : ""
+                }">
+
+                    <div class="tracker-step-circle">
+                        ${
+                            active
+                                ? "✓"
+                                : index + 1
+                        }
+                    </div>
+
+                    <div class="tracker-step-label">
+                        ${escapeHTML(step)}
+                    </div>
+
+                </div>
+
+                ${
+                    index < steps.length - 1
+                        ? `
+                            <div class="tracker-line ${
+                                currentIndex > index
+                                    ? "active"
+                                    : ""
+                            }"></div>
+                          `
+                        : ""
+                }
+            `;
+        })
+        .join("");
+}
+
+
+/* =========================================================
+   ACCOUNT ORDERS OPEN
+   ========================================================= */
+
+function openAccountOrders() {
+    const customer =
+        getCurrentCustomer();
+
+    if (!customer) {
+        showCustomerLogin();
+        return;
+    }
+
+    renderAccount();
+
+    openModal("accountModal");
+}
+
+
+/* =========================================================
+   ACCOUNT PROFILE
+   ========================================================= */
+
+function openAccountProfile() {
+    const customer =
+        getCurrentCustomer();
+
+    if (!customer) {
+        showCustomerLogin();
+        return;
+    }
+
+    const nameInput =
+        document.getElementById(
+            "profileName"
+        );
+
+    const mobileInput =
+        document.getElementById(
+            "profileMobile"
+        );
+
+    const emailInput =
+        document.getElementById(
+            "profileEmail"
+        );
+
+    if (nameInput) {
+        nameInput.value =
+            customer.name || "";
+    }
+
+    if (mobileInput) {
+        mobileInput.value =
+            customer.mobile || "";
+    }
+
+    if (emailInput) {
+        emailInput.value =
+            customer.email || "";
+    }
+
+    openModal("profileModal");
+}
+
+
+/* =========================================================
+   PROFILE UPDATE
+   ========================================================= */
+
+function handleProfileUpdate(event) {
+    event.preventDefault();
+
+    const customer =
+        getCurrentCustomer();
+
+    if (!customer) {
+        showCustomerLogin();
+        return;
+    }
+
+    const name =
+        document.getElementById(
+            "profileName"
+        )?.value.trim() || "";
+
+    const email =
+        document.getElementById(
+            "profileEmail"
+        )?.value.trim() || "";
+
+    if (!name) {
+        showToast(
+            "Name cannot be empty.",
+            "warning"
+        );
+        return;
+    }
+
+    customer.name = name;
+    customer.email = email;
+
+    customer.updatedAt =
+        new Date().toISOString();
+
+    currentCustomer = customer;
+
+    saveCustomers();
+    saveCurrentCustomer();
+
+    updateCustomerUI();
+    renderAccount();
+
+    closeModal("profileModal");
+
+    showToast(
+        "Profile updated successfully.",
+        "success"
+    );
+}
+
+
+/* =========================================================
+   LOGOUT CUSTOMER
+   ========================================================= */
+
+function logoutCustomer() {
+    currentCustomer = null;
+
+    saveCurrentCustomer();
+
+    closeAllModals();
+
+    updateCustomerUI();
+
+    showToast(
+        "You have been logged out.",
+        "success"
+    );
+}
+
+
+/* =========================================================
+   INVOICE HTML
+   ========================================================= */
+
+function createInvoiceHTML(order) {
+    const storeName =
+        settings.storeName || "Sale 11";
+
+    const items =
+        (order.items || [])
+            .map(item => `
+                <tr>
+
+                    <td>
+                        ${escapeHTML(item.name)}
+                        ${
+                            item.size || item.color
+                                ? `
+                                    <br>
+                                    <small>
+                                        ${
+                                            item.size
+                                                ? `Size: ${escapeHTML(item.size)}`
+                                                : ""
+                                        }
+                                        ${
+                                            item.size && item.color
+                                                ? " • "
+                                                : ""
+                                        }
+                                        ${
+                                            item.color
+                                                ? `Color: ${escapeHTML(item.color)}`
+                                                : ""
+                                        }
+                                    </small>
+                                  `
+                                : ""
+                        }
+                    </td>
+
+                    <td>
+                        ${numberValue(item.quantity, 1)}
+                    </td>
+
+                    <td>
+                        ${formatCurrency(item.price)}
+                    </td>
+
+                    <td>
+                        ${formatCurrency(item.lineTotal)}
+                    </td>
+
+                </tr>
+            `)
+            .join("");
+
+    return `
+        <div class="invoice">
+
+            <div class="invoice-header">
+
+                <div>
+                    <h2>
+                        ${escapeHTML(storeName)}
+                    </h2>
+
+                    <p>
+                        Order Invoice
+                    </p>
+                </div>
+
+                <div>
+                    <strong>
+                        ${escapeHTML(
+                            order.orderId || order.id
+                        )}
+                    </strong>
+
+                    <p>
+                        ${formatDateTime(order.createdAt)}
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="invoice-meta">
+
+                <div>
+                    <strong>Customer</strong>
+
+                    <p>
+                        ${escapeHTML(
+                            order.customerName || ""
+                        )}
+                    </p>
+
+                    <p>
+                        ${escapeHTML(
+                            order.customerMobile || ""
+                        )}
+                    </p>
+                </div>
+
+                <div>
+                    <strong>Delivery Address</strong>
+
+                    <p>
+                        ${escapeHTML(
+                            order.address?.fullAddress || ""
+                        )}
+                    </p>
+                </div>
+
+            </div>
+
+
+            <table class="invoice-table">
+
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    ${items}
+                </tbody>
+
+            </table>
+
+
+            <div class="invoice-total">
+
+                <div>
+                    <span>Subtotal</span>
+                    <strong>
+                        ${formatCurrency(order.subtotal)}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Delivery</span>
+                    <strong>
+                        ${
+                            numberValue(
+                                order.deliveryCharge,
+                                0
+                            ) === 0
+                                ? "FREE"
+                                : formatCurrency(
+                                    order.deliveryCharge
+                                )
+                        }
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Total</span>
+                    <strong>
+                        ${formatCurrency(order.total)}
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="invoice-footer">
+
+                <p>
+                    Payment Method:
+                    <strong>
+                        ${escapeHTML(
+                            order.paymentMethod
+                        )}
+                    </strong>
+                </p>
+
+                <p>
+                    Order Status:
+                    <strong>
+                        ${escapeHTML(
+                            getOrderStatusLabel(
+                                order.status
+                            )
+                        )}
+                    </strong>
+                </p>
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* =========================================================
+   OPEN INVOICE
+   ========================================================= */
+
+function openOrderInvoice(orderId) {
+    const order =
+        orders.find(
+            item =>
+                item.id === orderId ||
+                item.orderId === orderId
+        );
+
+    if (!order) {
+        showToast(
+            "Order not found.",
+            "error"
+        );
+        return;
+    }
+
+    const container =
+        document.getElementById(
+            "invoiceContent"
+        );
+
+    if (!container) {
+        showToast(
+            "Invoice section is unavailable.",
+            "error"
+        );
+        return;
+    }
+
+    container.innerHTML =
+        createInvoiceHTML(order);
+
+    openModal("invoiceModal");
+}
+
+
+/* =========================================================
+   PRINT INVOICE
+   ========================================================= */
+
+function printInvoice() {
+    const invoice =
+        document.getElementById(
+            "invoiceContent"
+        );
+
+    if (!invoice) return;
+
+    const printWindow =
+        window.open(
+            "",
+            "_blank",
+            "width=900,height=700"
+        );
+
+    if (!printWindow) {
+        showToast(
+            "Please allow popups to print invoice.",
+            "warning"
+        );
+        return;
+    }
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+
+            <title>Sale 11 Invoice</title>
+
+            <style>
+
+                body {
+                    font-family: Arial, sans-serif;
+                    padding: 30px;
+                    color: #111;
+                }
+
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 25px;
+                }
+
+                th,
+                td {
+                    border: 1px solid #ddd;
+                    padding: 10px;
+                    text-align: left;
+                }
+
+                .invoice-header,
+                .invoice-meta,
+                .invoice-total {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 30px;
+                    margin-bottom: 25px;
+                }
+
+                .invoice-total {
+                    flex-direction: column;
+                    align-items: flex-end;
+                }
+
+                img {
+                    max-width: 80px;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${invoice.innerHTML}
+
+            <script>
+                window.onload = function () {
+                    window.print();
+                };
+            <\/script>
+
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+}
+
+
+/* =========================================================
+   CHECKOUT BUTTON BINDING
+   ========================================================= */
+
+function bindCheckoutButtons() {
+
+    const checkoutForm =
+        document.getElementById(
+            "checkoutForm"
+        );
+
+    if (checkoutForm) {
+        checkoutForm.addEventListener(
+            "submit",
+            handleCheckoutSubmit
+        );
+    }
+
+    document
+        .querySelectorAll(
+            "[data-action='checkout']"
+        )
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                proceedToCheckout
+            );
+        });
+}
+
+
+/* =========================================================
+   CUSTOMER EVENT BINDING
+   ========================================================= */
+
+function bindCustomerEvents() {
+
+    const customerLoginForm =
+        document.getElementById(
+            "customerLoginForm"
+        );
+
+    if (customerLoginForm) {
+        customerLoginForm.addEventListener(
+            "submit",
+            handleCustomerLogin
+        );
+    }
+
+    const profileForm =
+        document.getElementById(
+            "customerProfileForm"
+        );
+
+    if (profileForm) {
+        profileForm.addEventListener(
+            "submit",
+            handleProfileUpdate
+        );
+    }
+
+    document
+        .querySelectorAll(
+            ".customer-login-btn"
+        )
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                showCustomerLogin
+            );
+        });
+
+    document
+        .querySelectorAll(
+            ".account-btn"
+        )
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                openAccount
+            );
+        });
+}
+
+
+/* =========================================================
+   PAYMENT EVENT BINDING
+   ========================================================= */
+
+function bindPaymentEvents() {
+
+    document
+        .querySelectorAll(
+            'input[name="paymentMethod"]'
+        )
+        .forEach(input => {
+            input.addEventListener(
+                "change",
+                () => {
+                    updatePaymentOptions();
+                }
+            );
+        });
+
+    updatePaymentOptions();
+}
+
+
+/* =========================================================
+   CART HEADER BUTTONS
+   ========================================================= */
+
+function bindCartButtons() {
+
+    document
+        .querySelectorAll(
+            ".cart-btn, [data-action='cart']"
+        )
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                openCart
+            );
+
+        });
+}
+
+
+/* =========================================================
+   MODAL CLOSE EVENTS
+   ========================================================= */
+
+function bindModalEvents() {
+
+    document
+        .querySelectorAll(
+            "[data-close-modal]"
+        )
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const modalId =
+                        button.dataset.closeModal;
+
+                    if (modalId) {
+                        closeModal(modalId);
+                    } else {
+                        closeAllModals();
+                    }
+
+                }
+            );
+
+        });
+
+    document
+        .querySelectorAll(".modal-backdrop")
+        .forEach(backdrop => {
+
+            backdrop.addEventListener(
+                "click",
+                event => {
+
+                    if (
+                        event.target !== backdrop
+                    ) {
+                        return;
+                    }
+
+                    const modal =
+                        backdrop.closest(".modal");
+
+                    if (modal) {
+                        closeModal(modal.id);
+                    }
+
+                }
+            );
+
+        });
+
+    document.addEventListener(
+        "keydown",
+        event => {
+
+            if (event.key !== "Escape") {
+                return;
+            }
+
+            closeAllModals();
+
+        }
+    );
+}
+
+
+/* =========================================================
+   STORAGE SYNC
+   ========================================================= */
+
+function refreshApplicationFromStorage() {
+
+    products =
+        loadProducts();
+
+    orders =
+        loadOrders();
+
+    customers =
+        loadCustomers();
+
+    categories =
+        loadCategories();
+
+    settings =
+        loadSettings();
+
+    cart =
+        loadCart();
+
+    wishlist =
+        loadWishlist();
+
+    currentCustomer =
+        loadCurrentCustomer();
+
+    updateCartBadge();
+    updateWishlistCount();
+    updateCustomerUI();
+    updatePaymentOptions();
+
+    renderProducts();
+}
+
+
+/* =========================================================
+   CROSS-TAB STORAGE UPDATE
+   ========================================================= */
+
+window.addEventListener(
+    "storage",
+    event => {
+
+        if (!event.key) return;
+
+        const importantKeys = [
+            KEYS.products,
+            KEYS.orders,
+            KEYS.customers,
+            KEYS.categories,
+            KEYS.settings,
+            KEYS.cart,
+            KEYS.wishlist,
+            KEYS.currentUser
+        ];
+
+        if (
+            importantKeys.includes(event.key)
+        ) {
+            refreshApplicationFromStorage();
+        }
+    }
+);
+
+
+/* =========================================================
+   PART 3 INITIALIZATION
+   ========================================================= */
+
+function initializePart3() {
+
+    bindCheckoutButtons();
+
+    bindCustomerEvents();
+
+    bindPaymentEvents();
+
+    bindCartButtons();
+
+    bindModalEvents();
+
+    updateCustomerUI();
+
+    updatePaymentOptions();
+
+    updateCartBadge();
+
+    updateWishlistCount();
+}
+
+
+/* =========================================================
+   RUN PART 3
+   ========================================================= */
+
+if (
+    document.readyState === "loading"
+) {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        initializePart3,
+        { once: true }
+    );
+
+} else {
+
+    initializePart3();
+
+}
+
+
+/* =========================================================
+   PART 3 END
+   ========================================================= */
+   /* =========================================================
+   SALE 11
+   APP.JS — PART 4 / 5
+   ADMIN LOGIN + ADMIN DASHBOARD + PRODUCTS + ORDERS
+   ========================================================= */
+
+
+/* =========================================================
+   ADMIN LOGIN
+   ========================================================= */
+
+function showAdminLogin() {
+    const mobileInput =
+        document.getElementById("adminMobile");
+
+    const passwordInput =
+        document.getElementById("adminPassword");
+
+    if (mobileInput) {
+        mobileInput.value = "";
+    }
+
+    if (passwordInput) {
+        passwordInput.value = "";
+    }
+
+    openModal("adminLoginModal");
+}
+
+
+/* =========================================================
+   ADMIN LOGIN SUBMIT
+   ========================================================= */
+
+function handleAdminLogin(event) {
+    event.preventDefault();
+
+    const mobile =
+        String(
+            document.getElementById(
+                "adminMobile"
+            )?.value || ""
+        ).trim();
+
+    const password =
+        String(
+            document.getElementById(
+                "adminPassword"
+            )?.value || ""
+        );
+
+    if (!mobile) {
+        showToast(
+            "Please enter admin mobile number.",
+            "warning"
+        );
+        return;
+    }
+
+    if (!password) {
+        showToast(
+            "Please enter admin password.",
+            "warning"
+        );
+        return;
+    }
+
+    /*
+       IMPORTANT:
+       ADMIN_CONFIG is defined in PART 1.
+       Replace YOUR_ADMIN_MOBILE and
+       YOUR_ADMIN_PASSWORD there with your own details.
+    */
+
+    if (
+        mobile !== ADMIN_CONFIG.mobile ||
+        password !== ADMIN_CONFIG.password
+    ) {
+        showToast(
+            "Invalid admin mobile number or password.",
+            "error"
+        );
+
+        return;
+    }
+
+    adminAuth = {
+        loggedIn: true,
+        mobile,
+        loginAt: new Date().toISOString()
+    };
+
+    saveAdminAuth();
+
+    closeModal("adminLoginModal");
+
+    showAdminDashboard();
+
+    showToast(
+        "Admin login successful.",
+        "success"
+    );
+}
+
+
+/* =========================================================
+   ADMIN AUTH CHECK
+   ========================================================= */
+
+function isAdminLoggedIn() {
+    return Boolean(
+        adminAuth &&
+        adminAuth.loggedIn === true &&
+        adminAuth.mobile === ADMIN_CONFIG.mobile
+    );
+}
+
+
+/* =========================================================
+   OPEN ADMIN DASHBOARD
+   ========================================================= */
+
+function showAdminDashboard() {
+
+    if (!isAdminLoggedIn()) {
+        showAdminLogin();
+        return;
+    }
+
+    const storeView =
+        document.getElementById(
+            "customerStoreView"
+        );
+
+    const adminView =
+        document.getElementById(
+            "adminDashboardView"
+        );
+
+    if (storeView) {
+        storeView.style.display = "none";
+    }
+
+    if (adminView) {
+        adminView.style.display = "block";
+    }
+
+    renderAdminDashboard();
+
+    showAdminTab("dashboard");
+}
+
+
+/* =========================================================
+   RETURN TO STORE
+   ========================================================= */
+
+function showCustomerStore() {
+
+    const storeView =
+        document.getElementById(
+            "customerStoreView"
+        );
+
+    const adminView =
+        document.getElementById(
+            "adminDashboardView"
+        );
+
+    if (adminView) {
+        adminView.style.display = "none";
+    }
+
+    if (storeView) {
+        storeView.style.display = "";
+    }
+
+    renderProducts();
+}
+
+
+/* =========================================================
+   ADMIN LOGOUT
+   ========================================================= */
+
+function logoutAdmin() {
+
+    adminAuth = {
+        loggedIn: false,
+        mobile: "",
+        loginAt: ""
+    };
+
+    saveAdminAuth();
+
+    showCustomerStore();
+
+    showToast(
+        "Admin logged out.",
+        "success"
+    );
+}
+
+
+/* =========================================================
+   ADMIN TAB
+   ========================================================= */
+
+function showAdminTab(tabName) {
+
+    if (!isAdminLoggedIn()) {
+        showAdminLogin();
+        return;
+    }
+
+    const tabMap = {
+        dashboard: "adminTabDashboard",
+        products: "adminTabProducts",
+        orders: "adminTabOrders",
+        customers: "adminTabCustomers",
+        reports: "adminTabReports",
+        categories: "adminTabCategories",
+        settings: "adminTabSettings"
+    };
+
+    Object.values(tabMap).forEach(id => {
+        const section =
+            document.getElementById(id);
+
+        if (section) {
+            section.style.display = "none";
+        }
+    });
+
+    const activeId =
+        tabMap[tabName];
+
+    const activeSection =
+        document.getElementById(activeId);
+
+    if (activeSection) {
+        activeSection.style.display = "block";
+    }
+
+    document
+        .querySelectorAll(".admin-tab")
+        .forEach(button => {
+
+            button.classList.toggle(
+                "active",
+                button.dataset.tab === tabName ||
+                button.dataset.adminTab === tabName
+            );
+
+        });
+
+    if (tabName === "dashboard") {
+        renderAdminDashboard();
+    }
+
+    if (tabName === "products") {
+        renderAdminProducts();
+    }
+
+    if (tabName === "orders") {
+        renderAdminOrders();
+    }
+
+    if (tabName === "customers") {
+        renderAdminCustomers();
+    }
+
+    if (tabName === "reports") {
+        renderAdminReports();
+    }
+
+    if (tabName === "categories") {
+        renderAdminCategories();
+    }
+
+    if (tabName === "settings") {
+        renderAdminSettings();
+    }
+}
+
+
+/* =========================================================
+   DATE HELPERS FOR ADMIN
+   ========================================================= */
+
+function getStartOfDay(date = new Date()) {
+    const value = new Date(date);
+
+    value.setHours(
+        0,
+        0,
+        0,
+        0
+    );
+
+    return value;
+}
+
+
+function getStartOfDaysAgo(days) {
+    const date =
+        getStartOfDay();
+
+    date.setDate(
+        date.getDate() - days
+    );
+
+    return date;
+}
+
+
+function isOrderWithinPeriod(order, period) {
+
+    const created =
+        new Date(order.createdAt);
+
+    if (Number.isNaN(created.getTime())) {
+        return false;
+    }
+
+    const now =
+        new Date();
+
+    if (period === "today") {
+        return created >= getStartOfDay(now);
+    }
+
+    if (period === "7days") {
+        return created >= getStartOfDaysAgo(7);
+    }
+
+    if (period === "30days") {
+        return created >= getStartOfDaysAgo(30);
+    }
+
+    return true;
+}
+
+
+/* =========================================================
+   ADMIN ORDER FILTER
+   ========================================================= */
+
+// Dashboard period is stored in currentDashboardPeriod (defined in PART 1).
+
+
+function getOrdersForPeriod(period) {
+
+    return orders.filter(order => {
+        return isOrderWithinPeriod(
+            order,
+            period
+        );
+    });
+}
+
+
+/* =========================================================
+   ADMIN DASHBOARD STATS
+   ========================================================= */
+
+function calculateDashboardStats(
+    period = "all"
+) {
+
+    const periodOrders =
+        getOrdersForPeriod(period);
+
+    const validOrders =
+        periodOrders.filter(
+            order =>
+                order.status !== "Cancelled"
+        );
+
+    const revenue =
+        validOrders.reduce(
+            (sum, order) =>
+                sum +
+                numberValue(
+                    order.total,
+                    0
+                ),
+            0
+        );
+
+    const pending =
+        periodOrders.filter(
+            order =>
+                order.status === "Pending"
+        ).length;
+
+    const delivered =
+        periodOrders.filter(
+            order =>
+                order.status === "Delivered"
+        ).length;
+
+    const cancelled =
+        periodOrders.filter(
+            order =>
+                order.status === "Cancelled"
+        ).length;
+
+    const confirmed =
+        periodOrders.filter(
+            order =>
+                order.status === "Confirmed"
+        ).length;
+
+    const packed =
+        periodOrders.filter(
+            order =>
+                order.status === "Packed"
+        ).length;
+
+    const shipped =
+        periodOrders.filter(
+            order =>
+                order.status === "Shipped"
+        ).length;
+
+    const outForDelivery =
+        periodOrders.filter(
+            order =>
+                order.status === "Out for Delivery"
+        ).length;
+
+    return {
+        revenue,
+        orders: periodOrders.length,
+        pending,
+        delivered,
+        cancelled,
+        confirmed,
+        packed,
+        shipped,
+        outForDelivery,
+        products: products.length,
+        customers: customers.length
+    };
+}
+
+
+/* =========================================================
+   UPDATE ELEMENT TEXT
+   ========================================================= */
+
+function setAdminText(
+    ids,
+    value
+) {
+
+    const list =
+        Array.isArray(ids)
+            ? ids
+            : [ids];
+
+    list.forEach(id => {
+
+        const element =
+            document.getElementById(id);
+
+        if (element) {
+            element.textContent = value;
+        }
+
+    });
+}
+
+
+/* =========================================================
+   RENDER ADMIN DASHBOARD
+   ========================================================= */
+
+function renderAdminDashboard() {
+
+    if (!isAdminLoggedIn()) {
+        return;
+    }
+
+    const period =
+        getAdminPeriod();
+
+    const stats =
+        calculateDashboardStats(
+            period
+        );
+
+    setAdminText(
+        [
+            "statRevenue",
+            "dashboardRevenue",
+            "totalRevenue"
+        ],
+        formatCurrency(stats.revenue)
+    );
+
+    setAdminText(
+        [
+            "statOrders",
+            "dashboardOrders",
+            "totalOrders"
+        ],
+        stats.orders
+    );
+
+    setAdminText(
+        [
+            "statProducts",
+            "statProds",
+            "dashboardProducts",
+            "totalProducts"
+        ],
+        stats.products
+    );
+
+    setAdminText(
+        [
+            "statCustomers",
+            "statCusts",
+            "dashboardCustomers",
+            "totalCustomers"
+        ],
+        stats.customers
+    );
+
+    setAdminText(
+        [
+            "statPending",
+            "pendingOrders",
+            "dashboardPending"
+        ],
+        stats.pending
+    );
+
+    setAdminText(
+        [
+            "statDelivered",
+            "deliveredOrders",
+            "dashboardDelivered"
+        ],
+        stats.delivered
+    );
+
+    setAdminText(
+        [
+            "statCancelled",
+            "cancelledOrders",
+            "dashboardCancelled"
+        ],
+        stats.cancelled
+    );
+
+    setAdminText(
+        "statConfirmed",
+        stats.confirmed
+    );
+
+    setAdminText(
+        "statPacked",
+        stats.packed
+    );
+
+    setAdminText(
+        "statShipped",
+        stats.shipped
+    );
+
+    setAdminText(
+        "statOutForDelivery",
+        stats.outForDelivery
+    );
+
+    renderDashboardStatusSummary(
+        stats
+    );
+
+    renderRecentOrders();
+}
+
+
+/* =========================================================
+   STATUS SUMMARY
+   ========================================================= */
+
+function renderDashboardStatusSummary(stats) {
+
+    const container =
+        document.getElementById(
+            "statusSummary"
+        );
+
+    if (!container) return;
+
+    const items = [
+        ["Pending", stats.pending],
+        ["Confirmed", stats.confirmed],
+        ["Packed", stats.packed],
+        ["Shipped", stats.shipped],
+        ["Out for Delivery", stats.outForDelivery],
+        ["Delivered", stats.delivered],
+        ["Cancelled", stats.cancelled]
+    ];
+
+    container.innerHTML =
+        items.map(item => `
+            <div class="status-item">
+
+                <span class="status-item-label">
+                    ${escapeHTML(item[0])}
+                </span>
+
+                <strong class="status-item-value">
+                    ${item[1]}
+                </strong>
+
+            </div>
+        `).join("");
+}
+
+
+/* =========================================================
+   RECENT ORDERS
+   ========================================================= */
+
+function renderRecentOrders() {
+
+    const container =
+        document.getElementById(
+            "dashboardOrdersTable"
+        );
+
+    if (!container) return;
+
+    const recent =
+        [...orders]
+            .sort(
+                (a, b) =>
+                    new Date(b.createdAt) -
+                    new Date(a.createdAt)
+            )
+            .slice(0, 10);
+
+    if (!recent.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>No orders yet</h3>
+                <p>
+                    New customer orders will appear here.
+                </p>
+            </div>
+        `;
+
+        return;
+    }
+
+    container.innerHTML =
+        recent.map(order => `
+            <div class="order-summary-card">
+
+                <div>
+                    <strong>
+                        ${escapeHTML(
+                            order.orderId || order.id
+                        )}
+                    </strong>
+
+                    <div class="customer-sub">
+                        ${escapeHTML(
+                            order.customerName || "Customer"
+                        )}
+                    </div>
+                </div>
+
+                <div>
+                    <strong>
+                        ${formatCurrency(
+                            order.total
+                        )}
+                    </strong>
+
+                    <div>
+                        <span class="status-badge status-${escapeHTML(
+                            getOrderStatusClass(
+                                order.status
+                            )
+                        )}">
+                            ${escapeHTML(
+                                getOrderStatusLabel(
+                                    order.status
+                                )
+                            )}
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        `).join("");
+}
+
+
+/* =========================================================
+   PRODUCT FORM RESET
+   ========================================================= */
+
+function resetProductForm() {
+
+    const form =
+        document.getElementById(
+            "productForm"
+        );
+
+    if (form) {
+        form.reset();
+    }
+
+    const idInput =
+        document.getElementById(
+            "productId"
+        );
+
+    if (idInput) {
+        idInput.value = "";
+    }
+
+    const preview =
+        document.getElementById(
+            "productImagePreview"
+        );
+
+    if (preview) {
+        preview.innerHTML = "";
+    }
+
+    const formTitle =
+        document.getElementById(
+            "productModalTitle"
+        );
+
+    if (formTitle) {
+        formTitle.textContent =
+            "Add Product";
+    }
+
+    const imageInput =
+        document.getElementById(
+            "productImages"
+        );
+
+    if (imageInput) {
+        imageInput.value = "";
+    }
+
+    window.adminProductImages = [];
+}
+
+
+/* =========================================================
+   OPEN ADD PRODUCT
+   ========================================================= */
+
+function openAddProduct() {
+
+    if (!isAdminLoggedIn()) {
+        showAdminLogin();
+        return;
+    }
+
+    resetProductForm();
+
+    populateProductCategoryOptions();
+
+    openModal("productFormModal");
+}
+
+
+/* =========================================================
+   CATEGORY OPTIONS
+   ========================================================= */
+
+function populateProductCategoryOptions() {
+
+    const select =
+        document.getElementById(
+            "productCategory"
+        );
+
+    if (!select) return;
+
+    const current =
+        select.value;
+
+    select.innerHTML =
+        categories.map(category => `
+            <option value="${escapeHTML(category)}">
+                ${escapeHTML(category)}
+            </option>
+        `).join("");
+
+    if (current) {
+        select.value = current;
+    }
+}
+
+
+/* =========================================================
+   PARSE LIST INPUT
+   ========================================================= */
+
+function parseListInput(value) {
+
+    if (Array.isArray(value)) {
+        return value
+            .map(item => String(item).trim())
+            .filter(Boolean);
+    }
+
+    return String(value || "")
+        .split(",")
+        .map(item => item.trim())
+        .filter(Boolean);
+}
+
+
+/* =========================================================
+   GET PRODUCT FORM DATA
+   ========================================================= */
+
+function getProductFormData() {
+
+    const name =
+        document.getElementById(
+            "productName"
+        )?.value.trim() || "";
+
+    const sku =
+        document.getElementById(
+            "productId"
+        )?.value.trim() || "";
+
+    const category =
+        document.getElementById(
+            "productCategory"
+        )?.value || "";
+
+    const description =
+        document.getElementById(
+            "productDescription"
+        )?.value.trim() || "";
+
+    const details =
+        document.getElementById(
+            "productDetails"
+        )?.value.trim() || "";
+
+    const features =
+        document.getElementById(
+            "productFeatures"
+        )?.value || "";
+
+    const price =
+        numberValue(
+            document.getElementById(
+                "productPrice"
+            )?.value,
+            0
+        );
+
+    const mrp =
+        numberValue(
+            document.getElementById(
+                "productMrp"
+            )?.value,
+            0
+        );
+
+    const costPrice =
+        numberValue(
+            document.getElementById(
+                "productCost"
+            )?.value ||
+            document.getElementById(
+                "productResellPrice"
+            )?.value,
+            0
+        );
+
+    const stock =
+        Math.max(
+            0,
+            numberValue(
+                document.getElementById(
+                    "productStock"
+                )?.value,
+                0
+            )
+        );
+
+    const sizes =
+        parseListInput(
+            document.getElementById(
+                "productSizes"
+            )?.value
+        );
+
+    const colors =
+        parseListInput(
+            document.getElementById(
+                "productColors"
+            )?.value
+        );
+
+    const activeInput =
+        document.getElementById(
+            "productActive"
+        );
+
+    const active =
+        activeInput
+            ? activeInput.checked
+            : true;
+
+    return {
+        name,
+        sku,
+        category,
+        description,
+        details,
+        features,
+        price,
+        mrp,
+        costPrice,
+        stock,
+        sizes,
+        colors,
+        active
+    };
+}
+
+
+/* =========================================================
+   CALCULATE DISCOUNT
+   ========================================================= */
+
+function calculateProductDiscount(
+    price,
+    mrp
+) {
+
+    if (
+        mrp <= 0 ||
+        price <= 0 ||
+        price >= mrp
+    ) {
+        return 0;
+    }
+
+    return Math.round(
+        ((mrp - price) / mrp) * 100
+    );
+}
+
+
+/* =========================================================
+   SAVE PRODUCT
+   ========================================================= */
+
+async function handleProductFormSubmit(event) {
+
+    event.preventDefault();
+
+    if (!isAdminLoggedIn()) {
+        showAdminLogin();
+        return;
+    }
+
+    const data =
+        getProductFormData();
+
+    if (!data.name) {
+        showToast(
+            "Product name is required.",
+            "warning"
+        );
+        return;
+    }
+
+    if (!data.category) {
+        showToast(
+            "Please select a category.",
+            "warning"
+        );
+        return;
+    }
+
+    if (data.price <= 0) {
+        showToast(
+            "Selling price must be greater than 0.",
+            "warning"
+        );
+        return;
+    }
+
+    if (data.mrp > 0 && data.mrp < data.price) {
+        showToast(
+            "MRP cannot be lower than selling price.",
+            "warning"
+        );
+        return;
+    }
+
+    const productId =
+        document.getElementById(
+            "productId"
+        )?.value.trim() || "";
+
+    const now =
+        new Date().toISOString();
+
+    let existing =
+        productId
+            ? products.find(
+                product =>
+                    product.id === productId
+            )
+            : null;
+
+    let images =
+        Array.isArray(
+            window.adminProductImages
+        )
+            ? [...window.adminProductImages]
+            : [];
+
+    /*
+       Keep old images while editing
+       if no new images were selected.
+    */
+
+    if (
+        existing &&
+        !images.length &&
+        Array.isArray(existing.images)
+    ) {
+        images = [...existing.images];
+    }
+
+    images =
+        images
+            .filter(isValidImageData)
+            .slice(0, 6);
+
+    const product = normalizeProduct({
+        id:
+            existing?.id ||
+            generateId("PRD"),
+
+        name: data.name,
+
+        sku:
+            data.sku ||
+            existing?.sku ||
+            `SKU-${Date.now()}`,
+
+        category: data.category,
+
+        description: data.description,
+
+        details: data.details,
+
+        features: data.features,
+
+        price: data.price,
+
+        mrp: data.mrp,
+
+        discount:
+            calculateProductDiscount(
+                data.price,
+                data.mrp
+            ),
+
+        costPrice: data.costPrice,
+
+        resellPrice: data.costPrice,
+
+        stock: data.stock,
+
+        sizes: data.sizes,
+
+        colors: data.colors,
+
+        images,
+
+        active: data.active,
+
+        createdAt:
+            existing?.createdAt ||
+            now,
+
+        updatedAt: now
+    });
+
+    if (existing) {
+
+        const index =
+            products.findIndex(
+                item =>
+                    item.id === existing.id
+            );
+
+        if (index !== -1) {
+            products[index] = product;
+        }
+
+        showToast(
+            "Product updated successfully.",
+            "success"
+        );
+
+    } else {
+
+        products.unshift(product);
+
+        showToast(
+            "Product added successfully.",
+            "success"
+        );
+    }
+
+    saveProducts();
+
+    resetProductForm();
+
+    closeModal("productFormModal");
+
+    renderAdminProducts();
+
+    renderProducts();
+}
+
+
+/* =========================================================
+EDIT PRODUCT
+   ========================================================= */
+
+function editProduct(productId) {
+
+    if (!isAdminLoggedIn()) {
+        showAdminLogin();
+        return;
+    }
+
+    const product =
+        products.find(
+            item =>
+                item.id === productId
+        );
+
+    if (!product) {
+        showToast(
+            "Product not found.",
+            "error"
+        );
+        return;
+    }
+
+    populateProductCategoryOptions();
+
+    const values = {
+        productId: product.id,
+        productName: product.name || "",
+        productSku: product.sku || "",
+        productCategory: product.category || "",
+        productDescription: product.description || "",
+        productDetails: product.details || "",
+        productFeatures: Array.isArray(product.features)
+            ? product.features.join(", ")
+            : product.features || "",
+        productPrice: product.price || "",
+        productMrp: product.mrp || "",
+        productCostPrice:
+            product.costPrice ||
+            product.resellPrice ||
+            "",
+        productStock: product.stock || 0,
+        productSizes:
+            Array.isArray(product.sizes)
+                ? product.sizes.join(", ")
+                : product.sizes || "",
+        productColors:
+            Array.isArray(product.colors)
+                ? product.colors.join(", ")
+                : product.colors || ""
+    };
+
+    Object.entries(values).forEach(
+        ([id, value]) => {
+
+            const element =
+                document.getElementById(id);
+
+            if (element) {
+                element.value = value;
+            }
+
+        }
+    );
+
+    const active =
+        document.getElementById(
+            "productActive"
+        );
+
+    if (active) {
+        active.checked =
+            product.active !== false;
+    }
+
+    window.adminProductImages =
+        Array.isArray(product.images)
+            ? [...product.images]
+            : [];
+
+    renderAdminProductImagePreviews();
+
+    const formTitle =
+        document.getElementById(
+            "productModalTitle"
+        );
+
+    if (formTitle) {
+        formTitle.textContent =
+            "Edit Product";
+    }
+
+    openModal("productFormModal");
+}
+
+
+/* =========================================================
+   DELETE PRODUCT
+   ========================================================= */
+
+function deleteProduct(productId) {
+
+    if (!isAdminLoggedIn()) {
+        showAdminLogin();
+        return;
+    }
+
+    const product =
+        products.find(
+            item =>
+                item.id === productId
+        );
+
+    if (!product) {
+        showToast(
+            "Product not found.",
+            "error"
+        );
+        return;
+    }
+
+    confirmAction(
+        `Delete "${product.name}"?`,
+        () => {
+
+            products =
+                products.filter(
+                    item =>
+                        item.id !== productId
+                );
+
+            saveProducts();
+
+            cart =
+                cart.filter(
+                    item =>
+                        item.productId !== productId
+                );
+
+            wishlist =
+                wishlist.filter(
+                    id =>
+                        id !== productId
+                );
+
+            saveCart();
+            saveWishlist();
+
+            updateCartBadge();
+            updateWishlistCount();
+
+            renderAdminProducts();
+            renderProducts();
+
+            showToast(
+                "Product deleted.",
+                "success"
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   IMAGE PREVIEW
+   ========================================================= */
+
+function renderAdminProductImagePreviews() {
+
+    const container =
+        document.getElementById(
+            "productImagePreview"
+        );
+
+    if (!container) return;
+
+    const images =
+        Array.isArray(
+            window.adminProductImages
+        )
+            ? window.adminProductImages
+            : [];
+
+    if (!images.length) {
+        container.innerHTML = "";
+        return;
+    }
+
+    container.innerHTML =
+        images.map(
+            (image, index) => `
+                <div class="image-preview-item">
+
+                    <img
+                        src="${escapeHTML(image)}"
+                        alt="Product image ${index + 1}">
+
+                    <button
+                        type="button"
+                        class="image-preview-remove"
+                        data-image-index="${index}">
+                        ×
+                    </button>
+
+                </div>
+            `
+        ).join("");
+
+    container
+        .querySelectorAll(
+            ".image-preview-remove"
+        )
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const index =
+                        numberValue(
+                            button.dataset.imageIndex
+                        );
+
+                    window.adminProductImages
+                        .splice(index, 1);
+
+                    renderAdminProductImagePreviews();
+
+                }
+            );
+
+        });
+}
+
+
+/* =========================================================
+   PRODUCT IMAGE FILE SELECTION
+   ========================================================= */
+
+async function handleAdminProductImages(
+    event
+) {
+
+    if (!isAdminLoggedIn()) {
+        showAdminLogin();
+        return;
+    }
+
+    const files =
+        Array.from(
+            event.target.files || []
+        );
+
+    if (!files.length) {
+        return;
+    }
+
+    const existing =
+        Array.isArray(
+            window.adminProductImages
+        )
+            ? window.adminProductImages
+            : [];
+
+    if (
+        existing.length + files.length > 6
+    ) {
+        showToast(
+            "Maximum 6 images allowed per product.",
+            "warning"
+        );
+    }
+
+    const remaining =
+        Math.max(
+            0,
+            6 - existing.length
+        );
+
+    const selected =
+        files.slice(
+            0,
+            remaining
+        );
+
+    for (const file of selected) {
+
+        if (
+            !isValidImageFile(file)
+        ) {
+            showToast(
+                `${file.name} is not a valid image or is larger than 5 MB.`,
+                "warning"
+            );
+
+            continue;
+        }
+
+        try {
+
+            const data =
+                await readImageAsDataURL(
+                    file
+                );
+
+            if (
+                isValidImageData(data)
+            ) {
+                existing.push(data);
+            }
+
+        } catch (error) {
+
+            showToast(
+                `Could not read ${file.name}.`,
+                "error"
+            );
+        }
+    }
+
+    window.adminProductImages =
+        existing.slice(0, 6);
+
+    renderAdminProductImagePreviews();
+
+    event.target.value = "";
+}
+
+
+/* =========================================================
+   ADMIN PRODUCT TABLE
+   ========================================================= */
+
+function renderAdminProducts() {
+
+    const container =
+        document.getElementById(
+            "adminProductsTable"
+        ) ||
+        document.getElementById(
+            "adminProductsTable"
+        );
+
+    if (!container) return;
+
+    const pageSize = 10;
+
+    const totalPages =
+        Math.max(
+            1,
+            Math.ceil(
+                products.length /
+                pageSize
+            )
+        );
+
+    adminProductPage =
+        Math.min(
+            adminProductPage,
+            totalPages
+        );
+
+    const start =
+        (adminProductPage - 1) *
+        pageSize;
+
+    const pageProducts =
+        products.slice(
+            start,
+            start + pageSize
+        );
+
+    if (!pageProducts.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>No products found</h3>
+                <p>
+                    Add your first product.
+                </p>
+            </div>
+        `;
+
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="table-wrapper">
+
+            <table class="admin-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Product</th>
+                        <th>SKU</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    ${pageProducts.map(product => {
+
+                        const image =
+                            getProductImage(product);
+
+                        const stock =
+                            numberValue(
+                                product.stock,
+                                0
+                            );
+
+                        return `
+                            <tr>
+
+                                <td>
+
+                                    <div class="table-product">
+
+                                        <div class="table-product-image">
+
+                                            ${
+                                                image
+                                                    ? `
+                                                        <img
+                                                            src="${escapeHTML(image)}"
+                                                            alt="${escapeHTML(product.name)}">
+                                                      `
+                                                    : `
+                                                        <div class="product-image-placeholder">
+                                                            No Image
+                                                        </div>
+                                                      `
+                                            }
+
+                                        </div>
+
+                                        <div class="table-product-info">
+
+                                            <strong>
+                                                ${escapeHTML(
+                                                    product.name
+                                                )}
+                                            </strong>
+
+                                            <small>
+                                                ${
+                                                    product.images?.length || 0
+                                                }
+                                                image(s)
+                                            </small>
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+
+                                <td>
+                                    ${escapeHTML(
+                                        product.sku || "-"
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHTML(
+                                        product.category || "-"
+                                    )}
+                                </td>
+
+                                <td>
+                                    <strong>
+                                        ${formatCurrency(
+                                            product.price
+                                        )}
+                                    </strong>
+                                </td>
+
+                                <td>
+
+                                    <span class="${
+                                        stock <= 0
+                                            ? "stock-out"
+                                            : stock <= 5
+                                                ? "stock-low"
+                                                : "stock-text"
+                                    }">
+
+                                        ${stock}
+
+                                    </span>
+
+                                </td>
+
+                                <td>
+
+                                    <span class="status-badge">
+
+                                        ${
+                                            product.active === false
+                                                ? "Inactive"
+                                                : "Active"
+                                        }
+
+                                    </span>
+
+                                </td>
+
+                                <td>
+
+                                    <div class="table-actions">
+
+                                        <button
+                                            type="button"
+                                            class="table-action"
+                                            onclick="editProduct('${escapeHTML(product.id)}')">
+                                            Edit
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="table-action"
+                                            onclick="deleteProduct('${escapeHTML(product.id)}')">
+                                            Delete
+                                        </button>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                        `;
+
+                    }).join("")}
+
+                </tbody>
+
+            </table>
+
+        </div>
+    `;
+
+    renderProductPagination(
+        totalPages
+    );
+}
+
+
+/* =========================================================
+PRODUCT PAGINATION
+   ========================================================= */
+
+function renderProductPagination(
+    totalPages
+) {
+
+    const container =
+        document.getElementById(
+            "productsPagination"
+        );
+
+    if (!container) return;
+
+    if (totalPages <= 1) {
+        container.innerHTML = "";
+        return;
+    }
+
+    let html = "";
+
+    for (
+        let page = 1;
+        page <= totalPages;
+        page++
+    ) {
+
+        html += `
+            <button
+                type="button"
+                class="page-btn ${
+                    page === adminProductPage
+                        ? "active"
+                        : ""
+                }"
+                data-product-page="${page}">
+                ${page}
+            </button>
+        `;
+    }
+
+    container.innerHTML = html;
+
+    container
+        .querySelectorAll(
+            "[data-product-page]"
+        )
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    adminProductPage =
+                        numberValue(
+                            button.dataset.productPage
+                        );
+
+                    renderAdminProducts();
+
+                }
+            );
+
+        });
+}
+
+
+/* =========================================================
+   ORDER ADMIN FILTER
+   ========================================================= */
+
+function getAdminOrderSearchValue() {
+
+    const input =
+        document.getElementById(
+            "adminOrderSearch"
+        ) ||
+        document.getElementById(
+            "adminOrderSearch"
+        );
+
+    return String(
+        input?.value || ""
+    )
+        .trim()
+        .toLowerCase();
+}
+
+
+function getAdminOrderStatusFilter() {
+
+    const select =
+        document.getElementById(
+            "adminOrderStatusFilter"
+        ) ||
+        document.getElementById(
+            "adminOrderStatusFilter"
+        );
+
+    return String(
+        select?.value || ""
+    );
+}
+
+
+/* =========================================================
+   FILTER ADMIN ORDERS
+   ========================================================= */
+
+function getFilteredAdminOrders() {
+
+    const search =
+        getAdminOrderSearchValue();
+
+    const status =
+        getAdminOrderStatusFilter();
+
+    return [...orders]
+        .filter(order => {
+
+            const matchesSearch =
+                !search ||
+                String(
+                    order.orderId ||
+                    order.id ||
+                    ""
+                )
+                    .toLowerCase()
+                    .includes(search) ||
+                String(
+                    order.customerName ||
+                    ""
+                )
+                    .toLowerCase()
+                    .includes(search) ||
+                String(
+                    order.customerMobile ||
+                    ""
+                )
+                    .toLowerCase()
+                    .includes(search);
+
+            const matchesStatus =
+                !status ||
+                order.status === status;
+
+            return (
+                matchesSearch &&
+                matchesStatus
+            );
+        })
+        .sort(
+            (a, b) =>
+                new Date(b.createdAt) -
+                new Date(a.createdAt)
+        );
+}
+
+
+/* =========================================================
+   RENDER ADMIN ORDERS
+   ========================================================= */
 
 function renderAdminOrders() {
 
     const container =
         document.getElementById(
-            "adminOrdersContainer"
+            "adminOrdersTable"
+        ) ||
+        document.getElementById(
+            "adminOrdersTable"
         );
 
     if (!container) return;
 
-    const orders =
-        getOrders();
+    const filtered =
+        getFilteredAdminOrders();
 
-    if (!orders.length) {
+    const pageSize = 10;
 
-        container.innerHTML =
-            "<p>No orders yet.</p>";
+    const totalPages =
+        Math.max(
+            1,
+            Math.ceil(
+                filtered.length /
+                pageSize
+            )
+        );
+
+    adminOrderPage =
+        Math.min(
+            adminOrderPage,
+            totalPages
+        );
+
+    const start =
+        (adminOrderPage - 1) *
+        pageSize;
+
+    const pageOrders =
+        filtered.slice(
+            start,
+            start + pageSize
+        );
+
+    if (!pageOrders.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>No orders found</h3>
+                <p>
+                    Try changing the search or filter.
+                </p>
+            </div>
+        `;
 
         return;
     }
 
-    container.innerHTML =
-        orders.map(order => `
+    container.innerHTML = `
+        <div class="table-wrapper">
 
-        <div style="
-            border:1px solid var(--border-color);
-            border-radius:8px;
-            padding:12px;
-            margin-bottom:12px;">
+            <table class="admin-table">
 
-            <h4>
-                🛒 Order #${escapeHtml(order.id)}
-            </h4>
+                <thead>
 
-            <p style="font-size:12px;">
-                ${escapeHtml(order.date)}
-            </p>
+                    <tr>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
 
-            <p>
-                <strong>
-                    ${escapeHtml(order.customer)}
-                </strong>
-                <br>
-                ${escapeHtml(order.phone)}
-            </p>
+                </thead>
 
-            <p style="font-size:12px;">
-                ${escapeHtml(order.address)}
-            </p>
+                <tbody>
 
-            <p>
-                Total:
-                <strong>
-                    ₹${Number(order.total || 0)}
-                </strong>
-            </p>
+                    ${pageOrders.map(order => `
 
-            <label style="font-size:12px;">
-                Order Status
-            </label>
+                        <tr>
 
-            <select
-                class="input-box"
-                onchange="updateOrderStatus('${order.id}',this.value)">
+                            <td>
 
-                ${[
-                    "Order Placed",
-                    "Confirmed",
-                    "Packed",
-                    "Shipped",
-                    "Out for Delivery",
-                    "Delivered",
-                    "Cancelled"
-                ].map(status => `
-                    <option
-                        value="${status}"
+                                <strong>
+                                    ${escapeHTML(
+                                        order.orderId ||
+                                        order.id
+                                    )}
+                                </strong>
+
+                                <div class="customer-sub">
+                                    ${
+                                        order.items?.length || 0
+                                    }
+                                    item(s)
+                                </div>
+
+                            </td>
+
+                            <td>
+
+                                <strong>
+                                    ${escapeHTML(
+                                        order.customerName ||
+                                        "Customer"
+                                    )}
+                                </strong>
+
+                                <div class="customer-sub">
+                                    ${escapeHTML(
+                                        order.customerMobile ||
+                                        ""
+                                    )}
+                                </div>
+
+                            </td>
+
+                            <td class="amount-cell">
+
+                                <strong>
+                                    ${formatCurrency(
+                                        order.total
+                                    )}
+                                </strong>
+
+                            </td>
+
+                            <td>
+                                ${escapeHTML(
+                                    order.paymentMethod ||
+                                    "-"
+                                )}
+                            </td>
+
+                            <td>
+
+                                <select
+                                    class="admin-status-select"
+                                    data-order-status-id="${escapeHTML(
+                                        order.id
+                                    )}">
+
+                                    ${[
+                                        "Pending",
+                                        "Confirmed",
+                                        "Packed",
+                                        "Shipped",
+                                        "Out for Delivery",
+                                        "Delivered",
+                                        "Cancelled"
+                                    ].map(status => `
+                                        <option
+                                            value="${escapeHTML(status)}"
+                                            ${
+                                                order.status === status
+                                                    ? "selected"
+                                                    : ""
+                                            }>
+                                            ${escapeHTML(status)}
+                                        </option>
+                                    `).join("")}
+
+                                </select>
+
+                            </td>
+
+                            <td>
+                                ${formatDateTime(
+                                    order.createdAt
+                                )}
+                            </td>
+
+                            <td>
+
+                                <div class="table-actions">
+
+                                    <button
+                                        type="button"
+                                        class="table-action"
+                                        onclick="openAdminOrderDetails('${escapeHTML(order.id)}')">
+                                        View
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="table-action"
+                                        onclick="openOrderInvoice('${escapeHTML(order.id)}')">
+                                        Invoice
+                                    </button>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                    `).join("")}
+
+                </tbody>
+
+            </table>
+
+        </div>
+    `;
+
+    bindAdminOrderStatusEvents();
+
+    renderOrderPagination(
+        totalPages
+    );
+}
+
+
+/* =========================================================
+   ORDER STATUS UPDATE
+   ========================================================= */
+
+function updateOrderStatus(
+    orderId,
+    newStatus
+) {
+
+    if (!isAdminLoggedIn()) {
+        showAdminLogin();
+        return;
+    }
+
+    const order =
+        orders.find(
+            item =>
+                item.id === orderId
+        );
+
+    if (!order) {
+        showToast(
+            "Order not found.",
+            "error"
+        );
+        return;
+    }
+
+    order.status =
+        newStatus;
+
+    order.updatedAt =
+        new Date().toISOString();
+
+    if (newStatus === "Delivered") {
+        order.paymentStatus =
+            order.paymentMethod === "COD"
+                ? "Paid"
+                : order.paymentStatus;
+    }
+
+    if (newStatus === "Cancelled") {
+        order.cancellationReason =
+            order.cancellationReason ||
+            "Cancelled by admin";
+    }
+
+    saveOrders();
+
+    renderAdminOrders();
+    renderAdminDashboard();
+
+    showToast(
+        `Order status changed to ${newStatus}.`,
+        "success"
+    );
+}
+
+
+/* =========================================================
+   ADMIN ORDER STATUS EVENTS
+   ========================================================= */
+
+function bindAdminOrderStatusEvents() {
+
+    document
+        .querySelectorAll(
+            "[data-order-status-id]"
+        )
+        .forEach(select => {
+
+            select.addEventListener(
+                "change",
+                () => {
+
+                    updateOrderStatus(
+                        select.dataset.orderStatusId,
+                        select.value
+                    );
+
+                }
+            );
+
+        });
+}
+
+
+/* =========================================================
+   ORDER PAGINATION
+   ========================================================= */
+
+function renderOrderPagination(
+    totalPages
+) {
+
+    const container =
+        document.getElementById(
+            "ordersPagination"
+        );
+
+    if (!container) return;
+
+    if (totalPages <= 1) {
+        container.innerHTML = "";
+        return;
+    }
+
+    let html = "";
+
+    for (
+        let page = 1;
+        page <= totalPages;
+        page++
+    ) {
+
+        html += `
+            <button
+                type="button"
+                class="page-btn ${
+                    page === adminOrderPage
+                        ? "active"
+                        : ""
+                }"
+                data-order-page="${page}">
+                ${page}
+            </button>
+        `;
+    }
+
+    container.innerHTML = html;
+
+    container
+        .querySelectorAll(
+            "[data-order-page]"
+        )
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    adminOrderPage =
+                        numberValue(
+                            button.dataset.orderPage
+                        );
+
+                    renderAdminOrders();
+
+                }
+            );
+
+        });
+}
+
+
+/* =========================================================
+   ADMIN ORDER DETAILS
+   ========================================================= */
+
+function openAdminOrderDetails(
+    orderId
+) {
+
+    if (!isAdminLoggedIn()) {
+        showAdminLogin();
+        return;
+    }
+
+    const order =
+        orders.find(
+            item =>
+                item.id === orderId
+        );
+
+    if (!order) {
+        showToast(
+            "Order not found.",
+            "error"
+        );
+        return;
+    }
+
+    renderAdminOrderDetails(
+        order
+    );
+
+    openModal(
+        "adminOrderDetailsModal"
+    );
+}
+
+
+/* =========================================================
+   RENDER ADMIN ORDER DETAILS
+   ========================================================= */
+
+function renderAdminOrderDetails(
+    order
+) {
+
+    const container =
+        document.getElementById(
+            "adminOrderDetailsContent"
+        );
+
+    if (!container) return;
+
+    const items =
+        (order.items || [])
+            .map(item => `
+                <div class="order-item">
+
+                    <div class="order-item-image">
+
                         ${
-                            order.status === status
-                            ? "selected"
-                            : ""
-                        }>
-                        ${status}
-                    </option>
-                `).join("")}
+                            item.image
+                                ? `
+                                    <img
+                                        src="${escapeHTML(item.image)}"
+                                        alt="${escapeHTML(item.name)}">
+                                  `
+                                : `
+                                    <div class="product-image-placeholder">
+                                        No Image
+                                    </div>
+                                  `
+                        }
 
-            </select>
+                    </div>
+
+                    <div class="order-item-info">
+
+                        <strong>
+                            ${escapeHTML(item.name)}
+                        </strong>
+
+                        <span>
+                            Qty:
+                            ${numberValue(item.quantity, 1)}
+                        </span>
+
+                        ${
+                            item.size
+                                ? `
+                                    <span>
+                                        Size:
+                                        ${escapeHTML(item.size)}
+                                    </span>
+                                  `
+                                : ""
+                        }
+
+                        ${
+                            item.color
+                                ? `
+                                    <span>
+                                        Color:
+                                        ${escapeHTML(item.color)}
+                                    </span>
+                                  `
+                                : ""
+                        }
+
+                    </div>
+
+                    <strong>
+                        ${formatCurrency(
+                            item.lineTotal
+                        )}
+                    </strong>
+
+                </div>
+            `)
+            .join("");
+
+    container.innerHTML = `
+
+        <div class="order-summary-grid">
+
+            <div class="order-summary-card">
+                <span>Order ID</span>
+                <strong>
+                    ${escapeHTML(
+                        order.orderId ||
+                        order.id
+                    )}
+                </strong>
+            </div>
+
+            <div class="order-summary-card">
+                <span>Status</span>
+                <strong>
+                    ${escapeHTML(
+                        order.status
+                    )}
+                </strong>
+            </div>
+
+            <div class="order-summary-card">
+                <span>Payment</span>
+                <strong>
+                    ${escapeHTML(
+                        order.paymentMethod
+                    )}
+                </strong>
+            </div>
+
+            <div class="order-summary-card">
+                <span>Total</span>
+                <strong>
+                    ${formatCurrency(
+                        order.total
+                    )}
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-header">
+                <h3>Customer</h3>
+            </div>
+
+            <p>
+                <strong>
+                    ${escapeHTML(
+                        order.customerName ||
+                        ""
+                    )}
+                </strong>
+            </p>
+
+            <p>
+                ${escapeHTML(
+                    order.customerMobile ||
+                    ""
+                )}
+            </p>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-header">
+                <h3>Delivery Address</h3>
+            </div>
+
+            <p>
+                ${escapeHTML(
+                    order.address?.fullAddress ||
+                    ""
+                )}
+            </p>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-header">
+                <h3>Products</h3>
+            </div>
+
+            <div class="order-items">
+                ${items}
+            </div>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <div class="cart-summary">
+
+                <div class="cart-summary-row">
+                    <span>Subtotal</span>
+                    <strong>
+                        ${formatCurrency(
+                            order.subtotal
+                        )}
+                    </strong>
+                </div>
+
+                <div class="cart-summary-row">
+                    <span>Delivery</span>
+                    <strong>
+                        ${
+                            numberValue(
+                                order.deliveryCharge,
+                                0
+                            ) === 0
+                                ? "FREE"
+                                : formatCurrency(
+                                    order.deliveryCharge
+                                )
+                        }
+                    </strong>
+                </div>
+
+                <div class="cart-summary-row cart-total">
+                    <span>Total</span>
+                    <strong>
+                        ${formatCurrency(
+                            order.total
+                        )}
+                    </strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-footer">
 
             <button
-                class="btn-secondary"
-                onclick="openInvoice('${order.id}')">
+                type="button"
+                class="btn btn-secondary"
+                onclick="openOrderInvoice('${escapeHTML(order.id)}')">
                 View Invoice
             </button>
 
         </div>
-
-    `).join("");
+    `;
 }
 
-function updateOrderStatus(
-    orderId,
-    status
-) {
 
-    const orders =
-        getOrders();
-
-    const order =
-        orders.find(
-            o =>
-                o.id === orderId
-        );
-
-    if (!order) return;
-
-    order.status =
-        status;
-
-    saveOrders(orders);
-
-    renderAdminOrders();
-
-    renderOrders();
-}
-
-// ================= ADMIN CUSTOMERS =================
+/* =========================================================
+   ADMIN CUSTOMERS
+   ========================================================= */
 
 function renderAdminCustomers() {
 
     const container =
         document.getElementById(
-            "adminCustomersContainer"
+            "adminCustomersGrid"
+        ) ||
+        document.getElementById(
+            "adminCustomersGrid"
         );
 
     if (!container) return;
-
-    const customers =
-        getCustomers();
 
     if (!customers.length) {
 
-        container.innerHTML =
-            "<p>No customers yet.</p>";
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>No customers yet</h3>
+                <p>
+                    Customer accounts will appear here.
+                </p>
+            </div>
+        `;
 
         return;
     }
+
+    const sorted =
+        [...customers].sort(
+            (a, b) =>
+                new Date(b.updatedAt || b.createdAt) -
+                new Date(a.updatedAt || a.createdAt)
+        );
 
     container.innerHTML =
-        customers.map(customer => `
+        sorted.map(customer => `
 
-        <div style="
-            padding:10px;
-            border:1px solid var(--border-color);
-            border-radius:7px;
-            margin-bottom:8px;">
+            <div class="customer-card">
 
-            <strong>
-                ${escapeHtml(customer.name)}
-            </strong>
+                <div class="customer-card-top">
 
-            <p style="font-size:12px;">
-                📱 ${escapeHtml(customer.phone)}
-            </p>
+                    <div class="customer-avatar">
+                        ${escapeHTML(
+                            (
+                                customer.name ||
+                                "C"
+                            )
+                                .charAt(0)
+                                .toUpperCase()
+                        )}
+                    </div>
 
-        </div>
+                    <div class="customer-card-info">
 
-    `).join("");
+                        <strong>
+                            ${escapeHTML(
+                                customer.name ||
+                                "Customer"
+                            )}
+                        </strong>
+
+                        <span>
+                            ${escapeHTML(
+                                customer.mobile ||
+                                ""
+                            )}
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div class="customer-card-meta">
+
+                    <div class="customer-meta-box">
+
+                        <span>Orders</span>
+
+                        <strong>
+                            ${numberValue(
+                                customer.ordersCount,
+                                0
+                            )}
+                        </strong>
+
+                    </div>
+
+                    <div class="customer-meta-box">
+
+                        <span>Total Spent</span>
+
+                        <strong>
+                            ${formatCurrency(
+                                customer.totalSpent
+                            )}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="openAdminCustomerDetails('${escapeHTML(customer.id)}')">
+                    View Details
+                </button>
+
+            </div>
+
+        `).join("");
 }
 
-// ================= ADMIN SETTINGS =================
 
-function loadAdminSettings() {
+/* =========================================================
+   ADMIN CUSTOMER DETAILS
+   ========================================================= */
 
-    const settings =
-        getSettings();
+function openAdminCustomerDetails(
+    customerId
+) {
 
-    const delivery =
-        document.getElementById(
-            "stDeliveryCharge"
-        );
-
-    const limit =
-        document.getElementById(
-            "stFreeLimit"
-        );
-
-    const cod =
-        document.getElementById(
-            "stCodToggle"
-        );
-
-    if (delivery)
-        delivery.value =
-            settings.deliveryCharge;
-
-    if (limit)
-        limit.value =
-            settings.freeDeliveryLimit;
-
-    if (cod)
-        cod.value =
-            settings.cod;
-}
-
-function saveAdminSettings() {
-
-    const delivery =
-        Number(
-            document.getElementById(
-                "stDeliveryCharge"
-            )?.value || 0
-        );
-
-    const freeLimit =
-        Number(
-            document.getElementById(
-                "stFreeLimit"
-            )?.value || 0
-        );
-
-    const cod =
-        document.getElementById(
-            "stCodToggle"
-        )?.value || "Enabled";
-
-    saveSettings({
-
-        deliveryCharge:
-            delivery,
-
-        freeDeliveryLimit:
-            freeLimit,
-
-        cod
-    });
-
-    updateCartTotals();
-
-    alert(
-        "✅ Store settings saved!"
-    );
-}
-
-// ================= SUPPORT =================
-
-function openSupportModal() {
-
-    const modal =
-        document.getElementById(
-            "supportModal"
-        );
-
-    if (!modal) {
-
-        alert(
-            "Support section is not available."
-        );
-
+    if (!isAdminLoggedIn()) {
+        showAdminLogin();
         return;
     }
 
-    modal.style.display =
-        "flex";
-}
-
-function closeSupportModal() {
-
-    const modal =
-        document.getElementById(
-            "supportModal"
+    const customer =
+        customers.find(
+            item =>
+                item.id === customerId
         );
 
-    if (modal)
-        modal.style.display =
-            "none";
-}
-
-function submitSupportQuery() {
-
-    const input =
-        document.getElementById(
-            "supportQuery"
+    if (!customer) {
+        showToast(
+            "Customer not found.",
+            "error"
         );
-
-    const query =
-        input?.value.trim();
-
-    if (!query) {
-
-        alert(
-            "Please write your issue."
-        );
-
         return;
     }
 
-    alert(
-        "✅ Your query has been submitted."
-    );
-
-    if (input)
-        input.value = "";
-}
-
-// ================= DARK MODE =================
-
-function toggleDarkMode() {
-
-    const body =
-        document.getElementById(
-            "pageBody"
+    const customerOrders =
+        orders.filter(
+            order =>
+                order.customerId === customer.id ||
+                order.customerMobile === customer.mobile
         );
-
-    if (!body) return;
-
-    body.classList.toggle(
-        "dark-mode"
-    );
-
-    const dark =
-        body.classList.contains(
-            "dark-mode"
-        );
-
-    localStorage.setItem(
-        "sale11_dark_mode",
-        dark
-            ? "true"
-            : "false"
-    );
-
-    const icon =
-        document.getElementById(
-            "darkModeIcon"
-        );
-
-    if (icon) {
-
-        icon.className =
-            dark
-            ? "fas fa-sun"
-            : "fas fa-moon";
-    }
-}
-
-function loadDarkMode() {
-
-    const dark =
-        localStorage.getItem(
-            "sale11_dark_mode"
-        ) === "true";
-
-    const body =
-        document.getElementById(
-            "pageBody"
-        );
-
-    if (!body) return;
-
-    body.classList.toggle(
-        "dark-mode",
-        dark
-    );
-
-    const icon =
-        document.getElementById(
-            "darkModeIcon"
-        );
-
-    if (icon) {
-
-        icon.className =
-            dark
-            ? "fas fa-sun"
-            : "fas fa-moon";
-    }
-}
-
-// ================= POLICY =================
-
-function openPolicyModal(type) {
-
-    const modal =
-        document.getElementById(
-            "policyModal"
-        );
-
-    const title =
-        document.getElementById(
-            "policyTitle"
-        );
-
-    const text =
-        document.getElementById(
-            "policyText"
-        );
-
-    if (!modal || !title || !text)
-        return;
-
-    if (type === "Terms") {
-
-        title.innerText =
-            "Terms & Conditions";
-
-        text.innerHTML = `
-            <p>
-                By using Sale 11, you agree to use
-                the website responsibly.
-            </p>
-
-            <p style="margin-top:10px;">
-                Product prices, availability and
-                delivery information may change.
-            </p>
-
-            <p style="margin-top:10px;">
-                Orders may be cancelled when a product
-                is unavailable.
-            </p>
-        `;
-
-    } else {
-
-        title.innerText =
-            "Privacy Policy";
-
-        text.innerHTML = `
-            <p>
-                Sale 11 may store information required
-                for orders and customer accounts.
-            </p>
-
-            <p style="margin-top:10px;">
-                Customer information should only be
-                used for legitimate store operations.
-            </p>
-        `;
-    }
-
-    modal.style.display =
-        "flex";
-}
-
-function closePolicyModal() {
-
-    const modal =
-        document.getElementById(
-            "policyModal"
-        );
-
-    if (modal)
-        modal.style.display =
-            "none";
-}
-
-// ================= SAVED ADDRESS =================
-
-function getAddresses() {
-
-    try {
-
-        return JSON.parse(
-            localStorage.getItem(
-                "sale11_addresses"
-            )
-        ) || [];
-
-    } catch {
-
-        return [];
-    }
-}
-
-function saveAddresses(list) {
-
-    localStorage.setItem(
-        "sale11_addresses",
-        JSON.stringify(list)
-    );
-}
-
-function openAddressModal() {
-
-    const modal =
-        document.getElementById(
-            "addressModal"
-        );
-
-    if (!modal) return;
-
-    modal.style.display =
-        "flex";
-
-    renderAddresses();
-}
-
-function closeAddressModal() {
-
-    const modal =
-        document.getElementById(
-            "addressModal"
-        );
-
-    if (modal)
-        modal.style.display =
-            "none";
-}
-
-function renderAddresses() {
 
     const container =
         document.getElementById(
-            "addressList"
+            "customerDetailsContent"
         );
 
     if (!container) return;
 
-    const addresses =
-        getAddresses();
+    container.innerHTML = `
 
-    if (!addresses.length) {
+        <div class="customer-card">
 
-        container.innerHTML =
-            "<p>No saved addresses.</p>";
+            <div class="customer-card-top">
 
-        return;
-    }
+                <div class="customer-avatar">
+                    ${escapeHTML(
+                        (
+                            customer.name ||
+                            "C"
+                        )
+                            .charAt(0)
+                            .toUpperCase()
+                    )}
+                </div>
 
-    container.innerHTML =
-        addresses.map(
-            (address, index) => `
+                <div class="customer-card-info">
 
-        <div style="
-            padding:8px;
-            border:1px solid var(--border-color);
-            border-radius:6px;
-            margin-bottom:6px;">
+                    <strong>
+                        ${escapeHTML(
+                            customer.name ||
+                            "Customer"
+                        )}
+                    </strong>
 
-            ${escapeHtml(address)}
+                    <span>
+                        ${escapeHTML(
+                            customer.mobile ||
+                            ""
+                        )}
+                    </span>
 
-            <button
-                class="btn-secondary"
-                onclick="deleteAddress(${index})">
-                Delete
-            </button>
+                    ${
+                        customer.email
+                            ? `
+                                <span>
+                                    ${escapeHTML(
+                                        customer.email
+                                    )}
+                                </span>
+                              `
+                            : ""
+                    }
+
+                </div>
+
+            </div>
 
         </div>
 
-    `).join("");
+
+        <div class="order-summary-grid">
+
+            <div class="order-summary-card">
+                <span>Total Orders</span>
+                <strong>
+                    ${customerOrders.length}
+                </strong>
+            </div>
+
+            <div class="order-summary-card">
+                <span>Total Spent</span>
+                <strong>
+                    ${formatCurrency(
+                        customer.totalSpent
+                    )}
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-header">
+                <h3>Saved Address</h3>
+            </div>
+
+            <p>
+                ${escapeHTML(
+                    customer.address?.fullAddress ||
+                    "No saved address"
+                )}
+            </p>
+
+        </div>
+    `;
+
+    openModal(
+        "customerDetailsModal"
+    );
 }
 
-function saveNewAddress() {
 
-    const input =
+/* =========================================================
+   PART 4 INITIALIZATION
+   ========================================================= */
+
+function initializePart4() {
+
+    const adminLoginForm =
         document.getElementById(
-            "newAddressInput"
+            "adminLoginForm"
         );
 
-    const address =
-        input?.value.trim();
+    if (adminLoginForm) {
+        adminLoginForm.addEventListener(
+            "submit",
+            handleAdminLogin
+        );
+    }
 
-    if (!address) {
 
-        alert(
-            "Please enter an address."
+    const productForm =
+        document.getElementById(
+            "productForm"
         );
 
+    if (productForm) {
+        productForm.addEventListener(
+            "submit",
+            handleProductFormSubmit
+        );
+    }
+
+
+    const imageInput =
+        document.getElementById(
+            "productImages"
+        );
+
+    if (imageInput) {
+
+        imageInput.addEventListener(
+            "change",
+            handleAdminProductImages
+        );
+
+    }
+
+
+    document
+        .querySelectorAll(".admin-tab")
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const tab =
+                        button.dataset.tab ||
+                        button.dataset.adminTab;
+
+                    if (tab) {
+                        showAdminTab(tab);
+                    }
+
+                }
+            );
+
+        });
+
+
+    document
+        .querySelectorAll(
+            ".period-btn"
+        )
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    document
+                        .querySelectorAll(
+                            ".period-btn"
+                        )
+                        .forEach(item => {
+                            item.classList.remove(
+                                "active"
+                            );
+                        });
+
+                    button.classList.add(
+                        "active"
+                    );
+
+                    renderAdminDashboard();
+
+                }
+            );
+
+        });
+
+
+    const orderSearch =
+        document.getElementById(
+            "adminOrderSearch"
+        ) ||
+        document.getElementById(
+            "adminOrderSearch"
+        );
+
+    if (orderSearch) {
+
+        orderSearch.addEventListener(
+            "input",
+            () => {
+
+                adminOrderPage = 1;
+
+                renderAdminOrders();
+
+            }
+        );
+
+    }
+
+
+    const orderStatusFilter =
+        document.getElementById(
+            "adminOrderStatusFilter"
+        ) ||
+        document.getElementById(
+            "adminOrderStatusFilter"
+        );
+
+    if (orderStatusFilter) {
+
+        orderStatusFilter.addEventListener(
+            "change",
+            () => {
+
+                adminOrderPage = 1;
+
+                renderAdminOrders();
+
+            }
+        );
+
+    }
+
+
+    updateCustomerUI();
+}
+
+
+/* =========================================================
+   PART 4 END
+   ========================================================= */
+   /* =========================================================
+   SALE 11
+   PROFESSIONAL E-COMMERCE STORE
+   APP.JS — PART 5 / 5
+   ========================================================= */
+
+
+/* =========================================================
+   SETTINGS
+   ========================================================= */
+
+function renderSettingsForm() {
+    const storeName = document.getElementById("settingStoreName");
+    const supportPhone = document.getElementById("settingSupportPhone");
+    const deliveryCharge = document.getElementById("settingDeliveryCharge");
+    const freeDeliveryAbove = document.getElementById("settingFreeDeliveryAbove");
+    const upiId = document.getElementById("settingUpiId");
+    const codEnabled = document.getElementById("settingCodEnabled");
+    const upiEnabled = document.getElementById("settingUpiEnabled");
+
+    if (storeName) storeName.value = settings.storeName || "";
+    if (supportPhone) supportPhone.value = settings.supportPhone || "";
+    if (deliveryCharge) deliveryCharge.value = settings.deliveryCharge ?? 49;
+    if (freeDeliveryAbove) {
+        freeDeliveryAbove.value = settings.freeDeliveryAbove ?? 499;
+    }
+    if (upiId) upiId.value = settings.upiId || "";
+    if (codEnabled) codEnabled.checked = settings.codEnabled !== false;
+    if (upiEnabled) upiEnabled.checked = settings.upiEnabled === true;
+}
+
+
+function saveSettingsFromForm() {
+    const storeName = document.getElementById("settingStoreName");
+    const supportPhone = document.getElementById("settingSupportPhone");
+    const deliveryCharge = document.getElementById("settingDeliveryCharge");
+    const freeDeliveryAbove = document.getElementById("settingFreeDeliveryAbove");
+    const upiId = document.getElementById("settingUpiId");
+    const codEnabled = document.getElementById("settingCodEnabled");
+    const upiEnabled = document.getElementById("settingUpiEnabled");
+
+    settings = {
+        ...settings,
+
+        storeName: storeName
+            ? String(storeName.value).trim()
+            : settings.storeName,
+
+        supportPhone: supportPhone
+            ? String(supportPhone.value).trim()
+            : settings.supportPhone,
+
+        deliveryCharge: deliveryCharge
+            ? Math.max(0, Number(deliveryCharge.value) || 0)
+            : settings.deliveryCharge,
+
+        freeDeliveryAbove: freeDeliveryAbove
+            ? Math.max(0, Number(freeDeliveryAbove.value) || 0)
+            : settings.freeDeliveryAbove,
+
+        upiId: upiId
+            ? String(upiId.value).trim()
+            : settings.upiId,
+
+        codEnabled: codEnabled
+            ? codEnabled.checked
+            : settings.codEnabled,
+
+        upiEnabled: upiEnabled
+            ? upiEnabled.checked
+            : settings.upiEnabled
+    };
+
+    saveSettings();
+    renderSettingsForm();
+
+    showToast("Settings saved successfully.", "success");
+}
+
+
+/* =========================================================
+   CATEGORY ADMIN
+   ========================================================= */
+
+function renderAdminCategories() {
+    const container =
+        document.getElementById("adminCategoriesGrid");
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    categories.forEach(category => {
+        const count = products.filter(
+            product => product.category === category
+        ).length;
+
+        const card = document.createElement("div");
+        card.className = "category-admin-card";
+
+        card.innerHTML = `
+            <div class="category-admin-info">
+                <strong>${escapeHTML(category)}</strong>
+                <span>${count} product${count === 1 ? "" : "s"}</span>
+            </div>
+
+            <div class="table-actions">
+                <button
+                    type="button"
+                    class="table-action"
+                    data-category-edit="${escapeHTML(category)}">
+                    Edit
+                </button>
+
+                <button
+                    type="button"
+                    class="table-action danger"
+                    data-category-delete="${escapeHTML(category)}">
+                    Delete
+                </button>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+
+function addCategory(categoryName) {
+    const name = String(categoryName || "").trim();
+
+    if (!name) {
+        showToast("Please enter a category name.", "warning");
+        return false;
+    }
+
+    const exists = categories.some(
+        category => category.toLowerCase() === name.toLowerCase()
+    );
+
+    if (exists) {
+        showToast("This category already exists.", "warning");
+        return false;
+    }
+
+    categories.push(name);
+    saveCategories();
+
+    renderCategories();
+    renderAdminCategories();
+
+    showToast("Category added successfully.", "success");
+
+    return true;
+}
+
+
+function editCategory(oldName) {
+    const newName = window.prompt(
+        "Enter the new category name:",
+        oldName
+    );
+
+    if (newName === null) return;
+
+    const name = String(newName).trim();
+
+    if (!name) {
+        showToast("Category name cannot be empty.", "warning");
         return;
     }
 
-    const addresses =
-        getAddresses();
+    const exists = categories.some(
+        category =>
+            category !== oldName &&
+            category.toLowerCase() === name.toLowerCase()
+    );
 
-    addresses.push(address);
+    if (exists) {
+        showToast("This category already exists.", "warning");
+        return;
+    }
 
-    saveAddresses(addresses);
+    categories = categories.map(category =>
+        category === oldName ? name : category
+    );
 
-    if (input)
-        input.value = "";
+    products = products.map(product => ({
+        ...product,
+        category:
+            product.category === oldName
+                ? name
+                : product.category
+    }));
 
-    renderAddresses();
+    saveCategories();
+    saveProducts();
 
-    alert(
-        "✅ Address saved."
+    renderCategories();
+    renderProducts();
+    renderAdminCategories();
+    renderAdminProducts();
+
+    showToast("Category updated successfully.", "success");
+}
+
+
+function deleteCategory(categoryName) {
+    const usedProducts = products.filter(
+        product => product.category === categoryName
+    );
+
+    if (usedProducts.length > 0) {
+        showToast(
+            `Cannot delete "${categoryName}" because ${usedProducts.length} product(s) use this category.`,
+            "warning"
+        );
+        return;
+    }
+
+    confirmAction(
+        `Delete category "${categoryName}"?`,
+        () => {
+            categories = categories.filter(
+                category => category !== categoryName
+            );
+
+            saveCategories();
+
+            renderCategories();
+            renderAdminCategories();
+
+            showToast("Category deleted.", "success");
+        }
     );
 }
 
-function deleteAddress(index) {
 
-    const addresses =
-        getAddresses();
+/* =========================================================
+   CATEGORY EVENT BINDINGS
+   ========================================================= */
 
-    addresses.splice(
-        index,
-        1
-    );
+function bindCategoryAdminEvents() {
+    const addButtons = [
+        document.getElementById("addCategoryBtn"),
+        document.getElementById("emptyAddCategoryBtn")
+    ].filter(Boolean);
 
-    saveAddresses(addresses);
+    addButtons.forEach(button => {
+        if (button.dataset.bound === "true") return;
 
-    renderAddresses();
-}
+        button.dataset.bound = "true";
 
-// ================= COUNTDOWN =================
+        button.addEventListener("click", () => {
+            const value = window.prompt("Enter the new category name:", "");
+            if (value !== null) addCategory(value);
+        });
+    });
 
-let countdownSeconds =
-    5 * 60 * 60 +
-    45 * 60 +
-    30;
+    const container =
+        document.getElementById("adminCategoriesGrid");
 
-function startCountdown() {
+    if (!container || container.dataset.bound === "true") return;
 
-    const timer =
-        document.getElementById(
-            "countdownTimer"
+    container.dataset.bound = "true";
+
+    container.addEventListener("click", event => {
+        const editButton = event.target.closest(
+            "[data-category-edit]"
         );
 
-    if (!timer) return;
+        if (editButton) {
+            editCategory(editButton.dataset.categoryEdit);
+            return;
+        }
 
-    function update() {
+        const deleteButton = event.target.closest(
+            "[data-category-delete]"
+        );
 
-        const hours =
-            Math.floor(
-                countdownSeconds / 3600
-            );
-
-        const minutes =
-            Math.floor(
-                (countdownSeconds % 3600) /
-                60
-            );
-
-        const seconds =
-            countdownSeconds % 60;
-
-        timer.innerText =
-            String(hours).padStart(2, "0") +
-            "h : " +
-            String(minutes).padStart(2, "0") +
-            "m : " +
-            String(seconds).padStart(2, "0") +
-            "s";
-
-        if (countdownSeconds > 0)
-            countdownSeconds--;
-    }
-
-    update();
-
-    setInterval(
-        update,
-        1000
-    );
+        if (deleteButton) {
+            deleteCategory(deleteButton.dataset.categoryDelete);
+        }
+    });
 }
 
-// ================= CLOSE MODALS BY BACKDROP =================
 
-window.addEventListener(
-    "click",
-    function(event) {
+/* =========================================================
+   REPORTS
+   ========================================================= */
+
+function getReportData(period = "30") {
+    const now = Date.now();
+
+    let start = 0;
+
+    if (period === "1" || period === "today") {
+        start = now - 24 * 60 * 60 * 1000;
+    } else if (period === "7" || period === "7days") {
+        start = now - 7 * 24 * 60 * 60 * 1000;
+    } else if (period === "30" || period === "30days") {
+        start = now - 30 * 24 * 60 * 60 * 1000;
+    }
+
+    const filteredOrders = orders.filter(order => {
+        if (!start) return true;
+
+        const time = new Date(order.createdAt).getTime();
+
+        return !Number.isNaN(time) && time >= start;
+    });
+
+    const deliveredOrders = filteredOrders.filter(
+        order => String(order.status).toLowerCase() === "delivered"
+    );
+
+    const cancelledOrders = filteredOrders.filter(
+        order => String(order.status).toLowerCase() === "cancelled"
+    );
+
+    const pendingOrders = filteredOrders.filter(order => {
+        const status = String(order.status).toLowerCase();
+
+        return [
+            "pending",
+            "confirmed",
+            "packed",
+            "shipped",
+            "out for delivery"
+        ].includes(status);
+    });
+
+    const revenue = deliveredOrders.reduce(
+        (sum, order) => sum + Number(order.total || order.amount || 0),
+        0
+    );
+
+    const orderValue = filteredOrders.reduce(
+        (sum, order) => sum + Number(order.total || order.amount || 0),
+        0
+    );
+
+    return {
+        orders: filteredOrders,
+        deliveredOrders,
+        cancelledOrders,
+        pendingOrders,
+        revenue,
+        orderValue,
+        averageOrderValue:
+            filteredOrders.length > 0
+                ? orderValue / filteredOrders.length
+                : 0
+    };
+}
+
+
+function renderReports(period = "30") {
+    const data = getReportData(period);
+
+    const revenueElements = [
+        document.getElementById("reportTotalSales")
+    ].filter(Boolean);
+
+    const orderElements = [
+        document.getElementById("reportTotalOrders")
+    ].filter(Boolean);
+
+    const averageElements = [
+        document.getElementById("reportAverageOrder")
+    ].filter(Boolean);
+
+    const deliveredElements = [
+        document.getElementById("reportDeliveredOrders")
+    ].filter(Boolean);
+
+    revenueElements.forEach(
+        element => element.textContent = formatCurrency(data.revenue)
+    );
+
+    orderElements.forEach(
+        element => element.textContent = data.orders.length
+    );
+
+    averageElements.forEach(
+        element =>
+            element.textContent = formatCurrency(
+                data.averageOrderValue
+            )
+    );
+
+    deliveredElements.forEach(
+        element =>
+            element.textContent = data.deliveredOrders.length
+    );
+
+}
+
+
+/* =========================================================
+   REPORT PERIOD BUTTONS
+   ========================================================= */
+
+function bindReportPeriodButtons() {
+    const buttons = document.querySelectorAll(
+        "[data-report-period]"
+    );
+
+    buttons.forEach(button => {
+        if (button.dataset.bound === "true") return;
+
+        button.dataset.bound = "true";
+
+        button.addEventListener("click", () => {
+            buttons.forEach(item =>
+                item.classList.remove("active")
+            );
+
+            button.classList.add("active");
+
+            renderReports(
+                button.dataset.reportPeriod || "30"
+            );
+        });
+    });
+}
+
+
+/* =========================================================
+   SETTINGS EVENTS
+   ========================================================= */
+
+function bindSettingsEvents() {
+    const saveButtons = [
+        document.getElementById("saveSettingsBtn"),
+        document.getElementById("saveSettingsBtn")
+    ].filter(Boolean);
+
+    saveButtons.forEach(button => {
+        if (button.dataset.bound === "true") return;
+
+        button.dataset.bound = "true";
+
+        button.addEventListener(
+            "click",
+            saveSettingsFromForm
+        );
+    });
+
+    renderSettingsForm();
+}
+
+
+/* =========================================================
+   ADMIN TAB INITIALIZATION
+   ========================================================= */
+
+function refreshAdminSection(sectionName) {
+    switch (sectionName) {
+        case "dashboard":
+            renderDashboardStats(
+                currentDashboardPeriod || "all"
+            );
+            break;
+
+        case "products":
+            renderAdminProducts();
+            break;
+
+        case "orders":
+            renderAdminOrders();
+            break;
+
+        case "customers":
+            renderAdminCustomers();
+            break;
+
+        case "reports":
+            renderReports("30");
+            break;
+
+        case "categories":
+            renderAdminCategories();
+            break;
+
+        case "settings":
+            renderSettingsForm();
+            break;
+    }
+}
+
+
+/* =========================================================
+   GLOBAL SEARCH
+   ========================================================= */
+
+function bindGlobalSearch() {
+    const searchInput =
+        document.getElementById("searchInput") ||
+        document.querySelector(".search-box input");
+
+    if (!searchInput || searchInput.dataset.globalBound === "true") {
+        return;
+    }
+
+    searchInput.dataset.globalBound = "true";
+
+    searchInput.addEventListener("input", event => {
+        searchProducts(event.target.value);
+    });
+}
+
+
+/* =========================================================
+   CUSTOMER / ADMIN BUTTONS
+   ========================================================= */
+
+function bindHeaderActions() {
+    const adminButtons = document.querySelectorAll(
+        "[data-open-admin], #openAdminBtn, #adminBtn"
+    );
+
+    adminButtons.forEach(button => {
+        if (button.dataset.headerBound === "true") return;
+
+        button.dataset.headerBound = "true";
+
+        button.addEventListener("click", () => {
+            if (isAdminLoggedIn()) {
+                showAdminDashboard();
+            } else {
+                openModal("adminLoginModal");
+            }
+        });
+    });
+
+    const accountButtons = document.querySelectorAll(
+        "[data-open-account], #accountBtn"
+    );
+
+    accountButtons.forEach(button => {
+        if (button.dataset.headerBound === "true") return;
+
+        button.dataset.headerBound = "true";
+
+        button.addEventListener("click", () => {
+            openAccountModal();
+        });
+    });
+
+    const cartButtons = document.querySelectorAll(
+        "[data-open-cart], #cartBtn"
+    );
+
+    cartButtons.forEach(button => {
+        if (button.dataset.headerBound === "true") return;
+
+        button.dataset.headerBound = "true";
+
+        button.addEventListener("click", () => {
+            openCartModal();
+        });
+    });
+
+    const wishlistButtons = document.querySelectorAll(
+        "[data-open-wishlist], #wishlistBtn"
+    );
+
+    wishlistButtons.forEach(button => {
+        if (button.dataset.headerBound === "true") return;
+
+        button.dataset.headerBound = "true";
+
+        button.addEventListener("click", () => {
+            openWishlistModal();
+        });
+    });
+}
+
+
+/* =========================================================
+   MODAL CLOSE EVENTS
+   ========================================================= */
+
+function bindModalCloseEvents() {
+    document.addEventListener("click", event => {
+        const closeButton = event.target.closest(
+            "[data-close-modal]"
+        );
+
+        if (closeButton) {
+            const modalId =
+                closeButton.dataset.closeModal;
+
+            if (modalId) {
+                closeModal(modalId);
+            } else {
+                closeAllModals();
+            }
+
+            return;
+        }
 
         if (
-            event.target.classList &&
-            event.target.classList.contains("modal")
+            event.target.classList.contains("modal-backdrop")
         ) {
+            const modal = event.target.closest(".modal");
 
-            event.target.style.display =
-                "none";
+            if (modal) {
+                closeModal(modal.id);
+            }
         }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            closeAllModals();
+        }
+    });
+}
+
+
+/* =========================================================
+   MOBILE NAVIGATION
+   ========================================================= */
+
+function bindMobileNavigation() {
+    const items = document.querySelectorAll(
+        ".mobile-nav-item"
+    );
+
+    items.forEach(item => {
+        if (item.dataset.mobileBound === "true") return;
+
+        item.dataset.mobileBound = "true";
+
+        item.addEventListener("click", () => {
+            const action = item.dataset.action;
+
+            switch (action) {
+                case "home":
+                    showCustomerStore();
+                    window.scrollTo({
+                        top: 0,
+                        behavior: "smooth"
+                    });
+                    break;
+
+                case "search":
+                    {
+                        const input =
+                            document.querySelector(
+                                ".search-box input"
+                            );
+
+                        if (input) {
+                            input.focus();
+                            window.scrollTo({
+                                top: input.offsetTop - 100,
+                                behavior: "smooth"
+                            });
+                        }
+                    }
+                    break;
+
+                case "wishlist":
+                    openWishlistModal();
+                    break;
+
+                case "cart":
+                    openCartModal();
+                    break;
+
+                case "account":
+                    openAccountModal();
+                    break;
+            }
+        });
+    });
+}
+
+
+/* =========================================================
+   SCROLL TO TOP
+   ========================================================= */
+
+function bindScrollTop() {
+    const button =
+        document.getElementById("scrollTopBtn") ||
+        document.querySelector(".scroll-top");
+
+    if (!button || button.dataset.bound === "true") {
+        return;
     }
-);
 
-// ================= INITIALIZE =================
+    button.dataset.bound = "true";
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
+    window.addEventListener("scroll", () => {
+        button.classList.toggle(
+            "show",
+            window.scrollY > 400
+        );
+    });
 
-        getProducts();
+    button.addEventListener("click", () => {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    });
+}
 
-        getSettings();
 
-        renderProducts();
+/* =========================================================
+STORAGE SYNC
+   ========================================================= */
+
+function bindStorageSync() {
+    window.addEventListener("storage", event => {
+        if (!event.key) return;
+
+        loadAllData();
 
         updateCartBadge();
+        updateWishlistCount();
 
-        loadDarkMode();
+        if (isAdminLoggedIn()) {
+            renderAdminProducts();
+            renderAdminOrders();
+            renderAdminCustomers();
+            renderAdminCategories();
+            renderSettingsForm();
+        } else {
+            renderProducts();
+        }
+    });
+}
 
-        updateAccountUI();
 
-        startCountdown();
+/* =========================================================
+FINAL APP INITIALIZATION
+   ========================================================= */
 
-        updateAdminDashboard();
+function initializePart5() {
+    try {
+        loadAdminAuth();
+        loadAllData();
+        initializeDefaultData();
 
+        updateCartBadge();
+        updateWishlistCount();
+
+        renderCategories();
+        renderProducts();
+
+        bindCategoryAdminEvents();
+        bindReportPeriodButtons();
+        bindSettingsEvents();
+        bindGlobalSearch();
+        bindHeaderActions();
+        bindModalCloseEvents();
+        bindMobileNavigation();
+        bindScrollTop();
+        bindStorageSync();
+
+        if (isAdminLoggedIn()) {
+            showAdminDashboard();
+        } else {
+            showCustomerStore();
+        }
+
+        console.log(
+            "Sale 11: App initialized successfully."
+        );
+    } catch (error) {
+        console.error(
+            "Sale 11 initialization error:",
+            error
+        );
+
+        showToast(
+            "Some store features could not be initialized.",
+            "error"
+        );
     }
-);
+}
+
+
+/* =========================================================
+SAFE START
+   ========================================================= */
+
+if (
+    document.readyState === "loading"
+) {
+    document.addEventListener(
+        "DOMContentLoaded",
+        initializePart5,
+        { once: true }
+    );
+} else {
+    initializePart5();
+}
+
+
+/* =========================================================
+   PART 5 END
+   ========================================================= */
+
+/* =========================================================
+   HTML COMPATIBILITY ALIASES
+   Existing index.html handlers -> current app functions.
+========================================================= */
+function switchTab(tab) {
+    if (tab === "admin") return showAdminDashboard();
+    if (tab === "store") return showCustomerStore();
+}
+
+function openOrdersModal() {
+    if (typeof isCustomerLoggedIn === "function" && isCustomerLoggedIn()) {
+        return openAccountOrders();
+    }
+    return showCustomerLogin();
+}
+
+function openAccountModal() {
+    return openAccount();
+}
+
+function openWishlist() {
+    return openWishlistModal();
+}
+
+function filterCategory(category) {
+    return selectCategory(category);
+}
+
+function scrollToProducts() {
+    const el = document.getElementById("productsGrid");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function adminLogout() {
+    return logoutAdmin();
+}
+
+function switchAdminTab(tab) {
+    return showAdminTab(tab);
+}
+
+function setDashboardPeriod(period) {
+    return setAdminPeriod(period);
+}
+
+function openProductModal(productId) {
+    return openAddProduct(productId);
+}

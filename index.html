@@ -3,857 +3,5137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sale 11 - Pro Reselling Store & Admin Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-color: #f8f9fa;
-            --text-color: #333333;
-            --card-bg: #ffffff;
-            --primary-color: #d81b60;
-            --primary-hover: #ad1457;
-            --border-color: #e0e0e0;
-        }
-        body.dark-mode {
-            --bg-color: #121212;
-            --text-color: #e0e0e0;
-            --card-bg: #1e1e1e;
-            --primary-color: #e91e63;
-            --border-color: #333333;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); transition: background 0.3s, color 0.3s; padding-bottom: 60px; }
-        
-        /* Navbar */
-        .navbar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 12px 20px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }
-        .logo { font-size: 22px; font-weight: 800; color: var(--primary-color); cursor: pointer; }
-        .search-bar { display: flex; align-items: center; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 6px 12px; width: 30%; }
-        .search-bar input { border: none; outline: none; background: transparent; width: 100%; margin-left: 8px; color: var(--text-color); font-size: 14px; }
-        .nav-icons { display: flex; gap: 15px; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 11px; cursor: pointer; color: var(--text-color); position: relative; }
-        .nav-item i { font-size: 16px; margin-bottom: 2px; color: var(--primary-color); }
-        .badge { position: absolute; top: -5px; right: 2px; background: var(--primary-color); color: white; font-size: 10px; padding: 1px 5px; border-radius: 50%; }
 
-        /* Category Bar */
-        .category-bar { display: flex; gap: 10px; overflow-x: auto; background: var(--card-bg); padding: 10px 20px; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
-        .cat-btn { background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 16px; cursor: pointer; font-size: 13px; }
-        .cat-btn.active, .cat-btn:hover { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+    <title>Sale 11 - Reselling Store</title>
 
-        /* Main Container */
-        .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
-        .flash-banner { background: linear-gradient(135deg, #d81b60, #8e24aa); color: white; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 25px; }
-        
-        /* Products Grid */
-        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-        .product-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; position: relative; display: flex; flex-direction: column; justify-content: space-between; }
-        .product-card img { width: 100%; height: 180px; object-fit: cover; border-radius: 6px; cursor: pointer; background: #eee; }
-        .product-card h3 { font-size: 14px; margin: 8px 0 4px 0; font-weight: 600; cursor: pointer; }
-        .price { font-size: 15px; font-weight: 700; color: var(--primary-color); margin-bottom: 8px; }
-        .mrp { font-size: 12px; text-decoration: line-through; color: #888; margin-left: 6px; }
-        .resell-badge { background: rgba(142, 36, 170, 0.1); color: #8e24aa; font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; display: inline-block; font-weight: 600; }
-        
-        /* Buttons */
-        .btn-primary { background: var(--primary-color); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; width: 100%; }
-        .btn-primary:hover { background: var(--primary-hover); }
-        .btn-secondary { background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-top: 5px; width: 100%; }
-        .wishlist-btn { position: absolute; top: 18px; right: 18px; background: var(--card-bg); border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer; color: #888; }
-        .wishlist-btn.active { color: #e53935; }
+    <meta
+        name="description"
+        content="Sale 11 - Professional online reselling store"
+    >
 
-        /* Modals */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 10px; }
-        .modal-content { background: var(--card-bg); color: var(--text-color); padding: 20px; border-radius: 10px; width: 100%; max-width: 500px; position: relative; max-height: 90vh; overflow-y: auto; }
-        .close { position: absolute; top: 12px; right: 15px; font-size: 20px; cursor: pointer; color: #888; }
-        .input-box { width: 100%; padding: 10px; margin: 8px 0; background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; }
+    <meta name="theme-color" content="#2874f0">
 
-        /* Admin Dashboard Styles */
-        .admin-tab-btn { background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
-        .admin-tab-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
-        .admin-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; }
-        .stat-card { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 4px solid var(--primary-color); }
-        .stat-card h3 { font-size: 20px; color: var(--primary-color); margin-bottom: 5px; }
-        .stat-card p { font-size: 12px; color: #888; }
-
-        /* Timeline & Tracking */
-        .timeline { display: flex; justify-content: space-between; margin: 15px 0; position: relative; font-size: 11px; text-align: center; }
-        .timeline-step { flex: 1; position: relative; color: #888; }
-        .timeline-step.active { color: var(--primary-color); font-weight: bold; }
-        .timeline-step i { display: block; font-size: 14px; margin-bottom: 4px; }
-
-        /* Mobile Bottom Nav Bar */
-        .mobile-bottom-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border-color); justify-content: space-around; padding: 8px 0; z-index: 1500; }
-        .mobile-nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text-color); cursor: pointer; }
-        .mobile-nav-item i { font-size: 18px; color: var(--primary-color); margin-bottom: 2px; }
-
-        @media (max-width: 768px) {
-            .search-bar { width: 30% !important; }
-            .nav-item span { display: none; }
-            .products-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .mobile-bottom-nav { display: flex; }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body id="pageBody">
 
-    <!-- Header / Navigation -->
-    <header class="navbar">
-        <div class="logo" onclick="switchTab('store')">Sale 11</div>
-        <div class="search-bar">
-            <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Search products..." onkeyup="filterProductsSearch()">
-        </div>
-        <div class="nav-icons">
-            <div class="nav-item" onclick="toggleDarkMode()"><i class="fas fa-moon" id="darkModeIcon"></i><span>Theme</span></div>
-            <div class="nav-item" onclick="openSupportModal()"><i class="fas fa-headset"></i><span>Support</span></div>
-            <div class="nav-item" onclick="checkAdminAccess()"><i class="fas fa-user-shield"></i><span>Admin</span></div>
-            <div class="nav-item" onclick="openLoginModal()"><i class="fas fa-user"></i><span>Account</span></div>
-            <div class="nav-item" onclick="openWishlistModal()"><i class="fas fa-heart"></i><span>Wishlist</span></div>
-            <div class="nav-item" onclick="openCartModal()">
-                <i class="fas fa-shopping-cart"></i><span>Cart</span>
-                <span id="cartCountBadge" class="badge">0</span>
+<body>
+
+<!-- =========================================================
+     CUSTOMER STORE
+========================================================= -->
+
+<div id="customerStoreView" class="page-view">
+
+    <!-- HEADER -->
+
+    <header class="site-header">
+
+        <div class="header-main">
+
+            <button
+                class="brand"
+                onclick="switchTab('store')"
+                type="button"
+            >
+                <span class="brand-mark">S</span>
+                <span class="brand-text">SALE 11</span>
+            </button>
+
+
+            <div class="search-box">
+
+                <span class="search-icon">⌕</span>
+
+                <input
+                    id="searchInput"
+                    type="search"
+                    placeholder="Search products..."
+                    autocomplete="off"
+                >
+
             </div>
+
+
+            <div class="header-actions">
+
+                <button
+                    class="header-action"
+                    onclick="openOrdersModal()"
+                    type="button"
+                >
+                    Orders
+                </button>
+
+                <button
+                    class="header-action"
+                    onclick="openAccountModal()"
+                    type="button"
+                >
+                    Account
+                </button>
+
+                <button
+                    class="header-action"
+                    onclick="openWishlist()"
+                    type="button"
+                >
+                    Wishlist
+                </button>
+
+                <button
+                    class="icon-btn"
+                    onclick="openCart()"
+                    type="button"
+                    aria-label="Cart"
+                >
+                    🛒
+                    <span id="cartBadge" class="cart-badge">0</span>
+                </button>
+
+                <button
+                    class="header-action admin-link"
+                    onclick="switchTab('admin')"
+                    type="button"
+                >
+                    Admin
+                </button>
+
+            </div>
+
         </div>
+
+
+        <!-- CATEGORY BAR -->
+
+        <nav class="category-strip">
+
+            <div class="category-scroll">
+
+                <button
+                    class="category-btn active"
+                    onclick="filterCategory('All')"
+                    type="button"
+                >
+                    All
+                </button>
+
+                <div id="customerCategories"></div>
+
+            </div>
+
+        </nav>
+
     </header>
 
-    <!-- Main Store View -->
-    <div id="customerStoreView">
-        <div class="category-bar">
-            <button onclick="filterCategory('All')" class="cat-btn active">All</button>
-            <button onclick="filterCategory('Fashion')" class="cat-btn">Fashion</button>
-            <button onclick="filterCategory('Electronics')" class="cat-btn">Electronics</button>
-            <button onclick="filterCategory('Home & Kitchen')" class="cat-btn">Home & Kitchen</button>
-            <button onclick="filterCategory('Beauty')" class="cat-btn">Beauty</button>
-            <button onclick="filterCategory('Kids')" class="cat-btn">Kids</button>
-            <button onclick="filterCategory('Best Sellers')" class="cat-btn">Best Sellers</button>
-        </div>
 
-        <main class="container">
-            <section class="flash-banner">
-                <h2>⚡ FLASH SALE LIVE!</h2>
-                <p>Massive discounts & reselling margins ending soon. Free Delivery on orders above ₹499!</p>
-            </section>
-            <h2>Store Products</h2>
-            <div class="products-grid" id="productsGrid"></div>
-        </main>
-    </div>
 
-    <!-- Admin Dashboard View -->
-    <div id="adminDashboardView" style="display:none; padding: 20px; max-width: 1200px; margin: auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #d81b60; padding-bottom: 10px;">
-            <h2>🛠️ Admin Control Panel</h2>
-            <button onclick="switchTab('store')" class="btn-secondary" style="background:#333; color:#fff; width:auto; padding:8px 15px;">Exit to Store 🛍️</button>
-        </div>
-        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-            <button onclick="switchAdminTab('dashboard')" class="admin-tab-btn active" id="tabBtnDash">📊 Dashboard</button>
-            <button onclick="switchAdminTab('products')" class="admin-tab-btn" id="tabBtnProds">📦 Products</button>
-            <button onclick="switchAdminTab('orders')" class="admin-tab-btn" id="tabBtnOrders">🛒 Orders</button>
-            <button onclick="switchAdminTab('customers')" class="admin-tab-btn" id="tabBtnCust">👥 Customers</button>
-            <button onclick="switchAdminTab('settings')" class="admin-tab-btn" id="tabBtnSett">⚙️ Settings</button>
-        </div>
+    <!-- HERO -->
 
-        <div id="adminTabDashboard">
-            <div class="admin-stats-grid">
-                <div class="stat-card"><h3>₹<span id="statRevenue">0</span></h3><p>Total Revenue</p></div>
-                <div class="stat-card"><h3><span id="statOrders">0</span></h3><p>Total Orders</p></div>
-                <div class="stat-card"><h3><span id="statProds">0</span></h3><p>Total Products</p></div>
-                <div class="stat-card"><h3><span id="statCusts">0</span></h3><p>Total Customers</p></div>
-            </div>
-        </div>
+    <main>
 
-        <div id="adminTabProducts" style="display:none;">
-            <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 25px;">
-                <h3 id="adminFormTitle">➕ Add New Product</h3>
-                <input type="hidden" id="editProductIndex" value="-1">
-                <input type="hidden" id="adminProdImgBase64" value="">
+        <section class="hero-section">
 
-                <input type="text" id="adminProdName" placeholder="Product Name *" class="input-box">
-                <input type="number" id="adminProdPrice" placeholder="Selling Price (₹) *" class="input-box">
-                <input type="number" id="adminProdMrp" placeholder="MRP Price (₹) *" class="input-box">
-                <input type="number" id="adminProdResell" placeholder="Reselling Price (₹)" class="input-box">
-                <select id="adminProdCat" class="input-box">
-                    <option value="Fashion">Fashion</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Home & Kitchen">Home & Kitchen</option>
-                    <option value="Beauty">Beauty</option>
-                    <option value="Kids">Kids</option>
-                    <option value="Best Sellers">Best Sellers</option>
-                </select>
-                <input type="number" id="adminProdStock" placeholder="Stock Quantity" class="input-box" value="10">
+            <div class="hero-content">
 
-                <!-- Direct Gallery Image Upload -->
-                <label style="font-size:12px; font-weight:bold; display:block; margin-top:8px;">📁 Upload Product Image from Gallery / Camera *</label>
-                <input type="file" id="adminProdFileInput" accept="image/*" class="input-box" onchange="handleImageFileSelect(event)">
-                <div id="imagePreviewContainer" style="display:none; margin:10px 0; text-align:center;">
-                    <img id="imagePreview" src="" style="max-height:150px; border-radius:6px; border:1px solid #ccc; object-fit:contain;">
-                    <p style="font-size:11px; color:green; margin-top:3px;">✓ Image Ready</p>
+                <div class="hero-text">
+
+                    <div class="section-kicker">
+                        SALE 11
+                    </div>
+
+                    <h1>
+                        Smart Shopping.<br>
+                        Better Reselling.
+                    </h1>
+
+                    <p>
+                        Discover products, manage your margin
+                        and handle your orders easily.
+                    </p>
+
+                    <button
+                        class="primary-btn"
+                        onclick="scrollToProducts()"
+                        type="button"
+                    >
+                        Shop Now
+                    </button>
+
                 </div>
 
-                <textarea id="adminProdDesc" placeholder="Product Description" class="input-box" style="height:60px;"></textarea>
-                <button id="adminSaveBtn" onclick="saveAdminProduct()" class="btn-primary" style="margin-top:10px;">Save Product</button>
-            </div>
-            <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <h3>📦 Existing Products</h3>
-                <div style="overflow-x: auto; margin-top: 10px;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                        <thead>
-                            <tr style="background: rgba(216,27,96,0.1); text-align: left;">
-                                <th style="padding: 8px;">Image</th>
-                                <th style="padding: 8px;">Name</th>
-                                <th style="padding: 8px;">Price</th>
-                                <th style="padding: 8px;">Stock</th>
-                                <th style="padding: 8px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="adminProductsTableBody"></tbody>
-                    </table>
+
+                <div class="hero-placeholder">
+
+                    <strong>SALE 11</strong>
+
+                    <span>
+                        Reselling Store
+                    </span>
+
                 </div>
+
             </div>
+
+        </section>
+
+
+
+        <!-- TRUST -->
+
+        <section class="trust-row">
+
+            <div class="trust-item">
+                <strong>🚚</strong>
+                <span>Fast Delivery</span>
+            </div>
+
+            <div class="trust-item">
+                <strong>🔒</strong>
+                <span>Secure Ordering</span>
+            </div>
+
+            <div class="trust-item">
+                <strong>💰</strong>
+                <span>Cash on Delivery</span>
+            </div>
+
+            <div class="trust-item">
+                <strong>↩️</strong>
+                <span>Order Support</span>
+            </div>
+
+        </section>
+
+
+
+        <!-- PRODUCTS -->
+
+        <section
+            id="productsSection"
+            class="products-section"
+        >
+
+            <div class="section-heading">
+
+                <div>
+
+                    <div class="section-kicker">
+                        PRODUCTS
+                    </div>
+
+                    <h2>
+                        Explore Products
+                    </h2>
+
+                    <p id="productCountText">
+                        Browse available products
+                    </p>
+
+                </div>
+
+
+                <div class="sort-area">
+
+                    <select id="sortProducts">
+
+                        <option value="default">
+                            Sort: Recommended
+                        </option>
+
+                        <option value="priceLow">
+                            Price: Low to High
+                        </option>
+
+                        <option value="priceHigh">
+                            Price: High to Low
+                        </option>
+
+                        <option value="newest">
+                            Newest
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="productsGrid"
+                class="product-grid"
+            ></div>
+
+
+            <div
+                id="productsEmpty"
+                class="empty-state hidden"
+            >
+
+                <div class="empty-icon">
+                    📦
+                </div>
+
+                <h3>
+                    No products available
+                </h3>
+
+                <p>
+                    Products added from the admin panel
+                    will appear here.
+                </p>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+
+    <!-- FOOTER -->
+
+    <footer class="site-footer">
+
+        <div class="footer-column">
+
+            <strong>
+                SALE 11
+            </strong>
+
+            <p>
+                Professional reselling store.
+            </p>
+
         </div>
 
-        <div id="adminTabOrders" style="display:none;">
-            <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <h3>🛒 Customer Orders Management</h3>
-                <div id="adminOrdersContainer" style="margin-top: 15px;"><p>No orders yet.</p></div>
-            </div>
+
+        <div class="footer-column">
+
+            <strong>
+                Customer Support
+            </strong>
+
+            <p id="footerSupport">
+                Contact support for order assistance.
+            </p>
+
         </div>
 
-        <div id="adminTabCustomers" style="display:none;">
-            <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <h3>👥 Registered Customers</h3>
-                <div id="adminCustomersContainer" style="margin-top: 15px;"><p>No customers yet.</p></div>
-            </div>
+
+        <div class="footer-column">
+
+            <strong>
+                Payment
+            </strong>
+
+            <p>
+                Cash on Delivery available.
+            </p>
+
         </div>
 
-        <div id="adminTabSettings" style="display:none;">
-            <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); max-width: 500px;">
-                <h3>⚙️ Store & Delivery Settings</h3>
-                <label style="font-size:12px; display:block; margin-top:10px;">Delivery Charge (₹)</label>
-                <input type="number" id="stDeliveryCharge" class="input-box" value="50">
-                <label style="font-size:12px; display:block; margin-top:10px;">Free Delivery Above Amount (₹)</label>
-                <input type="number" id="stFreeLimit" class="input-box" value="499">
-                <label style="font-size:12px; display:block; margin-top:10px;">Cash on Delivery (COD)</label>
-                <select id="stCodToggle" class="input-box">
-                    <option value="Enabled">Enabled (ON)</option>
-                    <option value="Disabled">Disabled (OFF)</option>
-                </select>
-                <button onclick="saveAdminSettings()" class="btn-primary" style="margin-top:15px;">Save Settings</button>
-            </div>
+
+        <div class="footer-bottom">
+            © 2026 Sale 11. All rights reserved.
         </div>
-    </div>
 
-    <!-- Mobile Bottom Navigation -->
-    <div class="mobile-bottom-nav">
-        <div class="mobile-nav-item" onclick="switchTab('store')"><i class="fas fa-home"><span>Home</span></i></div>
-        <div class="mobile-nav-item" onclick="openWishlistModal()"><i class="fas fa-heart"><span>Wishlist</span></i></div>
-        <div class="mobile-nav-item" onclick="openCartModal()"><i class="fas fa-shopping-cart"><span>Cart</span></i></div>
-        <div class="mobile-nav-item" onclick="openOrdersModal()"><i class="fas fa-box"><span>Orders</span></i></div>
-        <div class="mobile-nav-item" onclick="openLoginModal()"><i class="fas fa-user"><span>Account</span></i></div>
-    </div>
-
-    <!-- Footer -->
-    <footer style="background:var(--card-bg); padding: 20px; text-align:center; margin-top:30px; border-top:1px solid var(--border-color);">
-        <p style="font-size: 13px; color: var(--text-color);">&copy; 2026 Sale 11 Reselling Store. All rights reserved.</p>
     </footer>
 
-    <!-- Modals -->
-    <div id="productDetailModal" class="modal"><div class="modal-content"><span class="close" onclick="closeProductDetailModal()">&times;</span><div id="productDetailContainer"></div></div></div>
-    
-    <div id="cartModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeCartModal()">&times;</span>
-            <h2>Shopping Cart 🛒</h2>
-            <div id="cartItemsContainer" style="margin:10px 0; max-height:150px; overflow-y:auto;"><p>Cart is empty.</p></div>
-            <div style="border-top:1px solid var(--border-color); padding-top:8px; margin-top:8px; font-size:13px;">
-                <p>Subtotal: ₹<span id="cartSubtotal">0</span></p>
-                <p>Delivery: ₹<span id="cartDeliveryCalc">0</span></p>
-                <h3>Final Total: ₹<span id="cartTotalPrice">0</span></h3>
-            </div>
-            <button onclick="openCheckoutModal()" class="btn-primary" style="margin-top:10px;">Proceed to Checkout</button>
+</div>
+
+
+
+<!-- =========================================================
+     ADMIN VIEW
+========================================================= -->
+
+<div
+    id="adminView"
+    class="page-view hidden"
+>
+
+    <!-- ADMIN HEADER -->
+
+    <header class="admin-header">
+
+        <div class="admin-header-left">
+
+            <button
+                class="brand"
+                onclick="switchTab('store')"
+                type="button"
+            >
+
+                <span class="brand-mark">
+                    S
+                </span>
+
+                <span class="brand-text">
+                    SALE 11
+                </span>
+
+            </button>
+
+
+            <span class="admin-label">
+                Admin Dashboard
+            </span>
+
         </div>
-    </div>
 
-    <div id="checkoutModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeCheckoutModal()">&times;</span>
-            <h2>Checkout & Delivery</h2>
-            <input type="text" id="checkoutName" placeholder="Full Name *" class="input-box">
-            <input type="tel" id="checkoutPhone" placeholder="Mobile Number *" class="input-box">
-            <input type="text" id="checkoutAddress" placeholder="House No, Street, Area *" class="input-box">
-            <input type="text" id="checkoutCity" placeholder="City *" class="input-box">
-            
-            <!-- Pincode Verification Section -->
-            <div style="display:flex; gap:5px; margin:8px 0;">
-                <input type="text" id="checkoutPincode" placeholder="Pincode *" class="input-box" style="margin:0;">
-                <button type="button" onclick="checkPincode()" class="btn-secondary" style="margin:0; width:120px;">Check Pincode</button>
-            </div>
-            <p id="pincodeStatusMsg" style="font-size:12px; margin-bottom:5px;"></p>
 
-            <h3 style="margin-top:10px;">Payment Method</h3>
-            <div id="codOptionWrapper">
-                <label style="display:block; margin:6px 0;"><input type="radio" name="payment" value="COD" checked> Cash on Delivery (COD)</label>
-            </div>
-            <label style="display:block; margin:6px 0;"><input type="radio" name="payment" value="UPI"> UPI / QR Code Payment</label>
-            <label style="display:block; margin:6px 0;"><input type="radio" name="payment" value="Online"> Online Payment Gateway</label>
+        <div class="header-actions">
 
-            <!-- UPI QR Section -->
-            <div id="upiScannerBox" style="display:none; text-align:center; margin:10px 0; background:var(--bg-color); padding:10px; border-radius:6px; border:1px solid var(--border-color);">
-                <p style="font-size:12px; margin-bottom:5px;">Scan QR to Pay via GPay / PhonePe / Paytm</p>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=upi://pay?pa=sale11store@upi&pn=Sale11" alt="UPI QR" style="width:100px; height:100px;">
-                <input type="text" id="checkoutUtr" placeholder="Enter UPI Reference / UTR Number *" class="input-box" style="margin-top:8px;">
-            </div>
+            <button
+                class="secondary-btn"
+                onclick="switchTab('store')"
+                type="button"
+            >
+                Store
+            </button>
 
-            <!-- Detailed Bill Summary -->
-            <div style="background:var(--bg-color); padding:10px; border-radius:6px; margin:10px 0; font-size:13px; border:1px solid var(--border-color);">
-                <p>Product Price: ₹<span id="summaryProductPrice">0</span></p>
-                <p>Delivery Charge: ₹<span id="summaryDeliveryCharge">0</span></p>
-                <p>Estimated Delivery: <strong id="summaryEstDelivery" style="color:var(--primary-color);">--</strong></p>
-                <hr style="margin:6px 0;">
-                <h3 style="color:var(--primary-color);">Final Payable: ₹<span id="summaryFinalAmount">0</span></h3>
-            </div>
+            <button
+                class="secondary-btn"
+                onclick="adminLogout()"
+                type="button"
+            >
+                Logout
+            </button>
 
-            <button onclick="placeOrder()" class="btn-primary">Place Order Now</button>
         </div>
-    </div>
 
-    <!-- Customer Orders Modal with Timeline -->
-    <div id="ordersModal" class="modal">
-        <div class="modal-content" style="max-width:550px;">
-            <span class="close" onclick="closeOrdersModal()">&times;</span>
-            <h2>My Orders & Tracking 📦</h2>
-            <div id="ordersContainer" style="margin-top:10px; max-height:350px; overflow-y:auto;"><p>No orders placed yet.</p></div>
-        </div>
-    </div>
+    </header>
 
-    <div id="supportModal" class="modal"><div class="modal-content"><span class="close" onclick="closeSupportModal()">&times;</span><h2>Support ☎️</h2><p style="font-size:13px; margin:10px 0;">WhatsApp / Call: +91 9876543210<br>Email: support@sale11store.com</p></div></div>
 
-    <div id="wishlistModal" class="modal"><div class="modal-content"><span class="close" onclick="closeWishlistModal()">&times;</span><h2>Wishlist ❤️</h2><div id="wishlistItemsContainer"><p>Wishlist is empty.</p></div></div></div>
 
-    <div id="loginModal" class="modal"><div class="modal-content"><span class="close" onclick="closeLoginModal()">&times;</span><div id="authContainer"><h2>My Account Login</h2><input type="text" id="userNameInput" placeholder="Name" class="input-box"><input type="tel" id="userPhoneInput" placeholder="Phone" class="input-box"><button onclick="handleLogin()" class="btn-primary" style="margin-top:10px;">Login</button></div><div id="profileContainer" style="display:none;"><h2>My Profile</h2><p id="displayUserName"></p><p id="displayUserPhone"></p><button onclick="openOrdersModal(); closeLoginModal();" class="btn-secondary" style="margin-top:10px;">View My Orders 📦</button><button onclick="handleLogout()" class="btn-primary" style="background:#e53935; margin-top:8px;">Logout</button></div></div></div>
+    <!-- ADMIN LAYOUT -->
 
-    <!-- Script Logic -->
-    <script>
-        let products = JSON.parse(localStorage.getItem('sale11_products')) || [
-            { name: 'Classic Kurti', price: 499, mrp: 999, resellPrice: 750, category: 'Fashion', stock: 15, rating: 4.5, img: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400', description: 'Comfortable daily wear cotton kurti.' },
-            { name: 'Smart Watch', price: 1299, mrp: 2999, resellPrice: 1650, category: 'Electronics', stock: 10, rating: 4.7, img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400', description: 'Fitness tracker smartwatch with heart rate monitor.' }
-        ];
-        let orders = JSON.parse(localStorage.getItem('sale11_orders')) || [];
-        let customers = JSON.parse(localStorage.getItem('sale11_customers')) || [];
-        let cart = JSON.parse(localStorage.getItem('sale11_cart')) || [];
-        let wishlist = JSON.parse(localStorage.getItem('sale11_wishlist')) || [];
-        let settings = JSON.parse(localStorage.getItem('sale11_settings')) || { deliveryCharge: 50, freeLimit: 499, codEnabled: 'Enabled' };
+    <div class="admin-layout">
 
-        document.addEventListener('DOMContentLoaded', () => {
-            renderProducts();
-            updateCartCount();
-            if (localStorage.getItem('sale11_theme') === 'dark') {
-                document.body.classList.add('dark-mode');
-                let icon = document.getElementById('darkModeIcon');
-                if(icon) icon.className = "fas fa-sun";
-            }
-        });
 
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-            let icon = document.getElementById('darkModeIcon');
-            if (document.body.classList.contains('dark-mode')) {
-                localStorage.setItem('sale11_theme', 'dark');
-                if(icon) icon.className = "fas fa-sun";
-            } else {
-                localStorage.setItem('sale11_theme', 'light');
-                if(icon) icon.className = "fas fa-moon";
-            }
-        }
+        <!-- SIDEBAR -->
 
-        // Secure Admin Authentication using password s@hil2026
-        function checkAdminAccess() {
-            let isAdminLoggedIn = sessionStorage.getItem('sale11_admin_auth');
-            if(isAdminLoggedIn === 'true') {
-                openAdminDashboard();
-            } else {
-                let pass = prompt('🔐 Enter Admin Password:');
-                if(pass === 's@hil2026') {
-                    sessionStorage.setItem('sale11_admin_auth', 'true');
-                    openAdminDashboard();
-                    alert('✅ Welcome Admin!');
-                } else if(pass !== null) {
-                    alert('❌ Incorrect Password!');
-                }
-            }
-        }
+        <aside class="admin-sidebar">
 
-        function openAdminDashboard() {
-            document.getElementById('customerStoreView').style.display = 'none';
-            document.getElementById('adminDashboardView').style.display = 'block';
-            document.getElementById('stDeliveryCharge').value = settings.deliveryCharge;
-            document.getElementById('stFreeLimit').value = settings.freeLimit;
-            document.getElementById('stCodToggle').value = settings.codEnabled;
-            updateStats();
-            renderAdminProducts();
-            renderAdminOrders();
-            renderAdminCustomers();
-        }
+            <button
+                id="adminTabDashboard"
+                class="admin-tab active"
+                onclick="switchAdminTab('dashboard')"
+                type="button"
+            >
+                📊 Dashboard
+            </button>
 
-        function switchTab(tab) {
-            if(tab === 'store') {
-                document.getElementById('adminDashboardView').style.display = 'none';
-                document.getElementById('customerStoreView').style.display = 'block';
-                renderProducts();
-            }
-        }
 
-        function switchAdminTab(tabName) {
-            ['dashboard', 'products', 'orders', 'customers', 'settings'].forEach(t => {
-                let el = document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1));
-                if(el) el.style.display = (t === tabName) ? 'block' : 'none';
-            });
-        }
+            <button
+                id="adminTabProducts"
+                class="admin-tab"
+                onclick="switchAdminTab('products')"
+                type="button"
+            >
+                📦 Products
+            </button>
 
-        function updateStats() {
-            document.getElementById('statRevenue').innerText = orders.reduce((s, o) => s + (o.finalAmount || 0), 0);
-            document.getElementById('statOrders').innerText = orders.length;
-            document.getElementById('statProds').innerText = products.length;
-            document.getElementById('statCusts').innerText = customers.length;
-        }
 
-        function renderProducts(list = products) {
-            const grid = document.getElementById('productsGrid');
-            grid.innerHTML = list.length === 0 ? '<p>No products found.</p>' : '';
-            list.forEach((p) => {
-                let realIdx = products.indexOf(p);
-                let discount = p.mrp > p.price ? Math.round(((p.mrp - p.price)/p.mrp)*100) : 0;
-                grid.innerHTML += `
-                    <div class="product-card">
-                        <button class="wishlist-btn ${wishlist.some(w => w.name === p.name) ? 'active' : ''}" onclick="toggleWishlist('${p.name}', ${p.price}, this)"><i class="fas fa-heart"></i></button>
-                        <img src="${p.img}" alt="${p.name}" onclick="openProductDetail(${realIdx})" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
-                        <h3 onclick="openProductDetail(${realIdx})">${p.name}</h3>
-                        <span class="resell-badge">Resell: ₹${p.resellPrice || p.price + 200}</span>
-                        <p class="price">₹${p.price} <span class="mrp">₹${p.mrp}</span> <span style="font-size:11px; color:green; float:right;">${discount}% OFF</span></p>
-                        <div style="font-size:11px; color:#888; margin-bottom:8px;">★ ${p.rating || 4.5} | Stock: ${p.stock ?? 10}</div>
-                        <button class="btn-primary" onclick="addToCart('${p.name}', ${p.price})" ${p.stock <= 0 ? 'disabled style="background:#ccc;"' : ''}>Add to Cart</button>
-                        <div style="display:flex; gap:5px; margin-top:5px;">
-                            <button class="btn-secondary" onclick="shareProduct('${p.name}', ${p.price}, ${p.resellPrice || p.price + 200})"><i class="fas fa-share-alt"></i> Share</button>
-                            <button class="btn-secondary" onclick="whatsappShare('${p.name}', ${p.price}, ${p.resellPrice || p.price + 200})" style="background:#25D366; color:#fff;"><i class="fab fa-whatsapp"></i></button>
+            <button
+                id="adminTabOrders"
+                class="admin-tab"
+                onclick="switchAdminTab('orders')"
+                type="button"
+            >
+                🧾 Orders
+            </button>
+
+
+            <button
+                id="adminTabCustomers"
+                class="admin-tab"
+                onclick="switchAdminTab('customers')"
+                type="button"
+            >
+                👥 Customers
+            </button>
+
+
+            <button
+                id="adminTabReports"
+                class="admin-tab"
+                onclick="switchAdminTab('reports')"
+                type="button"
+            >
+                📈 Reports
+            </button>
+
+
+            <button
+                id="adminTabCategories"
+                class="admin-tab"
+                onclick="switchAdminTab('categories')"
+                type="button"
+            >
+                🗂️ Categories
+            </button>
+
+
+            <button
+                id="adminTabSettings"
+                class="admin-tab"
+                onclick="switchAdminTab('settings')"
+                type="button"
+            >
+                ⚙️ Settings
+            </button>
+
+        </aside>
+
+
+
+        <!-- ADMIN CONTENT -->
+
+        <main class="admin-content">
+
+
+            <!-- =================================================
+                 DASHBOARD
+            ================================================== -->
+
+            <section
+                id="adminDashboardView"
+                class="admin-panel active"
+            >
+
+                <div class="admin-panel-top">
+
+                    <div>
+
+                        <div class="section-kicker">
+                            OVERVIEW
                         </div>
+
+                        <h1>
+                            Dashboard
+                        </h1>
+
+                        <p>
+                            Manage your Sale 11 store.
+                        </p>
+
                     </div>
-                `;
-            });
-        }
 
-        function openProductDetail(idx) {
-            let p = products[idx];
-            let modal = document.getElementById('productDetailModal');
-            let container = document.getElementById('productDetailContainer');
-            container.innerHTML = `
-                <span class="close" onclick="closeProductDetailModal()">&times;</span>
-                <img src="${p.img}" style="width:100%; height:220px; object-fit:contain; border-radius:6px;" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
-                <h2 style="margin-top:10px;">${p.name}</h2>
-                <p class="price" style="font-size:18px; margin:5px 0;">₹${p.price} <span class="mrp">₹${p.mrp}</span></p>
-                <span class="resell-badge">Reselling Price: ₹${p.resellPrice || p.price + 200}</span>
-                <p style="font-size:13px; margin:8px 0;"><strong>Category:</strong> ${p.category}</p>
-                <p style="font-size:13px; margin:8px 0;">${p.description || 'High quality reselling product.'}</p>
-                <p style="font-size:12px; color:green; font-weight:600; margin:10px 0;">✓ Cash on Delivery Available | ✓ Easy Returns within 7 Days</p>
-                <button class="btn-primary" onclick="addToCart('${p.name}', ${p.price}); closeProductDetailModal();">Add to Cart</button>
-            `;
-            modal.style.display = 'flex';
-        }
-        function closeProductDetailModal() { document.getElementById('productDetailModal').style.display = 'none'; }
 
-        function filterCategory(cat) {
-            if(cat === 'All') renderProducts(products);
-            else renderProducts(products.filter(p => p.category === cat));
-        }
+                    <div class="period-tabs">
 
-        function filterProductsSearch() {
-            let q = document.getElementById('searchInput').value.toLowerCase();
-            renderProducts(products.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)));
-        }
+                        <button
+                            class="period-btn active"
+                            onclick="setDashboardPeriod('all')"
+                            type="button"
+                        >
+                            All Time
+                        </button>
 
-        function shareProduct(name, price, resellPrice) {
-            if (navigator.share) {
-                navigator.share({ title: 'Sale 11', text: `Check out ${name} for ₹${resellPrice}!`, url: window.location.href }).catch(()=>{});
-            } else { alert(`Link copied for ${name}!`); }
-        }
+                        <button
+                            class="period-btn"
+                            onclick="setDashboardPeriod('today')"
+                            type="button"
+                        >
+                            Today
+                        </button>
 
-        function whatsappShare(name, price, resellPrice) {
-            let msg = encodeURIComponent(`🔥 Hot Item! *${name}* - Resell Price: ₹${resellPrice}\nOrder now: ${window.location.href}`);
-            window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
-        }
+                        <button
+                            class="period-btn"
+                            onclick="setDashboardPeriod('7')"
+                            type="button"
+                        >
+                            7 Days
+                        </button>
 
-        function addToCart(name, price) {
-            cart.push({name, price});
-            localStorage.setItem('sale11_cart', JSON.stringify(cart));
-            updateCartCount();
-            alert(name + ' added to cart!');
-        }
-        function updateCartCount() { document.getElementById('cartCountBadge').innerText = cart.length; }
+                        <button
+                            class="period-btn"
+                            onclick="setDashboardPeriod('30')"
+                            type="button"
+                        >
+                            30 Days
+                        </button>
 
-        function openCartModal() { document.getElementById('cartModal').style.display = 'flex'; renderCartItems(); }
-        function closeCartModal() { document.getElementById('cartModal').style.display = 'none'; }
-        
-        function renderCartItems() {
-            const container = document.getElementById('cartItemsContainer');
-            container.innerHTML = cart.length === 0 ? '<p>Cart is empty.</p>' : '';
-            let subtotal = 0;
-            cart.forEach((item, i) => {
-                subtotal += item.price;
-                container.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${item.name} - ₹${item.price}</span><button onclick="cart.splice(${i},1);localStorage.setItem('sale11_cart',JSON.stringify(cart));updateCartCount();renderCartItems();" style="color:red;border:none;background:none;cursor:pointer;">❌</button></div>`;
-            });
-            
-            let delivery = subtotal >= Number(settings.freeLimit) || subtotal === 0 ? 0 : Number(settings.deliveryCharge);
-            document.getElementById('cartSubtotal').innerText = subtotal;
-            document.getElementById('cartDeliveryCalc').innerText = delivery;
-            document.getElementById('cartTotalPrice').innerText = subtotal + delivery;
-        }
-
-        function openCheckoutModal() { 
-            if(cart.length === 0){ alert('Cart is empty!'); return; } 
-            closeCartModal(); 
-            
-            let codWrapper = document.getElementById('codOptionWrapper');
-            if(settings.codEnabled === 'Disabled') {
-                codWrapper.innerHTML = '<p style="color:#e53935; font-size:12px;">Cash on Delivery is currently unavailable.</p>';
-            } else {
-                codWrapper.innerHTML = '<label style="display:block; margin:6px 0;"><input type="radio" name="payment" value="COD" checked> Cash on Delivery (COD)</label>';
-            }
-
-            let subtotal = cart.reduce((s, i) => s + i.price, 0);
-            let delivery = subtotal >= Number(settings.freeLimit) ? 0 : Number(settings.deliveryCharge);
-            
-            document.getElementById('summaryProductPrice').innerText = subtotal;
-            document.getElementById('summaryDeliveryCharge').innerText = delivery;
-            document.getElementById('summaryFinalAmount').innerText = subtotal + delivery;
-            document.getElementById('summaryEstDelivery').innerText = getEstimatedDeliveryDate();
-
-            document.getElementById('checkoutModal').style.display = 'flex'; 
-        }
-        function closeCheckoutModal() { document.getElementById('checkoutModal').style.display = 'none'; }
-
-        function checkPincode() {
-            let pin = document.getElementById('checkoutPincode').value.trim();
-            let msg = document.getElementById('pincodeStatusMsg');
-            if(pin.length === 6 && !isNaN(pin)) {
-                msg.style.color = 'green';
-                msg.innerText = '✓ Delivery Available in this area (Estimated 3-5 days)';
-            } else {
-                msg.style.color = 'red';
-                msg.innerText = '✕ Please enter a valid 6-digit Pincode';
-            }
-        }
-
-        function getEstimatedDeliveryDate() {
-            let d1 = new Date();
-            let d2 = new Date();
-            d1.setDate(d1.getDate() + 3);
-            d2.setDate(d2.getDate() + 6);
-            let options = { month: 'short', day: 'numeric' };
-            return `${d1.toLocaleDateString('en-US', options)} - ${d2.toLocaleDateString('en-US', options)}`;
-        }
-
-        document.addEventListener('change', function(e) {
-            if(e.target.name === 'payment') {
-                let upiBox = document.getElementById('upiScannerBox');
-                if(upiBox) {
-                    upiBox.style.display = e.target.value === 'UPI' ? 'block' : 'none';
-                }
-            }
-        });
-
-        function placeOrder() {
-            let name = document.getElementById('checkoutName').value.trim();
-            let phone = document.getElementById('checkoutPhone').value.trim();
-            let address = document.getElementById('checkoutAddress').value.trim();
-            let city = document.getElementById('checkoutCity').value.trim();
-            let pincode = document.getElementById('checkoutPincode').value.trim();
-            let paymentMethod = document.querySelector('input[name="payment"]:checked').value;
-            let utr = document.getElementById('checkoutUtr') ? document.getElementById('checkoutUtr').value.trim() : '';
-
-            if(name && phone && address && city && pincode) {
-                let subtotal = cart.reduce((s, i) => s + i.price, 0);
-                let delivery = subtotal >= Number(settings.freeLimit) ? 0 : Number(settings.deliveryCharge);
-                let finalAmount = subtotal + delivery;
-
-                let payStatus = paymentMethod === 'COD' ? 'COD Pending' : (paymentMethod === 'UPI' ? 'Pending (Verification)' : 'Paid');
-
-                let orderDetails = {
-                    id: 'ORD' + Math.floor(100000 + Math.random()*900000),
-                    customerName: name,
-                    phone: phone,
-                    address: `${address}, ${city} - ${pincode}`,
-                    pincode: pincode,
-                    items: [...cart],
-                    productPrice: subtotal,
-                    deliveryCharge: delivery,
-                    finalAmount: finalAmount,
-                    paymentMethod: paymentMethod,
-                    paymentStatus: payStatus,
-                    utrReference: utr || 'N/A',
-                    estDelivery: getEstimatedDeliveryDate(),
-                    date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                    orderStatus: 'Pending'
-                };
-
-                orders.push(orderDetails);
-                localStorage.setItem('sale11_orders', JSON.stringify(orders));
-
-                if(!customers.find(c => c.phone === phone)) {
-                    customers.push({name, phone, address, ordersCount: 1, totalSpent: finalAmount});
-                } else {
-                    let c = customers.find(x => x.phone === phone);
-                    c.ordersCount += 1;
-                    c.totalSpent += finalAmount;
-                }
-                localStorage.setItem('sale11_customers', JSON.stringify(customers));
-
-                alert('🎉 Order Placed Successfully!');
-                cart = [];
-                localStorage.removeItem('sale11_cart');
-                updateCartCount();
-                closeCheckoutModal();
-            } else { 
-                alert('Please fill all required checkout and address fields.'); 
-            }
-        }
-
-        function openOrdersModal() {
-            let modal = document.getElementById('ordersModal');
-            let container = document.getElementById('ordersContainer');
-            container.innerHTML = orders.length === 0 ? '<p>No orders placed yet.</p>' : '';
-
-            orders.forEach(o => {
-                let statuses = ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered'];
-                let currentIdx = statuses.indexOf(o.orderStatus);
-                if(currentIdx === -1) currentIdx = 0;
-
-                let timelineHtml = '<div class="timeline">';
-                statuses.forEach((st, idx) => {
-                    let activeClass = idx <= currentIdx ? 'active' : '';
-                    let iconClass = idx <= currentIdx ? 'fa-check-circle' : 'fa-circle';
-                    timelineHtml += `<div class="timeline-step ${activeClass}"><i class="fas ${iconClass}"></i>${st}</div>`;
-                });
-                timelineHtml += '</div>';
-
-                container.innerHTML += `
-                    <div style="background:var(--bg-color); padding:12px; margin-bottom:12px; border-radius:6px; border-left:4px solid var(--primary-color);">
-                        <p><strong>Order ID:</strong> ${o.id} | <strong>Date:</strong> ${o.date}</p>
-                        <p><strong>Product(s):</strong> ${o.items.map(i => i.name).join(', ')}</p>
-                        <p><strong>Amount:</strong> ₹${o.finalAmount} (${o.paymentMethod}) - Pay Status: <span style="color:${o.paymentStatus==='Paid'?'green':'orange'};">${o.paymentStatus}</span></p>
-                        <p><strong>Estimated Delivery:</strong> ${o.estDelivery}</p>
-                        <p><strong>Order Status:</strong> <span style="color:var(--primary-color); font-weight:bold;">${o.orderStatus}</span></p>
-                        ${timelineHtml}
                     </div>
-                `;
-            });
-            modal.style.display = 'flex';
-        }
-        function closeOrdersModal() { document.getElementById('ordersModal').style.display = 'none'; }
 
-        // Handle Image File Upload directly from Phone Gallery / Storage
-        function handleImageFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const base64Image = e.target.result;
-                    document.getElementById('adminProdImgBase64').value = base64Image;
-                    document.getElementById('imagePreview').src = base64Image;
-                    document.getElementById('imagePreviewContainer').style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            }
-        }
+                </div>
 
-        // Admin Management
-        function saveAdminProduct() {
-            let editIdx = Number(document.getElementById('editProductIndex').value);
-            let name = document.getElementById('adminProdName').value.trim();
-            let price = Number(document.getElementById('adminProdPrice').value);
-            let mrp = Number(document.getElementById('adminProdMrp').value);
-            let resellPrice = Number(document.getElementById('adminProdResell').value) || price + 200;
-            let category = document.getElementById('adminProdCat').value;
-            let stock = Number(document.getElementById('adminProdStock').value) || 10;
-            let img = document.getElementById('adminProdImgBase64').value.trim() || (editIdx !== -1 ? products[editIdx].img : 'https://via.placeholder.com/150');
-            let description = document.getElementById('adminProdDesc').value.trim();
 
-            if(name && price && mrp) {
-                let pData = {name, price, mrp, resellPrice, category, stock, img, description, rating: 4.5};
-                if(editIdx === -1) {
-                    products.push(pData);
-                } else {
-                    products[editIdx] = pData;
-                }
 
-                localStorage.setItem('sale11_products', JSON.stringify(products));
-                renderAdminProducts();
-                resetAdminForm();
-                alert('✅ Product saved successfully!');
-            } else { 
-                alert('Fill name, price, MRP and upload an image.'); 
-            }
-        }
+                <!-- DASHBOARD STATS -->
 
-        function renderAdminProducts() {
-            let tbody = document.getElementById('adminProductsTableBody');
-            tbody.innerHTML = '';
-            products.forEach((p, idx) => {
-                tbody.innerHTML += `<tr>
-                    <td style="padding:8px;"><img src="${p.img}" width="35" height="35" style="border-radius:4px;object-fit:cover;" onerror="this.src='https://via.placeholder.com/35?text=No+Img'"></td>
-                    <td style="padding:8px;">${p.name}</td>
-                    <td style="padding:8px;">₹${p.price}</td>
-                    <td style="padding:8px;">${p.stock}</td>
-                    <td style="padding:8px;">
-                        <button onclick="editProd(${idx})" style="background:#1976d2;color:#fff;border:none;padding:3px 6px;border-radius:3px; cursor:pointer;">Edit</button>
-                        <button onclick="products.splice(${idx},1);localStorage.setItem('sale11_products',JSON.stringify(products));renderAdminProducts();" style="background:#e53935;color:#fff;border:none;padding:3px 6px;border-radius:3px; cursor:pointer;">Del</button>
-                    </td>
-                </tr>`;
-            });
-        }
+                <div class="stats-grid">
 
-        function editProd(idx) {
-            let p = products[idx];
-            document.getElementById('editProductIndex').value = idx;
-            document.getElementById('adminProdName').value = p.name;
-            document.getElementById('adminProdPrice').value = p.price;
-            document.getElementById('adminProdMrp').value = p.mrp;
-            document.getElementById('adminProdResell').value = p.resellPrice;
-            document.getElementById('adminProdCat').value = p.category;
-            document.getElementById('adminProdStock').value = p.stock;
-            document.getElementById('adminProdImgBase64').value = p.img;
-            document.getElementById('imagePreview').src = p.img;
-            document.getElementById('imagePreviewContainer').style.display = 'block';
-            document.getElementById('adminProdDesc').value = p.description || '';
-            document.getElementById('adminFormTitle').innerText = 'Edit Product';
-            document.getElementById('adminSaveBtn').innerText = 'Update Product';
-        }
+                    <div class="stat-card">
 
-        function resetAdminForm() {
-            document.getElementById('editProductIndex').value = '-1';
-            document.getElementById('adminProdName').value = '';
-            document.getElementById('adminProdPrice').value = '';
-            document.getElementById('adminProdMrp').value = '';
-            document.getElementById('adminProdResell').value = '';
-            document.getElementById('adminProdStock').value = '10';
-            document.getElementById('adminProdImgBase64').value = '';
-            document.getElementById('adminProdFileInput').value = '';
-            document.getElementById('imagePreviewContainer').style.display = 'none';
-            document.getElementById('adminProdDesc').value = '';
-            document.getElementById('adminFormTitle').innerText = 'Add New Product';
-            document.getElementById('adminSaveBtn').innerText = 'Save Product';
-        }
+                        <span>
+                            Sales / Earnings
+                        </span>
 
-        function renderAdminOrders() {
-            let container = document.getElementById('adminOrdersContainer');
-            container.innerHTML = orders.length === 0 ? '<p>No orders yet.</p>' : '';
-            orders.forEach((o, i) => {
-                container.innerHTML += `<div style="background:var(--bg-color);padding:12px;margin-bottom:10px;border-radius:6px;border:1px solid var(--border-color);font-size:13px;">
-                    <p><strong>Order ID:</strong> ${o.id} | <strong>Date:</strong> ${o.date}</p>
-                    <p><strong>Customer:</strong> ${o.customerName} (${o.phone})</p>
-                    <p><strong>Address:</strong> ${o.address} (Pincode: ${o.pincode})</p>
-                    <p><strong>Product(s):</strong> ${o.items.map(it=>it.name).join(', ')}</p>
-                    <p><strong>Price Breakdown:</strong> Product: ₹${o.productPrice} + Delivery: ₹${o.deliveryCharge} = <b>Final: ₹${o.finalAmount}</b></p>
-                    <p><strong>Payment:</strong> ${o.paymentMethod} | Status: <b style="color:orange;">${o.paymentStatus}</b> ${o.utrReference !== 'N/A' ? '| UTR: <b>'+o.utrReference+'</b>' : ''}</p>
-                    
-                    <div style="display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;">
+                        <strong id="statRevenue">
+                            ₹0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Total Orders
+                        </span>
+
+                        <strong id="statOrders">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Products
+                        </span>
+
+                        <strong id="statProds">
+                            0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="stat-card">
+
+                        <span>
+                            Customers
+                        </span>
+
+                        <strong id="statCusts">
+                            0
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- DASHBOARD GRID -->
+
+                <div class="dashboard-grid">
+
+
+                    <!-- ORDER STATUS -->
+
+                    <div class="admin-card">
+
+                        <div class="admin-card-header">
+
+                            <div>
+
+                                <h3>
+                                    Order Status
+                                </h3>
+
+                                <p>
+                                    Current order summary
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            id="statusSummary"
+                            class="status-summary"
+                        >
+
+                            <div class="status-summary-row">
+                                <span>Pending</span>
+                                <strong id="pendingOrders">0</strong>
+                            </div>
+
+                            <div class="status-summary-row">
+                                <span>Confirmed</span>
+                                <strong id="confirmedOrders">0</strong>
+                            </div>
+
+                            <div class="status-summary-row">
+                                <span>Packed</span>
+                                <strong id="packedOrders">0</strong>
+                            </div>
+
+                            <div class="status-summary-row">
+                                <span>Shipped</span>
+                                <strong id="shippedOrders">0</strong>
+                            </div>
+
+                            <div class="status-summary-row">
+                                <span>Out for Delivery</span>
+                                <strong id="outForDeliveryOrders">0</strong>
+                            </div>
+
+                            <div class="status-summary-row">
+                                <span>Delivered</span>
+                                <strong id="deliveredOrders">0</strong>
+                            </div>
+
+                            <div class="status-summary-row">
+                                <span>Cancelled</span>
+                                <strong id="cancelledOrders">0</strong>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- QUICK ACTIONS -->
+
+                    <div class="admin-card">
+
+                        <div class="admin-card-header">
+
+                            <div>
+
+                                <h3>
+                                    Quick Actions
+                                </h3>
+
+                                <p>
+                                    Manage your store quickly
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="quick-actions">
+
+                            <button
+                                class="quick-action"
+                                onclick="openProductModal()"
+                                type="button"
+                            >
+                                <strong>＋</strong>
+                                <span>Add Product</span>
+                            </button>
+
+
+                            <button
+                                class="quick-action"
+                                onclick="switchAdminTab('orders')"
+                                type="button"
+                            >
+                                <strong>🧾</strong>
+                                <span>View Orders</span>
+                            </button>
+
+
+                            <button
+                                class="quick-action"
+                                onclick="switchAdminTab('customers')"
+                                type="button"
+                            >
+                                <strong>👥</strong>
+                                <span>Customers</span>
+                            </button>
+
+
+                            <button
+                                class="quick-action"
+                                onclick="switchAdminTab('reports')"
+                                type="button"
+                            >
+                                <strong>📈</strong>
+                                <span>Reports</span>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- RECENT ORDERS -->
+
+                <div class="admin-table-card">
+
+                    <div class="admin-panel-top">
+
                         <div>
-                            <label style="font-size:11px; display:block;">Order Status:</label>
-                            <select class="input-box" style="width:140px; margin:0; padding:4px;" onchange="orders[${i}].orderStatus=this.value;localStorage.setItem('sale11_orders',JSON.stringify(orders));alert('Order status updated!');">
-                                <option value="Pending" ${o.orderStatus==='Pending'?'selected':''}>Pending</option>
-                                <option value="Confirmed" ${o.orderStatus==='Confirmed'?'selected':''}>Confirmed</option>
-                                <option value="Shipped" ${o.orderStatus==='Shipped'?'selected':''}>Shipped</option>
-                                <option value="Out for Delivery" ${o.orderStatus==='Out for Delivery'?'selected':''}>Out for Delivery</option>
-                                <option value="Delivered" ${o.orderStatus==='Delivered'?'selected':''}>Delivered</option>
-                                <option value="Cancelled" ${o.orderStatus==='Cancelled'?'selected':''}>Cancelled</option>
-                            </select>
+
+                            <h2>
+                                Recent Orders
+                            </h2>
+
+                            <p>
+                                Latest customer orders
+                            </p>
+
                         </div>
-                        <div>
-                            <label style="font-size:11px; display:block;">Payment Status:</label>
-                            <select class="input-box" style="width:140px; margin:0; padding:4px;" onchange="orders[${i}].paymentStatus=this.value;localStorage.setItem('sale11_orders',JSON.stringify(orders));alert('Payment status updated!');">
-                                <option value="Pending" ${o.paymentStatus==='Pending'?'selected':''}>Pending</option>
-                                <option value="Paid" ${o.paymentStatus==='Paid'?'selected':''}>Paid</option>
-                                <option value="Failed" ${o.paymentStatus==='Failed'?'selected':''}>Failed</option>
-                                <option value="COD Pending" ${o.paymentStatus==='COD Pending'?'selected':''}>COD Pending</option>
-                                <option value="Refunded" ${o.paymentStatus==='Refunded'?'selected':''}>Refunded</option>
-                            </select>
-                        </div>
+
+
+                        <button
+                            class="text-btn"
+                            onclick="switchAdminTab('orders')"
+                            type="button"
+                        >
+                            View All
+                        </button>
+
                     </div>
-                </div>`;
-            });
-        }
 
-        function renderAdminCustomers() {
-            let container = document.getElementById('adminCustomersContainer');
-            container.innerHTML = customers.length === 0 ? '<p>No customers yet.</p>' : '';
-            customers.forEach(c => {
-                container.innerHTML += `<div style="background:var(--bg-color);padding:8px;margin-bottom:5px;border-radius:4px;"><strong>${c.name}</strong> (${c.phone}) - Orders: ${c.ordersCount}, Spent: ₹${c.totalSpent}</div>`;
-            });
-        }
 
-        function saveAdminSettings() {
-            settings.deliveryCharge = Number(document.getElementById('stDeliveryCharge').value);
-            settings.freeLimit = Number(document.getElementById('stFreeLimit').value);
-            settings.codEnabled = document.getElementById('stCodToggle').value;
-            localStorage.setItem('sale11_settings', JSON.stringify(settings));
-            alert('Settings saved successfully!');
-        }
+                    <div class="table-scroll">
 
-        function openSupportModal() { document.getElementById('supportModal').style.display = 'flex'; }
-        function closeSupportModal() { document.getElementById('supportModal').style.display = 'none'; }
-        
-        function toggleWishlist(name, price, btn) {
-            let idx = wishlist.findIndex(w => w.name === name);
-            if(idx > -1) {
-                wishlist.splice(idx, 1);
-                btn.classList.remove('active');
-            } else {
-                wishlist.push({name, price});
-                btn.classList.add('active');
-            }
-            localStorage.setItem('sale11_wishlist', JSON.stringify(wishlist));
-        }
+                        <table class="admin-table">
 
-        function openWishlistModal() {
-            let modal = document.getElementById('wishlistModal');
-            let container = document.getElementById('wishlistItemsContainer');
-            container.innerHTML = wishlist.length === 0 ? '<p>Wishlist is empty.</p>' : '';
-            wishlist.forEach((item, i) => {
-                container.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${item.name} - ₹${item.price}</span><button onclick="wishlist.splice(${i},1);localStorage.setItem('sale11_wishlist',JSON.stringify(wishlist));openWishlistModal();" style="color:red;border:none;background:none;cursor:pointer;">❌</button></div>`;
-            });
-            modal.style.display = 'flex';
-        }
-        function closeWishlistModal() { document.getElementById('wishlistModal').style.display = 'none'; }
+                            <thead>
 
-        function openLoginModal() { document.getElementById('loginModal').style.display = 'flex'; checkLoginState(); }
-        function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
-        
-        function handleLogin() {
-            let name = document.getElementById('userNameInput').value.trim();
-            let phone = document.getElementById('userPhoneInput').value.trim();
-            if(name && phone) {
-                localStorage.setItem('sale11_user_name', name);
-                localStorage.setItem('sale11_user_phone', phone);
-                alert('Login Successful!');
-                checkLoginState();
-            } else { alert('Please enter name and phone.'); }
-        }
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
 
-        function checkLoginState() {
-            let name = localStorage.getItem('sale11_user_name');
-            let phone = localStorage.getItem('sale11_user_phone');
-            if(name && phone) {
-                document.getElementById('authContainer').style.display = 'none';
-                document.getElementById('profileContainer').style.display = 'block';
-                document.getElementById('displayUserName').innerText = 'Name: ' + name;
-                document.getElementById('displayUserPhone').innerText = 'Phone: ' + phone;
-            } else {
-                document.getElementById('authContainer').style.display = 'block';
-                document.getElementById('profileContainer').style.display = 'none';
-            }
-        }
+                            </thead>
 
-        function handleLogout() {
-            localStorage.removeItem('sale11_user_name');
-            localStorage.removeItem('sale11_user_phone');
-            alert('Logged out successfully.');
-            checkLoginState();
-        }
-    </script>
+                            <tbody id="dashboardOrdersTable">
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 PRODUCTS
+            ================================================== -->
+
+            <section
+                id="adminProductsView"
+                class="admin-panel"
+            >
+
+                <!-- =====================================================
+             PRODUCTS ADMIN 
+             ===================================================== -->
+
+        <div class="admin-section-head">
+            <div>
+                <h2>Products</h2>
+                <p>Manage your complete product catalog</p>
+            </div>
+
+            <button
+                type="button"
+                class="primary-btn"
+                id="addProductBtn"
+            >
+                <span>＋</span>
+                Add Product
+            </button>
+        </div>
+
+        <div class="admin-toolbar">
+
+            <div class="toolbar-search">
+                <span>⌕</span>
+
+                <input
+                    type="search"
+                    id="adminProductSearch"
+                    placeholder="Search products..."
+                    autocomplete="off"
+                >
+            </div>
+
+            <select id="adminProductCategoryFilter">
+                <option value="all">All Categories</option>
+                <option value="Fashion">Fashion</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Home & Kitchen">Home & Kitchen</option>
+                <option value="Beauty">Beauty</option>
+                <option value="Kids">Kids</option>
+                <option value="Best Sellers">Best Sellers</option>
+            </select>
+
+            <select id="adminProductStockFilter">
+                <option value="all">All Stock</option>
+                <option value="in-stock">In Stock</option>
+                <option value="low-stock">Low Stock</option>
+                <option value="out-stock">Out of Stock</option>
+            </select>
+
+        </div>
+
+
+        <div class="product-admin-table-wrap" id="adminProductsTable">
+
+            <table class="admin-table">
+
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Selling Price</th>
+                        <th>MRP</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody id="adminProductsTableBody">
+
+                    <!-- Products will be rendered by app.js -->
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <div
+            id="adminProductsEmpty"
+            class="empty-state hidden"
+        >
+            <div class="empty-icon">📦</div>
+
+            <h3>No products found</h3>
+
+            <p>
+                Add your first product or change the search/filter.
+            </p>
+
+            <button
+                type="button"
+                class="primary-btn"
+                id="emptyAddProductBtn"
+            >
+                Add Product
+            </button>
+        </div>
+
+
+        <!-- =====================================================
+             PRODUCT PAGINATION
+             ===================================================== -->
+
+        <div
+            class="admin-pagination"
+            id="productsPagination"
+        >
+
+            <button
+                type="button"
+                class="pagination-btn"
+                id="productsPrevPage"
+            >
+                ← Previous
+            </button>
+
+            <span id="productsPageInfo">
+                Page 1
+            </span>
+
+            <button
+                type="button"
+                class="pagination-btn"
+                id="productsNextPage"
+            >
+                Next →
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================================================
+         ORDERS ADMIN VIEW
+         ========================================================= -->
+
+    <section
+        id="adminOrdersView"
+        class="admin-panel"
+    >
+
+        <div class="admin-section-head">
+
+            <div>
+                <h2>Orders</h2>
+
+                <p>
+                    Manage customer orders and delivery status
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="secondary-btn"
+                id="refreshOrdersBtn"
+            >
+                ↻ Refresh
+            </button>
+
+        </div>
+
+
+        <!-- ORDER SUMMARY -->
+
+        <div class="order-summary-grid">
+
+            <div class="order-summary-card">
+
+                <span>Total Orders</span>
+
+                <strong id="ordersTotalCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="order-summary-card">
+
+                <span>Pending</span>
+
+                <strong id="ordersPendingCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="order-summary-card">
+
+                <span>Confirmed</span>
+
+                <strong id="ordersConfirmedCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="order-summary-card">
+
+                <span>Shipped</span>
+
+                <strong id="ordersShippedCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="order-summary-card">
+
+                <span>Delivered</span>
+
+                <strong id="ordersDeliveredCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="order-summary-card">
+
+                <span>Cancelled</span>
+
+                <strong id="ordersCancelledCount">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- ORDER FILTERS -->
+
+        <div class="admin-toolbar order-toolbar">
+
+            <div class="toolbar-search">
+
+                <span>⌕</span>
+
+                <input
+                    type="search"
+                    id="adminOrderSearch"
+                    placeholder="Search order ID, customer or phone..."
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <select id="adminOrderStatusFilter">
+
+                <option value="all">
+                    All Status
+                </option>
+
+                <option value="Pending">
+                    Pending
+                </option>
+
+                <option value="Confirmed">
+                    Confirmed
+                </option>
+
+                <option value="Packed">
+                    Packed
+                </option>
+
+                <option value="Shipped">
+                    Shipped
+                </option>
+
+                <option value="Out for Delivery">
+                    Out for Delivery
+                </option>
+
+                <option value="Delivered">
+                    Delivered
+                </option>
+
+                <option value="Cancelled">
+                    Cancelled
+                </option>
+
+            </select>
+
+
+            <select id="adminPaymentFilter">
+
+                <option value="all">
+                    All Payments
+                </option>
+
+                <option value="COD">
+                    Cash on Delivery
+                </option>
+
+                <option value="UPI">
+                    UPI
+                </option>
+
+            </select>
+
+
+            <select id="adminOrderDateFilter">
+
+                <option value="all">
+                    All Dates
+                </option>
+
+                <option value="today">
+                    Today
+                </option>
+
+                <option value="7days">
+                    Last 7 Days
+                </option>
+
+                <option value="30days">
+                    Last 30 Days
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- ORDERS TABLE -->
+
+        <div class="orders-table-wrap" id="adminOrdersTable">
+
+            <table class="admin-table orders-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Order</th>
+
+                        <th>Customer</th>
+
+                        <th>Date</th>
+
+                        <th>Items</th>
+
+                        <th>Amount</th>
+
+                        <th>Payment</th>
+
+                        <th>Status</th>
+
+                        <th>Action</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="adminOrdersTableBody">
+
+                    <!-- Orders rendered by app.js -->
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <div
+            id="adminOrdersEmpty"
+            class="empty-state hidden"
+        >
+
+            <div class="empty-icon">
+                🛍️
+            </div>
+
+            <h3>No orders found</h3>
+
+            <p>
+                Orders placed by customers will appear here.
+            </p>
+
+        </div>
+
+
+        <!-- =====================================================
+             ORDERS PAGINATION
+             ===================================================== -->
+
+        <div
+            class="admin-pagination"
+            id="ordersPagination"
+        >
+
+            <button
+                type="button"
+                class="pagination-btn"
+                id="ordersPrevPage"
+            >
+                ← Previous
+            </button>
+
+
+            <span id="ordersPageInfo">
+                Page 1
+            </span>
+
+
+            <button
+                type="button"
+                class="pagination-btn"
+                id="ordersNextPage"
+            >
+                Next →
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================================================
+         ORDER DETAIL SIDE / MODAL TRIGGER AREA
+         ========================================================= -->
+
+    <div
+        id="adminOrderQuickInfo"
+        class="admin-quick-info hidden"
+    >
+
+        <div class="quick-info-header">
+
+            <div>
+
+                <span class="small-label">
+                    Order Details
+                </span>
+
+                <h3 id="quickOrderId">
+                    #ORDER
+                </h3>
+
+            </div>
+
+            <button
+                type="button"
+                class="icon-btn"
+                id="closeQuickOrderInfo"
+                aria-label="Close"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div class="quick-info-body" id="adminOrderDetailsContent">
+
+            <div class="quick-info-row">
+
+                <span>Customer</span>
+
+                <strong id="quickOrderCustomer">
+                    —
+                </strong>
+
+            </div>
+
+
+            <div class="quick-info-row">
+
+                <span>Phone</span>
+
+                <strong id="quickOrderPhone">
+                    —
+                </strong>
+
+            </div>
+
+
+            <div class="quick-info-row">
+
+                <span>Amount</span>
+
+                <strong id="quickOrderAmount">
+                    ₹0
+                </strong>
+
+            </div>
+
+
+            <div class="quick-info-row">
+
+                <span>Payment</span>
+
+                <strong id="quickOrderPayment">
+                    —
+                </strong>
+
+            </div>
+
+
+            <div class="quick-info-row">
+
+                <span>Status</span>
+
+                <strong id="quickOrderStatus">
+                    Pending
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="quick-info-actions">
+
+            <button
+                type="button"
+                class="secondary-btn"
+                id="quickViewOrderBtn"
+            >
+                View Full Order
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         ORDER STATUS CHANGE AREA
+         ========================================================= -->
+
+    <div
+        id="orderStatusEditor"
+        class="status-editor hidden"
+    >
+
+        <label for="orderStatusSelect">
+            Update Order Status
+        </label>
+
+
+        <select id="orderStatusSelect">
+
+            <option value="Pending">
+                Pending
+            </option>
+
+            <option value="Confirmed">
+                Confirmed
+            </option>
+
+            <option value="Packed">
+                Packed
+            </option>
+
+            <option value="Shipped">
+                Shipped
+            </option>
+
+            <option value="Out for Delivery">
+                Out for Delivery
+            </option>
+
+            <option value="Delivered">
+                Delivered
+            </option>
+
+            <option value="Cancelled">
+                Cancelled
+            </option>
+
+        </select>
+
+
+        <button
+            type="button"
+            class="primary-btn"
+            id="saveOrderStatusBtn"
+        >
+            Save Status
+        </button>
+
+    </div>
+
+
+    <!-- =========================================================
+    <!-- =========================================================
+     CUSTOMERS ADMIN VIEW — PART 3
+     ========================================================= -->
+
+<section
+    id="adminCustomersView"
+    class="admin-panel"
+>
+
+    <div class="admin-section-head">
+
+        <div>
+            <h2>Customers</h2>
+            <p>View and manage your customer accounts</p>
+        </div>
+
+        <button
+            type="button"
+            class="secondary-btn"
+            id="refreshCustomersBtn"
+        >
+            ↻ Refresh
+        </button>
+
+    </div>
+
+
+    <!-- CUSTOMER SUMMARY -->
+
+    <div class="customer-summary-grid">
+
+        <div class="customer-summary-card">
+            <span>Total Customers</span>
+            <strong id="customersTotalCount">0</strong>
+        </div>
+
+        <div class="customer-summary-card">
+            <span>New Customers</span>
+            <strong id="customersNewCount">0</strong>
+        </div>
+
+        <div class="customer-summary-card">
+            <span>Active Customers</span>
+            <strong id="customersActiveCount">0</strong>
+        </div>
+
+        <div class="customer-summary-card">
+            <span>Customers With Orders</span>
+            <strong id="customersOrderCount">0</strong>
+        </div>
+
+    </div>
+
+
+    <!-- CUSTOMER FILTER -->
+
+    <div class="admin-toolbar">
+
+        <div class="toolbar-search">
+
+            <span>⌕</span>
+
+            <input
+                type="search"
+                id="adminCustomerSearch"
+                placeholder="Search name, mobile or email..."
+                autocomplete="off"
+            >
+
+        </div>
+
+
+        <select id="adminCustomerDateFilter">
+
+            <option value="all">
+                All Customers
+            </option>
+
+            <option value="today">
+                Joined Today
+            </option>
+
+            <option value="7days">
+                Last 7 Days
+            </option>
+
+            <option value="30days">
+                Last 30 Days
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <!-- CUSTOMER TABLE -->
+
+    <div class="customer-table-wrap" id="adminCustomersGrid">
+
+        <table class="admin-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>Customer</th>
+
+                    <th>Mobile</th>
+
+                    <th>Email</th>
+
+                    <th>Orders</th>
+
+                    <th>Total Spent</th>
+
+                    <th>Joined</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="adminCustomersTableBody">
+
+                <!-- Customers rendered by app.js -->
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <div
+        id="adminCustomersEmpty"
+        class="empty-state hidden"
+    >
+
+        <div class="empty-icon">
+            👤
+        </div>
+
+        <h3>No customers found</h3>
+
+        <p>
+            Customer accounts will appear here after registration.
+        </p>
+
+    </div>
+
+
+    <!-- CUSTOMER PAGINATION -->
+
+    <div
+        class="admin-pagination"
+        id="customersPagination"
+    >
+
+        <button
+            type="button"
+            class="pagination-btn"
+            id="customersPrevPage"
+        >
+            ← Previous
+        </button>
+
+        <span id="customersPageInfo">
+            Page 1
+        </span>
+
+        <button
+            type="button"
+            class="pagination-btn"
+            id="customersNextPage"
+        >
+            Next →
+        </button>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     REPORTS ADMIN VIEW
+     ========================================================= -->
+
+<section
+    id="adminReportsView"
+    class="admin-panel"
+>
+
+    <div class="admin-section-head">
+
+        <div>
+            <h2>Sales & Reports</h2>
+            <p>Track your store performance and earnings</p>
+        </div>
+
+        <button
+            type="button"
+            class="secondary-btn"
+            id="refreshReportsBtn"
+        >
+            ↻ Refresh
+        </button>
+
+    </div>
+
+
+    <!-- REPORT PERIOD -->
+
+    <div class="report-period-tabs">
+
+        <button
+            type="button"
+            class="report-period-btn active"
+            data-report-period="today"
+        >
+            Today
+        </button>
+
+        <button
+            type="button"
+            class="report-period-btn"
+            data-report-period="7days"
+        >
+            7 Days
+        </button>
+
+        <button
+            type="button"
+            class="report-period-btn"
+            data-report-period="30days"
+        >
+            30 Days
+        </button>
+
+        <button
+            type="button"
+            class="report-period-btn"
+            data-report-period="all"
+        >
+            All Time
+        </button>
+
+    </div>
+
+
+    <!-- REPORT CARDS -->
+
+    <div class="report-cards">
+
+        <div class="report-card">
+
+            <span>Total Sales</span>
+
+            <strong id="reportTotalSales">
+                ₹0
+            </strong>
+
+            <small>
+                Customer order value
+            </small>
+
+        </div>
+
+
+        <div class="report-card">
+
+            <span>Orders</span>
+
+            <strong id="reportTotalOrders">
+                0
+            </strong>
+
+            <small>
+                Orders received
+            </small>
+
+        </div>
+
+
+        <div class="report-card">
+
+            <span>Delivered</span>
+
+            <strong id="reportDeliveredOrders">
+                0
+            </strong>
+
+            <small>
+                Successfully delivered
+            </small>
+
+        </div>
+
+
+        <div class="report-card">
+
+            <span>Cancelled</span>
+
+            <strong id="reportCancelledOrders">
+                0
+            </strong>
+
+            <small>
+                Cancelled orders
+            </small>
+
+        </div>
+
+
+        <div class="report-card">
+
+            <span>Average Order Value</span>
+
+            <strong id="reportAverageOrder">
+                ₹0
+            </strong>
+
+            <small>
+                Average per order
+            </small>
+
+        </div>
+
+
+        <div class="report-card">
+
+            <span>Estimated Earnings</span>
+
+            <strong id="reportEstimatedEarnings">
+                ₹0
+            </strong>
+
+            <small>
+                Based on product margin
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <!-- SALES OVERVIEW -->
+
+    <div class="report-section">
+
+        <div class="report-section-head">
+
+            <div>
+                <h3>Sales Overview</h3>
+
+                <p>
+                    Order and revenue performance
+                </p>
+            </div>
+
+        </div>
+
+
+        <div
+            class="sales-chart"
+            id="salesChart"
+        >
+
+            <div class="chart-empty">
+
+                <span>📊</span>
+
+                <p>
+                    Sales data will appear here.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ORDER STATUS REPORT -->
+
+    <div class="report-grid">
+
+        <div class="report-section">
+
+            <div class="report-section-head">
+
+                <div>
+                    <h3>Order Status</h3>
+                    <p>Current order distribution</p>
+                </div>
+
+            </div>
+
+
+            <div class="status-report-list">
+
+                <div class="status-report-row">
+
+                    <span>
+                        <i class="status-dot pending"></i>
+                        Pending
+                    </span>
+
+                    <strong id="reportPendingCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="status-report-row">
+
+                    <span>
+                        <i class="status-dot confirmed"></i>
+                        Confirmed
+                    </span>
+
+                    <strong id="reportConfirmedCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="status-report-row">
+
+                    <span>
+                        <i class="status-dot packed"></i>
+                        Packed
+                    </span>
+
+                    <strong id="reportPackedCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="status-report-row">
+
+                    <span>
+                        <i class="status-dot shipped"></i>
+                        Shipped
+                    </span>
+
+                    <strong id="reportShippedCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="status-report-row">
+
+                    <span>
+                        <i class="status-dot delivery"></i>
+                        Out for Delivery
+                    </span>
+
+                    <strong id="reportOutDeliveryCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="status-report-row">
+
+                    <span>
+                        <i class="status-dot delivered"></i>
+                        Delivered
+                    </span>
+
+                    <strong id="reportDeliveredStatusCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="status-report-row">
+
+                    <span>
+                        <i class="status-dot cancelled"></i>
+                        Cancelled
+                    </span>
+
+                    <strong id="reportCancelledStatusCount">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- PAYMENT REPORT -->
+
+        <div class="report-section">
+
+            <div class="report-section-head">
+
+                <div>
+                    <h3>Payment Methods</h3>
+                    <p>Order payment distribution</p>
+                </div>
+
+            </div>
+
+
+            <div class="payment-report-list">
+
+                <div class="payment-report-row">
+
+                    <span>
+                        Cash on Delivery
+                    </span>
+
+                    <strong id="reportCodCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="payment-report-row">
+
+                    <span>
+                        UPI
+                    </span>
+
+                    <strong id="reportUpiCount">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     CATEGORIES ADMIN VIEW
+     ========================================================= -->
+
+<section
+    id="adminCategoriesView"
+    class="admin-panel"
+>
+
+    <div class="admin-section-head">
+
+        <div>
+            <h2>Categories</h2>
+            <p>Manage product categories</p>
+        </div>
+
+        <button
+            type="button"
+            class="primary-btn"
+            id="addCategoryBtn"
+        >
+            ＋ Add Category
+        </button>
+
+    </div>
+
+
+    <div
+        class="category-admin-grid"
+        id="adminCategoriesGrid"
+    >
+
+        <!-- Categories rendered by app.js -->
+
+    </div>
+
+
+    <div
+        id="adminCategoriesEmpty"
+        class="empty-state hidden"
+    >
+
+        <div class="empty-icon">
+            🗂️
+        </div>
+
+        <h3>No categories found</h3>
+
+        <p>
+            Add a category to organize your products.
+        </p>
+
+        <button
+            type="button"
+            class="primary-btn"
+            id="emptyAddCategoryBtn"
+        >
+            Add Category
+        </button>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     SETTINGS ADMIN VIEW
+     ========================================================= -->
+
+<section
+    id="adminSettingsView"
+    class="admin-panel"
+>
+
+    <div class="admin-section-head">
+
+        <div>
+            <h2>Store Settings</h2>
+            <p>Manage your Sale 11 store configuration</p>
+        </div>
+
+        <button
+            type="button"
+            class="primary-btn"
+            id="saveSettingsBtn"
+        >
+            Save Settings
+        </button>
+
+    </div>
+
+
+    <!-- STORE INFORMATION -->
+
+    <div class="settings-card">
+
+        <div class="settings-card-head">
+
+            <div>
+                <h3>Store Information</h3>
+
+                <p>
+                    Basic information shown to customers.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="settings-form-grid">
+
+            <div class="form-group">
+
+                <label for="settingStoreName">
+                    Store Name
+                </label>
+
+                <input
+                    type="text"
+                    id="settingStoreName"
+                    placeholder="Sale 11"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="settingSupportPhone">
+                    Support Mobile
+                </label>
+
+                <input
+                    type="tel"
+                    id="settingSupportPhone"
+                    placeholder="Enter support mobile"
+                    inputmode="numeric"
+                >
+
+            </div>
+
+
+            <div class="form-group full-width">
+
+                <label for="settingStoreDescription">
+                    Store Description
+                </label>
+
+                <textarea
+                    id="settingStoreDescription"
+                    rows="4"
+                    placeholder="Write a short description about your store..."
+                ></textarea>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- DELIVERY SETTINGS -->
+
+    <div class="settings-card">
+
+        <div class="settings-card-head">
+
+            <div>
+                <h3>Delivery Settings</h3>
+
+                <p>
+                    Configure delivery charges and free delivery limit.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="settings-form-grid">
+
+            <div class="form-group">
+
+                <label for="settingDeliveryCharge">
+                    Delivery Charge
+                </label>
+
+                <div class="input-with-prefix">
+
+                    <span>₹</span>
+
+                    <input
+                        type="number"
+                        id="settingDeliveryCharge"
+                        min="0"
+                        step="1"
+                        placeholder="49"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="settingFreeDeliveryAbove">
+                    Free Delivery Above
+                </label>
+
+                <div class="input-with-prefix">
+
+                    <span>₹</span>
+
+                    <input
+                        type="number"
+                        id="settingFreeDeliveryAbove"
+                        min="0"
+                        step="1"
+                        placeholder="499"
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PAYMENT SETTINGS -->
+
+    <div class="settings-card">
+
+        <div class="settings-card-head">
+
+            <div>
+                <h3>Payment Settings</h3>
+
+                <p>
+                    Enable or disable available payment methods.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="settings-toggle-list">
+
+            <label class="settings-toggle-row">
+
+                <div>
+
+                    <strong>
+                        Cash on Delivery
+                    </strong>
+
+                    <span>
+                        Allow customers to pay when the order arrives.
+                    </span>
+
+                </div>
+
+                <input
+                    type="checkbox"
+                    id="settingCodEnabled"
+                >
+
+                <span class="toggle-switch"></span>
+
+            </label>
+
+
+            <label class="settings-toggle-row">
+
+                <div>
+
+                    <strong>
+                        UPI Payment
+                    </strong>
+
+                    <span>
+                        Allow customers to pay using UPI.
+                    </span>
+
+                </div>
+
+                <input
+                    type="checkbox"
+                    id="settingUpiEnabled"
+                >
+
+                <span class="toggle-switch"></span>
+
+            </label>
+
+        </div>
+
+
+        <div
+            class="form-group"
+            id="upiSettingsGroup"
+        >
+
+            <label for="settingUpiId">
+                UPI ID
+            </label>
+
+            <input
+                type="text"
+                id="settingUpiId"
+                placeholder="example@upi"
+                autocomplete="off"
+            >
+
+            <small>
+                Enter the UPI ID where customer payments should be sent.
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <!-- ORDER SETTINGS -->
+
+    <div class="settings-card">
+
+        <div class="settings-card-head">
+
+            <div>
+                <h3>Order Settings</h3>
+
+                <p>
+                    Control basic order behavior.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="settings-toggle-list">
+
+            <label class="settings-toggle-row">
+
+                <div>
+
+                    <strong>
+                        Customer Login Required
+                    </strong>
+
+                    <span>
+                        Customers must log in before placing an order.
+                    </span>
+
+                </div>
+
+                <input
+                    type="checkbox"
+                    id="settingLoginRequired"
+                    checked
+                >
+
+                <span class="toggle-switch"></span>
+
+            </label>
+
+
+            <label class="settings-toggle-row">
+
+                <div>
+
+                    <strong>
+                        Allow Out of Stock Orders
+                    </strong>
+
+                    <span>
+                        Customers can place orders when stock is zero.
+                    </span>
+
+                </div>
+
+                <input
+                    type="checkbox"
+                    id="settingAllowOutOfStock"
+                >
+
+                <span class="toggle-switch"></span>
+
+            </label>
+
+        </div>
+
+    </div>
+
+
+    <!-- ADMIN ACCOUNT -->
+
+    <div class="settings-card">
+
+        <div class="settings-card-head">
+
+            <div>
+
+                <h3>Admin Account</h3>
+
+                <p>
+                    Admin login credentials are configured inside
+                    <strong>app.js</strong>.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="admin-account-note">
+
+            <span class="info-icon">
+                🔐
+            </span>
+
+            <div>
+
+                <strong>
+                    Admin Mobile + Password
+                </strong>
+
+                <p>
+                    Keep your admin mobile number and password
+                    private. Replace the placeholder values in
+                    the ADMIN_CONFIG section of app.js.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- DANGER ZONE -->
+
+    <div class="settings-card danger-card">
+
+        <div class="settings-card-head">
+
+            <div>
+
+                <h3>Store Data</h3>
+
+                <p>
+                    Be careful before using these options.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="danger-actions">
+
+            <button
+                type="button"
+                class="secondary-btn"
+                id="export
+                <!-- =========================================================
+     PART 4 — ALL MODALS
+     ========================================================= -->
+
+
+<!-- =========================================================
+     PRODUCT ADD / EDIT MODAL
+     ========================================================= -->
+
+<div
+    id="productModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-large">
+
+        <div class="modal-header">
+
+            <div>
+                <span class="modal-kicker">PRODUCT</span>
+
+                <h2 id="productModalTitle">
+                    Add Product
+                </h2>
+
+                <p>
+                    Add complete product information
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeProductModal"
+                aria-label="Close"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form
+            id="productForm"
+            autocomplete="off"
+        >
+
+            <input
+                type="hidden"
+                id="productEditId"
+            >
+
+
+            <!-- BASIC INFORMATION -->
+
+            <div class="form-section">
+
+                <div class="form-section-title">
+                    <h3>Basic Information</h3>
+
+                    <p>
+                        Enter the main details of your product.
+                    </p>
+                </div>
+
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label for="productId">
+                            Product ID / SKU
+                        </label>
+
+                        <input
+                            type="text"
+                            id="productId"
+                            placeholder="Example: S11-1001"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="productName">
+                            Product Name *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="productName"
+                            placeholder="Enter product name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="productCategory">
+                            Category *
+                        </label>
+
+                        <select
+                            id="productCategory"
+                            required
+                        >
+
+                            <option value="">
+                                Select Category
+                            </option>
+
+                            <option value="Fashion">
+                                Fashion
+                            </option>
+
+                            <option value="Electronics">
+                                Electronics
+                            </option>
+
+                            <option value="Home & Kitchen">
+                                Home & Kitchen
+                            </option>
+
+                            <option value="Beauty">
+                                Beauty
+                            </option>
+
+                            <option value="Kids">
+                                Kids
+                            </option>
+
+                            <option value="Best Sellers">
+                                Best Sellers
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="productStock">
+                            Stock Quantity *
+                        </label>
+
+                        <input
+                            type="number"
+                            id="productStock"
+                            min="0"
+                            value="0"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="productActive" checked>
+                            <span>Active / Visible</span>
+                        </label>
+                    </div>
+
+            </div>
+
+
+            <!-- PRICING -->
+
+            <div class="form-section">
+
+                <div class="form-section-title">
+
+                    <h3>Pricing</h3>
+
+                    <p>
+                        Add selling price, MRP and your product cost.
+                    </p>
+
+                </div>
+
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label for="productPrice">
+                            Selling Price *
+                        </label>
+
+                        <div class="input-with-prefix">
+
+                            <span>₹</span>
+
+                            <input
+                                type="number"
+                                id="productPrice"
+                                min="0"
+                                step="0.01"
+                                placeholder="199"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="productMrp">
+                            MRP
+                        </label>
+
+                        <div class="input-with-prefix">
+
+                            <span>₹</span>
+
+                            <input
+                                type="number"
+                                id="productMrp"
+                                min="0"
+                                step="0.01"
+                                placeholder="299"
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="productDiscount">
+                            Discount
+                        </label>
+
+                        <div class="input-with-suffix">
+
+                            <input
+                                type="number"
+                                id="productDiscount"
+                                min="0"
+                                max="100"
+                                step="1"
+                                placeholder="0"
+                            >
+
+                            <span>%</span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="productCost">
+                            Product Cost
+                        </label>
+
+                        <div class="input-with-prefix">
+
+                            <span>₹</span>
+
+                            <input
+                                type="number"
+                                id="productCost"
+                                min="0"
+                                step="0.01"
+                                placeholder="130"
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="productResellPrice">
+                            Resell / Source Price
+                        </label>
+
+                        <div class="input-with-prefix">
+
+                            <span>₹</span>
+
+                            <input
+                                type="number"
+                                id="productResellPrice"
+                                min="0"
+                                step="0.01"
+                                placeholder="139"
+                            >
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- VARIANTS -->
+
+            <div class="form-section">
+
+                <div class="form-section-title">
+
+                    <h3>Variants</h3>
+
+                    <p>
+                        Add sizes and colors when the product has variants.
+                    </p>
+
+                </div>
+
+
+                <div class="form-grid">
+
+                    <div class="form-group full-width">
+
+                        <label for="productSizes">
+                            Sizes
+                        </label>
+
+                        <input
+                            type="text"
+                            id="productSizes"
+                            placeholder="S, M, L, XL, XXL, 3XL"
+                        >
+
+                        <small>
+                            Example: S, M, L, XL, XXL, 3XL
+                        </small>
+
+                    </div>
+
+
+                    <div class="form-group full-width">
+
+                        <label for="productColors">
+                            Colors
+                        </label>
+
+                        <input
+                            type="text"
+                            id="productColors"
+                            placeholder="Black, White, Blue, Red"
+                        >
+
+                        <small>
+                            Separate multiple colors with commas.
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- DESCRIPTION -->
+
+            <div class="form-section">
+
+                <div class="form-section-title">
+
+                    <h3>Product Description</h3>
+
+                    <p>
+                        Tell customers about the product.
+                    </p>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="productDescription">
+                        Description *
+                    </label>
+
+                    <textarea
+                        id="productDescription"
+                        rows="6"
+                        placeholder="Write product description, material, features, usage and other important details..."
+                        required
+                    ></textarea>
+
+                    <div class="form-group full-width">
+                        <label for="productDetails">Product Details</label>
+                        <textarea id="productDetails" rows="4" placeholder="Material, fit, dimensions, care, specifications..."></textarea>
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="productFeatures">
+                        Product Features
+                    </label>
+
+                    <textarea
+                        id="productFeatures"
+                        rows="4"
+                        placeholder="Feature 1, Feature 2, Feature 3..."
+                    ></textarea>
+
+                </div>
+
+            </div>
+
+
+            <!-- PRODUCT IMAGES -->
+
+            <div class="form-section">
+
+                <div class="form-section-title">
+
+                    <h3>Product Images</h3>
+
+                    <p>
+                        Upload up to 6 product images.
+                    </p>
+
+                </div>
+
+
+                <div class="image-upload-box">
+
+                    <label
+                        for="productImages"
+                        class="image-upload-label"
+                    >
+
+                        <span class="upload-icon">
+                            ＋
+                        </span>
+
+                        <strong>
+                            Add Product Images
+                        </strong>
+
+                        <small>
+                            Select up to 6 images
+                        </small>
+
+                    </label>
+
+
+                    <input
+                        type="file"
+                        id="productImages"
+                        accept="image/*"
+                        multiple
+                    >
+
+                </div>
+
+
+                <div
+                    class="image-preview-grid"
+                    id="productImagePreview"
+                >
+                    <!-- Image previews -->
+                </div>
+
+            </div>
+
+
+            <!-- FORM ACTIONS -->
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    id="cancelProductBtn"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    type="submit"
+                    class="primary-btn"
+                    id="saveProductBtn"
+                >
+                    Save Product
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     PRODUCT DETAILS MODAL
+     ========================================================= -->
+
+<div
+    id="productDetailModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-product-detail">
+
+        <div class="modal-header">
+
+            <div>
+                <span class="modal-kicker">
+                    PRODUCT
+                </span>
+
+                <h2 id="detailProductName">
+                    Product
+                </h2>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeProductDetailModal"
+                aria-label="Close"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div class="product-detail-layout">
+
+
+            <!-- PRODUCT GALLERY -->
+
+            <div class="product-detail-gallery">
+
+                <div
+                    class="product-main-image"
+                    id="detailMainImage"
+                >
+
+                    <span>
+                        No Image
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="product-thumbnails"
+                    id="detailProductThumbnails"
+                >
+                    <!-- Thumbnails -->
+                </div>
+
+            </div>
+
+
+            <!-- PRODUCT INFORMATION -->
+
+            <div class="product-detail-info">
+
+                <div
+                    class="product-category-label"
+                    id="detailProductCategory"
+                >
+                    Category
+                </div>
+
+
+                <div class="detail-price-row">
+
+                    <strong id="detailProductPrice">
+                        ₹0
+                    </strong>
+
+                    <del id="detailProductMrp">
+                        ₹0
+                    </del>
+
+                    <span
+                        id="detailProductDiscount"
+                        class="discount-badge"
+                    >
+                        0%
+                    </span>
+
+                </div>
+
+
+                <div class="detail-stock">
+
+                    <span>
+                        Stock:
+                    </span>
+
+                    <strong id="detailProductStock">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="detail-divider"></div>
+
+
+                <!-- SIZE -->
+
+                <div
+                    class="detail-option"
+                    id="detailSizeGroup"
+                >
+
+                    <div class="detail-option-head">
+
+                        <strong>
+                            Size
+                        </strong>
+
+                        <span id="selectedSizeText">
+                            Select size
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="variant-options"
+                        id="detailSizeOptions"
+                    >
+                        <!-- Sizes -->
+                    </div>
+
+                </div>
+
+
+                <!-- COLOR -->
+
+                <div
+                    class="detail-option"
+                    id="detailColorGroup"
+                >
+
+                    <div class="detail-option-head">
+
+                        <strong>
+                            Color
+                        </strong>
+
+                        <span id="selectedColorText">
+                            Select color
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="variant-options color-options"
+                        id="detailColorOptions"
+                    >
+                        <!-- Colors -->
+                    </div>
+
+                </div>
+
+
+                <!-- QUANTITY -->
+
+                <div class="quantity-selector">
+
+                    <strong>
+                        Quantity
+                    </strong>
+
+                    <div class="quantity-control">
+
+                        <button
+                            type="button"
+                            id="detailQtyMinus"
+                        >
+                            −
+                        </button>
+
+                        <span id="detailQuantity">
+                            1
+                        </span>
+
+                        <button
+                            type="button"
+                            id="detailQtyPlus"
+                        >
+                            +
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div class="detail-actions">
+
+                    <button
+                        type="button"
+                        class="secondary-btn"
+                        id="detailAddToCartBtn"
+                    >
+                        Add to Cart
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="primary-btn"
+                        id="detailBuyNowBtn"
+                    >
+                        Buy Now
+                    </button>
+
+                </div>
+
+
+                <div class="detail-description">
+
+                    <h3>
+                        Description
+                    </h3>
+
+                    <p id="detailProductDescription">
+                        —
+                    </p>
+
+                </div>
+
+
+                <div class="detail-features">
+
+                    <h3>
+                        Features
+                    </h3>
+
+                    <p id="detailProductFeatures">
+                        —
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     CART MODAL
+     ========================================================= -->
+
+<div
+    id="cartModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-cart">
+
+        <div class="modal-header">
+
+            <div>
+                <span class="modal-kicker">
+                    YOUR CART
+                </span>
+
+                <h2>
+                    Shopping Cart
+                </h2>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeCartModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div
+            id="cartItemsContainer"
+            class="cart-items-container"
+        >
+            <!-- Cart items -->
+        </div>
+
+
+        <div
+            id="cartEmptyState"
+            class="empty-state hidden"
+        >
+
+            <div class="empty-icon">
+                🛒
+            </div>
+
+            <h3>
+                Your cart is empty
+            </h3>
+
+            <p>
+                Add products to your cart to continue.
+            </p>
+
+            <button
+                type="button"
+                class="primary-btn"
+                id="continueShoppingBtn"
+            >
+                Continue Shopping
+            </button>
+
+        </div>
+
+
+        <div
+            id="cartSummary"
+            class="cart-summary"
+        >
+
+            <div class="summary-row">
+
+                <span>
+                    Subtotal
+                </span>
+
+                <strong id="cartSubtotal">
+                    ₹0
+                </strong>
+
+            </div>
+
+
+            <div class="summary-row">
+
+                <span>
+                    Delivery
+                </span>
+
+                <strong id="cartDelivery">
+                    ₹0
+                </strong>
+
+            </div>
+
+
+            <div class="summary-row total">
+
+                <span>
+                    Total
+                </span>
+
+                <strong id="cartTotal">
+                    ₹0
+                </strong>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="primary-btn full-width"
+                id="cartCheckoutBtn"
+            >
+                Proceed to Checkout
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     CHECKOUT MODAL
+     ========================================================= -->
+
+<div
+    id="checkoutModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-checkout">
+
+        <div class="modal-header">
+
+            <div>
+                <span class="modal-kicker">
+                    CHECKOUT
+                </span>
+
+                <h2>
+                    Complete Your Order
+                </h2>
+
+                <p>
+                    Enter your delivery and payment details.
+                </p>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeCheckoutModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form
+            id="checkoutForm"
+            class="checkout-layout"
+            autocomplete="on"
+        >
+
+            <!-- DELIVERY DETAILS -->
+
+            <div class="checkout-section">
+
+                <div class="form-section-title">
+
+                    <h3>
+                        Delivery Address
+                    </h3>
+
+                </div>
+
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label for="checkoutName">
+                            Full Name *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="checkoutName"
+                            name="name"
+                            placeholder="Enter full name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="checkoutMobile">
+                            Mobile Number *
+                        </label>
+
+                        <input
+                            type="tel"
+                            id="checkoutMobile"
+                            name="mobile"
+                            placeholder="10 digit mobile number"
+                            inputmode="numeric"
+                            maxlength="10"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="checkoutEmail">
+                            Email
+                        </label>
+
+                        <input
+                            type="email"
+                            id="checkoutEmail"
+                            name="email"
+                            placeholder="example@email.com"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="checkoutPincode">
+                            Pincode *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="checkoutPincode"
+                            name="pincode"
+                            placeholder="6 digit pincode"
+                            inputmode="numeric"
+                            maxlength="6"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group full-width">
+
+                        <label for="checkoutAddress">
+                            Full Address *
+                        </label>
+
+                        <textarea
+                            id="checkoutAddress"
+                            name="address"
+                            rows="4"
+                            placeholder="House / Flat / Street / Area"
+                            required
+                        ></textarea>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="checkoutCity">
+                            City *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="checkoutCity"
+                            name="city"
+                            placeholder="City"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="checkoutState">
+                            State *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="checkoutState"
+                            name="state"
+                            placeholder="State"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group full-width">
+
+                        <label for="checkoutLandmark">
+                            Landmark
+                        </label>
+
+                        <input
+                            type="text"
+                            id="checkoutLandmark"
+                            name="landmark"
+                            placeholder="Nearby landmark"
+                        >
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- PAYMENT -->
+
+            <div class="checkout-section">
+
+                <div class="form-section-title">
+
+                    <h3>
+                        Payment Method
+                    </h3>
+
+                </div>
+
+
+                <div
+                    class="payment-options"
+                    id="checkoutPaymentOptions"
+                >
+
+                    <label class="payment-option">
+
+                        <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="COD"
+                            checked
+                        >
+
+                        <div>
+
+                            <strong>
+                                Cash on Delivery
+                            </strong>
+
+                            <span>
+                                Pay when your order arrives.
+                            </span>
+
+                        </div>
+
+                    </label>
+
+
+                    <label
+                        class="payment-option"
+                        id="checkoutUpiOption"
+                    >
+
+                        <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="UPI"
+                        >
+
+                        <div>
+
+                            <strong>
+                                UPI
+                            </strong>
+
+                            <span>
+                                Pay using UPI.
+                            </span>
+
+                        </div>
+
+                    </label>
+
+                </div>
+
+            </div>
+
+
+            <!-- ORDER SUMMARY -->
+
+            <div class="checkout-section checkout-summary-section">
+
+                <div class="form-section-title">
+
+                    <h3>
+                        Order Summary
+                    </h3>
+
+                </div>
+
+
+                <div
+                    id="checkoutItems"
+                    class="checkout-items"
+                >
+                    <!-- Checkout items -->
+                </div>
+
+
+                <div class="checkout-total-box">
+
+                    <div class="summary-row">
+
+                        <span>
+                            Subtotal
+                        </span>
+
+                        <strong id="checkoutSubtotal">
+                            ₹0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="summary-row">
+
+                        <span>
+                            Delivery
+                        </span>
+
+                        <strong id="checkoutDelivery">
+                            ₹0
+                        </strong>
+
+                    </div>
+
+
+                    <div class="summary-row total">
+
+                        <span>
+                            Total Payable
+                        </span>
+
+                        <strong id="checkoutTotal">
+                            ₹0
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="primary-btn full-width"
+                    id="placeOrderBtn"
+                >
+                    Place Order
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     CUSTOMER LOGIN MODAL
+     ========================================================= -->
+
+<div
+    id="customerLoginModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-small">
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-kicker">
+                    ACCOUNT
+                </span>
+
+                <h2>
+                    Customer Login
+                </h2>
+
+                <p>
+                    Login or create your Sale 11 account.
+                </p>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeCustomerLoginModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form
+            id="customerLoginForm"
+            autocomplete="on"
+        >
+
+            <div class="form-group">
+
+                <label for="customerLoginMobile">
+                    Mobile Number
+                </label>
+
+                <input
+                    type="tel"
+                    id="customerLoginMobile"
+                    placeholder="Enter mobile number"
+                    inputmode="numeric"
+                    maxlength="10"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="customerLoginName">
+                    Name
+                </label>
+
+                <input
+                    type="text"
+                    id="customerLoginName"
+                    placeholder="Enter your name"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="customerLoginEmail">
+                    Email
+                </label>
+
+                <input
+                    type="email"
+                    id="customerLoginEmail"
+                    placeholder="Email address"
+                >
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="primary-btn full-width"
+            >
+                Continue
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     ADMIN LOGIN MODAL
+     ========================================================= -->
+
+<div
+    id="adminLoginModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-small">
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-kicker">
+                    ADMIN
+                </span>
+
+                <h2>
+                    Admin Login
+                </h2>
+
+                <p>
+                    Authorized account only.
+                </p>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeAdminLoginModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form
+            id="adminLoginForm"
+            autocomplete="off"
+        >
+
+            <div class="form-group">
+
+                <label for="adminMobile">
+                    Admin Mobile
+                </label>
+
+                <input
+                    type="tel"
+                    id="adminMobile"
+                    placeholder="Enter admin mobile"
+                    inputmode="numeric"
+                    maxlength="10"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="adminPassword">
+                    Admin Password
+                </label>
+
+                <input
+                    type="password"
+                    id="adminPassword"
+                    placeholder="Enter admin password"
+                    required
+                >
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="primary-btn full-width"
+            >
+                Login to Admin
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     ACCOUNT MODAL
+     ========================================================= -->
+
+<div
+    id="accountModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-medium">
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-kicker">
+                    MY ACCOUNT
+                </span>
+
+                <h2>
+                    My Account
+                </h2>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeAccountModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div class="account-profile">
+
+            <div class="account-avatar">
+                <span id="accountAvatarText">
+                    U
+                </span>
+            </div>
+
+
+            <div>
+
+                <h3 id="accountName">
+                    Customer
+                </h3>
+
+                <p id="accountMobile">
+                    —
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="account-menu">
+
+            <button
+                type="button"
+                class="account-menu-item"
+                id="accountOrdersBtn"
+            >
+                <span>📦</span>
+
+                <div>
+                    <strong>
+                        My Orders
+                    </strong>
+
+                    <small>
+                        View your orders
+                    </small>
+                </div>
+
+                <span>›</span>
+
+            </button>
+
+
+            <button
+                type="button"
+                class="account-menu-item"
+                id="accountProfileBtn"
+            >
+                <span>👤</span>
+
+                <div>
+                    <strong>
+                        Profile
+                    </strong>
+
+                    <small>
+                        Edit your information
+                    </small>
+                </div>
+
+                <span>›</span>
+
+            </button>
+
+
+            <button
+                type="button"
+                class="account-menu-item"
+                id="accountWishlistBtn"
+            >
+                <span>♡</span>
+
+                <div>
+                    <strong>
+                        Wishlist
+                    </strong>
+
+                    <small>
+                        Saved products
+                    </small>
+                </div>
+
+                <span>›</span>
+
+            </button>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="danger-btn full-width"
+            id="customerLogoutBtn"
+        >
+            Logout
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     CUSTOMER PROFILE MODAL
+     ========================================================= -->
+
+<div
+    id="customerProfileModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-medium">
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-kicker">
+                    PROFILE
+                </span>
+
+                <h2>
+                    My Profile
+                </h2>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeCustomerProfileModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form
+            id="customerProfileForm"
+            autocomplete="on"
+        >
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="profileName">
+                        Full Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="profileName"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="profileMobile">
+                        Mobile
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="profileMobile"
+                        readonly
+                    >
+
+                </div>
+
+
+                <div class="form-group full-width">
+
+                    <label for="profileEmail">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="profileEmail"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    id="cancelCustomerProfileBtn"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="primary-btn"
+                >
+                    Save Profile
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     CUSTOMER ORDERS MODAL
+     ========================================================= -->
+
+<div
+    id="customerOrdersModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-large">
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-kicker">
+                    MY ORDERS
+                </span>
+
+                <h2>
+                    My Orders
+                </h2>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeCustomerOrdersModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div
+            id="customerOrdersList"
+            class="customer-orders-list"
+        >
+            <!-- Customer orders -->
+        </div>
+
+
+        <div
+            id="customerOrdersEmpty"
+            class="empty-state hidden"
+        >
+
+            <div class="empty-icon">
+                📦
+            </div>
+
+            <h3>
+                No orders yet
+            </h3>
+
+            <p>
+                Your placed orders will appear here.
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     ORDER DETAILS MODAL
+     ========================================================= -->
+
+<div
+    id="orderDetailModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-large">
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-kicker">
+                    ORDER DETAILS
+                </span>
+
+                <h2 id="orderDetailTitle">
+                    Order
+                </h2>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeOrderDetailModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div class="order-detail-content" id="orderDetailsContent">
+
+            <div class="order-detail-top">
+
+                <div>
+
+                    <span>
+                        Order ID
+                    </span>
+
+                    <strong id="orderDetailId">
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Date
+                    </span>
+
+                    <strong id="orderDetailDate">
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Payment
+                    </span>
+
+                    <strong id="orderDetailPayment">
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Status
+                    </span>
+
+                    <strong id="orderDetailStatus">
+                        —
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- STATUS TRACKER -->
+
+            <div class="order-status-tracker">
+
+                <div
+                    class="order-status-step"
+                    data-status-step="Pending"
+                >
+
+                    <span>1</span>
+
+                    <strong>
+                        Pending
+                    </strong>
+
+                </div>
+
+
+                <div
+                    class="order-status-line"
+                ></div>
+
+
+                <div
+                    class="order-status-step"
+                    data-status-step="Confirmed"
+                >
+
+                    <span>2</span>
+
+                    <strong>
+                        Confirmed
+                    </strong>
+
+                </div>
+
+
+                <div
+                    class="order-status-line"
+                ></div>
+
+
+                <div
+                    class="order-status-step"
+                    data-status-step="Packed"
+                >
+
+                    <span>3</span>
+
+                    <strong>
+                        Packed
+                    </strong>
+
+                </div>
+
+
+                <div
+                    class="order-status-line"
+                ></div>
+
+
+                <div
+                    class="order-status-step"
+                    data-status-step="Shipped"
+                >
+
+                    <span>4</span>
+
+                    <strong>
+                        Shipped
+                    </strong>
+
+                </div>
+
+
+                <div
+                    class="order-status-line"
+                ></div>
+
+
+                <div
+                    class="order-status-step"
+                    data-status-step="Out for Delivery"
+                >
+
+                    <span>5</span>
+
+                    <strong>
+                        Out for Delivery
+                    </strong>
+
+                </div>
+
+
+                <div
+                    class="order-status-line"
+                ></div>
+
+
+                <div
+                    class="order-status-step"
+                    data-status-step="Delivered"
+                >
+
+                    <span>6</span>
+
+                    <strong>
+                        Delivered
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- ORDER ITEMS -->
+
+            <div class="order-detail-section">
+
+                <h3>
+                    Ordered Items
+                </h3>
+
+
+                <div
+                    id="orderDetailItems"
+                    class="order-detail-items"
+                >
+                    <!-- Items -->
+                </div>
+
+            </div>
+
+
+            <!-- DELIVERY ADDRESS -->
+
+            <div class="order-detail-section">
+
+                <h3>
+                    Delivery Address
+                </h3>
+
+
+                <div
+                    id="orderDetailAddress"
+                    class="address-box"
+                >
+                    —
+                </div>
+
+            </div>
+
+
+            <!-- PRICE -->
+
+            <div class="order-price-summary">
+
+                <div class="summary-row">
+
+                    <span>
+                        Subtotal
+                    </span>
+
+                    <strong id="orderDetailSubtotal">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span>
+                        Delivery
+                    </span>
+
+                    <strong id="orderDetailDelivery">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div class="summary-row total">
+
+                    <span>
+                        Total
+                    </span>
+
+                    <strong id="orderDetailTotal">
+                        ₹0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- ADMIN ORDER ACTION -->
+
+            <div
+                id="adminOrderActions"
+                class="order-admin-actions hidden"
+            >
+
+                <label for="adminDetailOrderStatus">
+                    Update Status
+                </label>
+
+
+                <select id="adminDetailOrderStatus">
+
+                    <option value="Pending">
+                        Pending
+                    </option>
+
+                    <option value="Confirmed">
+                        Confirmed
+                    </option>
+
+                    <option value="Packed">
+                        Packed
+                    </option>
+
+                    <option value="Shipped">
+                        Shipped
+                    </option>
+
+                    <option value="Out for Delivery">
+                        Out for Delivery
+                    </option>
+
+                    <option value="Delivered">
+                        Delivered
+                    </option>
+
+                    <option value="Cancelled">
+                        Cancelled
+                    </option>
+
+                </select>
+
+
+                <button
+                    type="button"
+                    class="primary-btn"
+                    id="updateDetailOrderStatusBtn"
+                >
+                    Update Status
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     CATEGORY MODAL
+     ========================================================= -->
+
+<div
+    id="categoryModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-small">
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-kicker">
+                    CATEGORY
+                </span>
+
+                <h2 id="categoryModalTitle">
+                    Add Category
+                </h2>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeCategoryModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form
+            id="categoryForm"
+            autocomplete="off"
+        >
+
+            <input
+                type="hidden"
+                id="categoryEditId"
+            >
+
+
+            <div class="form-group">
+
+                <label for="categoryName">
+                    Category Name *
+                </label>
+
+                <input
+                    type="text"
+                    id="categoryName"
+                    placeholder="Example: Fashion"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="categoryDescription">
+                    Description
+                </label>
+
+                <textarea
+                    id="categoryDescription"
+                    rows="4"
+                    placeholder="Short category description"
+                ></textarea>
+
+            </div>
+
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    id="cancelCategoryBtn"
+                >
+                    Cancel
+                </button>
+
+
+                <button
+                    type="submit"
+                    class="primary-btn"
+                >
+                    Save Category
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     CUSTOMER DETAIL MODAL — ADMIN
+     ========================================================= -->
+
+<div
+    id="customerDetailModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-medium">
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-kicker">
+                    CUSTOMER
+                </span>
+
+                <h2>
+                    Customer Details
+                </h2>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeCustomerDetailModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div class="customer-detail-content" id="customerDetailsContent">
+
+            <div class="customer-profile-card">
+
+                <div class="customer-detail-avatar">
+                    <span id="detailCustomerAvatar">
+                        U
+                    </span>
+                </div>
+
+
+                <div>
+
+                    <h3 id="detailCustomerName">
+                        Customer
+                    </h3>
+
+                    <p id="detailCustomerMobile">
+                        —
+                    </p>
+
+                    <p id="detailCustomerEmail">
+                        —
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="customer-detail-stats">
+
+                <div>
+
+                    <span>
+                        Orders
+                    </span>
+
+                    <strong id="detailCustomerOrders">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Total Spent
+                    </span>
+
+                    <strong id="detailCustomerSpent">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Joined
+                    </span>
+
+                    <strong id="detailCustomerJoined">
+                        —
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="customer-address-section">
+
+                <h3>
+                    Saved Address
+                </h3>
+
+                <div
+                    id="detailCustomerAddress"
+                    class="address-box"
+                >
+                    No address saved.
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="secondary-btn full-width"
+                id="viewCustomerOrdersBtn"
+            >
+                View Customer Orders
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     INVOICE MODAL
+     ========================================================= -->
+
+<div
+    id="invoiceModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-large invoice-modal">
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-kicker">
+                    SALE 11
+                </span>
+
+                <h2>
+                    Order Invoice
+                </h2>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeInvoiceModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div
+            id="invoiceContent"
+            class="invoice-content"
+        >
+
+            <!-- Invoice generated by app.js -->
+
+        </div>
+
+
+        <div class="modal-footer">
+
+            <button
+                type="button"
+                class="secondary-btn"
+                id="closeInvoiceBtn"
+            >
+                Close
+            </button>
+
+            <button
+                type="button"
+                class="primary-btn"
+                id="printInvoiceBtn"
+            >
+                Print Invoice
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     TOAST / NOTIFICATION
+     ========================================================= -->
+
+<div
+    id="toast"
+    class="toast"
+    role="status"
+    aria-live="polite"
+>
+
+    <span id="toastIcon">
+        ✓
+    </span>
+
+    <span id="toastMessage">
+        Done
+    </span>
+
+</div>
+
+
+<!-- =========================================================
+     CONFIRMATION MODAL
+     ========================================================= -->
+
+<div
+    id="confirmModal"
+    class="modal-overlay hidden"
+    aria-hidden="true"
+>
+
+    <div class="modal modal-small">
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-kicker">
+                    CONFIRM
+                </span>
+
+                <h2 id="confirmTitle">
+                    Are you sure?
+                </h2>
+
+                <p id="confirmMessage">
+                    Please confirm this action.
+                </p>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="closeConfirmModal"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <div class="confirm-actions">
+
+            <button
+                type="button"
+                class="secondary-btn"
+                id="confirmCancelBtn"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                type="button"
+                class="danger-btn"
+                id="confirmOkBtn"
+            >
+                Confirm
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+<!-- =========================================================
+     PART 5 — FINAL HTML / MOBILE NAV / SCRIPT
+     ========================================================= -->
+
+
+<!-- =========================================================
+     MOBILE BOTTOM NAVIGATION
+     ========================================================= -->
+
+<nav
+    class="mobile-bottom-nav"
+    id="mobileBottomNav"
+>
+
+    <button
+        type="button"
+        class="mobile-nav-item active"
+        data-mobile-nav="home"
+        id="mobileHomeBtn"
+    >
+        <span class="mobile-nav-icon">
+            ⌂
+        </span>
+
+        <span>
+            Home
+        </span>
+    </button>
+
+
+    <button
+        type="button"
+        class="mobile-nav-item"
+        data-mobile-nav="categories"
+        id="mobileCategoriesBtn"
+    >
+        <span class="mobile-nav-icon">
+            ☰
+        </span>
+
+        <span>
+            Categories
+        </span>
+    </button>
+
+
+    <button
+        type="button"
+        class="mobile-nav-item"
+        data-mobile-nav="wishlist"
+        id="mobileWishlistBtn"
+    >
+        <span class="mobile-nav-icon">
+            ♡
+        </span>
+
+        <span>
+            Wishlist
+        </span>
+
+        <b
+            id="mobileWishlistCount"
+            class="nav-count hidden"
+        >
+            0
+        </b>
+
+    </button>
+
+
+    <button
+        type="button"
+        class="mobile-nav-item"
+        data-mobile-nav="cart"
+        id="mobileCartBtn"
+    >
+        <span class="mobile-nav-icon">
+            🛒
+        </span>
+
+        <span>
+            Cart
+        </span>
+
+        <b
+            id="mobileCartCount"
+            class="nav-count hidden"
+        >
+            0
+        </b>
+
+    </button>
+
+
+    <button
+        type="button"
+        class="mobile-nav-item"
+        data-mobile-nav="account"
+        id="mobileAccountBtn"
+    >
+        <span class="mobile-nav-icon">
+            ♙
+        </span>
+
+        <span>
+            Account
+        </span>
+    </button>
+
+</nav>
+
+
+<!-- =========================================================
+     SCROLL TO TOP
+     ========================================================= -->
+
+<button
+    type="button"
+    id="scrollTopBtn"
+    class="scroll-top-btn hidden"
+    aria-label="Scroll to top"
+>
+    ↑
+</button>
+
+
+<!-- =========================================================
+     APP JAVASCRIPT
+     ========================================================= -->
+
+<script
+    src="app.js"
+    defer
+></script>
+
+
 </body>
 </html>
