@@ -10085,106 +10085,42 @@ function setDashboardPeriod(period) {
 function openProductModal(productId) {
     return openAddProduct(productId);
 }
-/* =========================================================
-   SALE 11 — MOBILE NAVIGATION FIX
-   ========================================================= */
+// ===== SALE 11 OLD HTML BUTTON COMPATIBILITY =====
 
-function bindMobileNavigation() {
-
-    const items = document.querySelectorAll(".mobile-nav-item");
-
-    items.forEach(item => {
-
-        if (item.dataset.mobileFixed === "true") return;
-
-        item.dataset.mobileFixed = "true";
-
-        item.addEventListener("click", function () {
-
-            const action = this.dataset.mobileNav;
-
-            document
-                .querySelectorAll(".mobile-nav-item")
-                .forEach(nav => nav.classList.remove("active"));
-
-            this.classList.add("active");
-
-            switch (action) {
-
-                case "home":
-
-                    showCustomerStore();
-
-                    window.scrollTo({
-                        top: 0,
-                        behavior: "smooth"
-                    });
-
-                    break;
-
-
-                case "categories":
-
-                    showCustomerStore();
-
-                    const categoryBar =
-                        document.querySelector(".category-strip");
-
-                    if (categoryBar) {
-
-                        categoryBar.scrollIntoView({
-                            behavior: "smooth",
-                            block: "start"
-                        });
-
-                    }
-
-                    break;
-
-
-                case "wishlist":
-
-                    openWishlistModal();
-
-                    break;
-
-
-                case "cart":
-
-                    openCart();
-
-                    break;
-
-
-                case "account":
-
-                    openAccountModal();
-
-                    break;
-
-            }
-
-        });
-
-    });
-
+function openCartModal() {
+    return openCart();
 }
 
+function openAdminModal() {
+    if (typeof isAdminLoggedIn === "function" && isAdminLoggedIn()) {
+        return showAdminDashboard();
+    }
+    return showAdminLogin();
+}
 
-/* =========================================================
-   MOBILE NAV — AUTO FIX
-   ========================================================= */
+function openLoginModal() {
+    return openAccount();
+}
 
-if (document.readyState === "loading") {
+function toggleDarkMode() {
+    document.body.classList.toggle("dark-mode");
 
-    document.addEventListener(
-        "DOMContentLoaded",
-        bindMobileNavigation,
-        { once: true }
-    );
+    const isDark =
+        document.body.classList.contains("dark-mode");
 
-} else {
+    localStorage.setItem("sale11_dark_mode", isDark ? "1" : "0");
+}
 
-    bindMobileNavigation();
+function openSupportModal() {
+    const modal =
+        document.getElementById("supportModal");
 
+    if (modal) {
+        openModal("supportModal");
+        return;
+    }
+
+    if (typeof showToast === "function") {
+        showToast("Support section is opening soon.", "info");
+    }
 }
