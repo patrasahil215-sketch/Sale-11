@@ -2749,6 +2749,10 @@ p {
 
 .hidden-admin { display: none !important; }
 
+.mobile-quick-actions { display:none; }
+.support-panel { padding:18px 20px 22px; color:var(--text-muted); font-size:14px; line-height:1.55; }
+.support-panel p { margin:0 0 16px; }
+
 .mobile-bottom-nav { display: none; }
 
 @media (max-width: 900px) {
@@ -2763,6 +2767,18 @@ p {
     .header-actions { gap: 2px; }
     .header-action { display: none; }
     .header-actions .icon-btn { display: inline-flex; width: 42px; height: 42px; }
+    .mobile-quick-actions {
+        display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px;
+        padding:7px 10px 9px; background:#fff; border-top:1px solid #eef1f5; border-bottom:1px solid #e4e7ec;
+    }
+    .mobile-quick-actions button { position:relative; min-width:0; min-height:50px; border:1px solid #e7eaf0; border-radius:12px; background:#fff; color:#344054; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:10px; font-weight:700; }
+    .mobile-quick-actions button span { font-size:19px; line-height:20px; }
+    .mobile-quick-actions button:active { transform:scale(.97); }
+    .mobile-quick-actions em { position:absolute; top:3px; right:8px; min-width:16px; height:16px; padding:0 4px; border-radius:99px; background:#e53935; color:#fff; font-size:9px; font-style:normal; display:flex; align-items:center; justify-content:center; }
+    .hero-text { display:block !important; visibility:visible !important; opacity:1 !important; position:relative; z-index:2; }
+    .hero-text .section-kicker { color:var(--primary) !important; }
+    .hero-text h1 { color:var(--text-dark) !important; display:block !important; }
+    .hero-text p { color:var(--text-muted) !important; display:block !important; }
     .category-strip { overflow: hidden; }
     .category-scroll { width: 100%; padding: 8px 12px; gap: 8px; }
     .category-btn { min-width: 76px; min-height: 62px; padding: 8px 7px; border: 1px solid #e8ebf0; border-radius: 12px; background: #fff; font-size: 11px; }
@@ -2824,6 +2840,10 @@ p {
 }
 
 @media (max-width: 480px) {
+    .mobile-quick-actions { gap:4px; padding-left:6px; padding-right:6px; }
+    .mobile-quick-actions button { border-radius:10px; font-size:9px; }
+    .mobile-quick-actions button span { font-size:17px; }
+    .mobile-quick-actions em { right:4px; }
     .header-main { grid-template-columns: auto minmax(0,1fr) auto; }
     .category-btn { min-width: 72px; }
     .hero-text h1 { font-size: 25px; }

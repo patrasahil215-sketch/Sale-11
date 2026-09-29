@@ -124,6 +124,15 @@
 
         </nav>
 
+        <!-- MOBILE QUICK ACTIONS -->
+        <div class="mobile-quick-actions" aria-label="Quick actions">
+            <button type="button" onclick="openOrdersModal()"><span>📦</span><b>Orders</b></button>
+            <button type="button" onclick="openWishlist()"><span>♡</span><b>Wishlist</b></button>
+            <button type="button" onclick="openAccountModal()"><span>👤</span><b>Account</b></button>
+            <button type="button" onclick="openCart()"><span>🛒</span><b>Cart</b><em id="quickCartCount">0</em></button>
+            <button type="button" onclick="openSupportModal()"><span>💬</span><b>Support</b></button>
+        </div>
+
     </header>
 
 
@@ -5026,6 +5035,23 @@
 <!-- =========================================================
      MOBILE BOTTOM NAVIGATION
      ========================================================= -->
+
+<div class="modal-overlay hidden" id="supportModal" aria-hidden="true">
+    <div class="modal modal-small">
+        <div class="modal-header">
+            <div>
+                <span class="modal-kicker">HELP &amp; SUPPORT</span>
+                <h2>Sale 11 Support</h2>
+                <p>Need help with shopping or an order?</p>
+            </div>
+            <button class="modal-close" type="button" onclick="closeModal('supportModal')">×</button>
+        </div>
+        <div class="support-panel">
+            <p>For order help, open <strong>My Orders</strong> from your account.</p>
+            <button class="primary-btn full-width" type="button" onclick="closeModal('supportModal'); openOrdersModal();">📦 Open My Orders</button>
+        </div>
+    </div>
+</div>
 
 <nav
     class="mobile-bottom-nav"

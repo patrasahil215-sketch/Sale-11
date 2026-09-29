@@ -10168,3 +10168,20 @@ function setDashboardPeriod(period) {
 function openProductModal(productId) {
     return openAddProduct(productId);
 }
+
+
+function openSupportModal() {
+    const modal = document.getElementById("supportModal");
+    if (!modal) return;
+    if (typeof openModal === "function") return openModal("supportModal");
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+}
+
+function updateQuickCartCount() {
+    const badge = document.getElementById("quickCartCount");
+    const source = document.getElementById("cartBadge");
+    if (badge) badge.textContent = source ? (source.textContent || "0") : "0";
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", updateQuickCartCount, {once:true});
+else updateQuickCartCount();
