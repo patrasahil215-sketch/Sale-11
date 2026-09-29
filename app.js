@@ -10085,3 +10085,106 @@ function setDashboardPeriod(period) {
 function openProductModal(productId) {
     return openAddProduct(productId);
 }
+/* =========================================================
+   SALE 11 — MOBILE NAVIGATION FIX
+   ========================================================= */
+
+function bindMobileNavigation() {
+
+    const items = document.querySelectorAll(".mobile-nav-item");
+
+    items.forEach(item => {
+
+        if (item.dataset.mobileFixed === "true") return;
+
+        item.dataset.mobileFixed = "true";
+
+        item.addEventListener("click", function () {
+
+            const action = this.dataset.mobileNav;
+
+            document
+                .querySelectorAll(".mobile-nav-item")
+                .forEach(nav => nav.classList.remove("active"));
+
+            this.classList.add("active");
+
+            switch (action) {
+
+                case "home":
+
+                    showCustomerStore();
+
+                    window.scrollTo({
+                        top: 0,
+                        behavior: "smooth"
+                    });
+
+                    break;
+
+
+                case "categories":
+
+                    showCustomerStore();
+
+                    const categoryBar =
+                        document.querySelector(".category-strip");
+
+                    if (categoryBar) {
+
+                        categoryBar.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start"
+                        });
+
+                    }
+
+                    break;
+
+
+                case "wishlist":
+
+                    openWishlistModal();
+
+                    break;
+
+
+                case "cart":
+
+                    openCart();
+
+                    break;
+
+
+                case "account":
+
+                    openAccountModal();
+
+                    break;
+
+            }
+
+        });
+
+    });
+
+}
+
+
+/* =========================================================
+   MOBILE NAV — AUTO FIX
+   ========================================================= */
+
+if (document.readyState === "loading") {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        bindMobileNavigation,
+        { once: true }
+    );
+
+} else {
+
+    bindMobileNavigation();
+
+}
