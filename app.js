@@ -1542,7 +1542,7 @@ function updateCartBadge() {
 
     document
         .querySelectorAll(
-            ".cart-badge"
+            ".cart-badge, #mobileCartCount"
         )
         .forEach(
             badge => {
@@ -1818,13 +1818,24 @@ function renderCategories(
                             ? "active"
                             : "";
 
+                    const icons = {
+                        "All": "✨",
+                        "Fashion": "👕",
+                        "Electronics": "📱",
+                        "Home & Kitchen": "🏠",
+                        "Beauty": "💄",
+                        "Kids": "🧸",
+                        "Best Sellers": "🔥"
+                    };
+
                     return `
                         <button
                             type="button"
                             class="category-btn ${active}"
                             data-category="${escapeAttribute(category)}"
                         >
-                            ${escapeHTML(category)}
+                            <span class="category-icon">${icons[category] || "🛍️"}</span>
+                            <span class="category-label">${escapeHTML(category)}</span>
                         </button>
                     `;
                 }
@@ -3809,8 +3820,12 @@ function initializePart2() {
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
 
-    if (!modal) return;
+    if (!modal) {
+        console.warn("Sale 11: modal not found:", modalId);
+        return;
+    }
 
+    modal.classList.remove("hidden");
     modal.classList.add("active");
     modal.setAttribute("aria-hidden", "false");
 
@@ -3823,16 +3838,18 @@ function closeModal(modalId) {
     if (!modal) return;
 
     modal.classList.remove("active");
+    modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
 
-    if (!document.querySelector(".modal.active")) {
+    if (!document.querySelector(".modal-overlay.active")) {
         document.body.classList.remove("modal-open");
     }
 }
 
 function closeAllModals() {
-    document.querySelectorAll(".modal.active").forEach(modal => {
+    document.querySelectorAll(".modal-overlay.active").forEach(modal => {
         modal.classList.remove("active");
+        modal.classList.add("hidden");
         modal.setAttribute("aria-hidden", "true");
     });
 
@@ -6444,7 +6461,7 @@ function showAdminDashboard() {
 
     const adminView =
         document.getElementById(
-            "adminDashboardView"
+            "adminView"
         );
 
     if (storeView) {
@@ -6452,6 +6469,7 @@ function showAdminDashboard() {
     }
 
     if (adminView) {
+        adminView.classList.remove("hidden");
         adminView.style.display = "block";
     }
 
@@ -6474,10 +6492,11 @@ function showCustomerStore() {
 
     const adminView =
         document.getElementById(
-            "adminDashboardView"
+            "adminView"
         );
 
     if (adminView) {
+        adminView.classList.add("hidden");
         adminView.style.display = "none";
     }
 
@@ -6524,13 +6543,13 @@ function showAdminTab(tabName) {
     }
 
     const tabMap = {
-        dashboard: "adminTabDashboard",
-        products: "adminTabProducts",
-        orders: "adminTabOrders",
-        customers: "adminTabCustomers",
-        reports: "adminTabReports",
-        categories: "adminTabCategories",
-        settings: "adminTabSettings"
+        dashboard: "adminDashboardView",
+        products: "adminProductsView",
+        orders: "adminOrdersView",
+        customers: "adminCustomersView",
+        reports: "adminReportsView",
+        categories: "adminCategoriesView",
+        settings: "adminSettingsView"
     };
 
     Object.values(tabMap).forEach(id => {
@@ -6555,13 +6574,12 @@ function showAdminTab(tabName) {
     document
         .querySelectorAll(".admin-tab")
         .forEach(button => {
+            const buttonTab =
+                button.dataset.tab ||
+                button.dataset.adminTab ||
+                button.id.replace(/^adminTab/, "").toLowerCase();
 
-            button.classList.toggle(
-                "active",
-                button.dataset.tab === tabName ||
-                button.dataset.adminTab === tabName
-            );
-
+            button.classList.toggle("active", buttonTab === tabName);
         });
 
     if (tabName === "dashboard") {
@@ -9832,7 +9850,8 @@ function bindModalCloseEvents() {
         }
 
         if (
-            event.target.classList.contains("modal-backdrop")
+            event.target.classList.contains("modal-backdrop") ||
+            event.target.classList.contains("modal-overlay")
         ) {
             const modal = event.target.closest(".modal");
 
@@ -9865,40 +9884,41 @@ function bindMobileNavigation() {
         item.dataset.mobileBound = "true";
 
         item.addEventListener("click", () => {
-            const action = item.dataset.action;
+            const action = item.dataset.action || item.dataset.mobileNav;
+
+            document.querySelectorAll(".mobile-nav-item").forEach(nav => {
+                nav.classList.toggle("active", nav === item);
+            });
 
             switch (action) {
                 case "home":
                     showCustomerStore();
-                    window.scrollTo({
-                        top: 0,
-                        behavior: "smooth"
-                    });
+                    window.scrollTo({ top: 0, behavior: "smooth" });
                     break;
 
-                case "search":
-                    {
-                        const input =
-                            document.querySelector(
-                                ".search-box input"
-                            );
-
-                        if (input) {
-                            input.focus();
-                            window.scrollTo({
-                                top: input.offsetTop - 100,
-                                behavior: "smooth"
-                            });
-                        }
+                case "categories":
+                    showCustomerStore();
+                    const categoryStrip = document.querySelector(".category-strip");
+                    if (categoryStrip) {
+                        categoryStrip.scrollIntoView({ behavior: "smooth", block: "start" });
                     }
                     break;
+
+                case "search": {
+                    const input = document.querySelector("#searchInput, .search-box input");
+                    if (input) {
+                        input.focus();
+                        window.scrollTo({ top: Math.max(0, input.getBoundingClientRect().top + window.scrollY - 90), behavior: "smooth" });
+                    }
+                    break;
+                }
 
                 case "wishlist":
                     openWishlistModal();
                     break;
 
                 case "cart":
-                    openCartModal();
+                    openCart();
                     break;
 
                 case "account":
@@ -9971,6 +9991,39 @@ function bindStorageSync() {
 FINAL APP INITIALIZATION
    ========================================================= */
 
+/* =========================================================
+   CUSTOMER STORE INTERACTIONS
+   ========================================================= */
+function bindStoreInteractions() {
+    bindCategoryEvents();
+    bindProductGridEvents();
+    bindProductDetailEvents();
+
+    const sort = document.getElementById("sortProducts");
+    if (sort && sort.dataset.storeBound !== "true") {
+        sort.dataset.storeBound = "true";
+        sort.addEventListener("change", event => sortProducts(event.target.value));
+    }
+
+    const wishlistBox = document.getElementById("wishlistItems");
+    if (wishlistBox && wishlistBox.dataset.storeBound !== "true") {
+        wishlistBox.dataset.storeBound = "true";
+        wishlistBox.addEventListener("click", event => {
+            const target = event.target.closest("[data-action]");
+            if (!target) return;
+            const action = target.dataset.action;
+            const id = target.dataset.id;
+            if (!id) return;
+            if (action === "product-detail") openProductDetail(id);
+            if (action === "remove-wishlist") {
+                removeFromWishlist(id);
+                renderWishlist();
+            }
+        });
+    }
+}
+
+
 function initializePart5() {
     try {
         loadAdminAuth();
@@ -9984,6 +10037,7 @@ function initializePart5() {
         renderProducts();
 
         bindCategoryAdminEvents();
+        bindStoreInteractions();
         bindReportPeriodButtons();
         bindSettingsEvents();
         bindGlobalSearch();
@@ -10038,6 +10092,35 @@ if (
    ========================================================= */
 
 /* =========================================================
+   HIDDEN ADMIN ENTRY
+   Customer-facing admin button is hidden.
+   Tap the SALE 11 logo 5 times quickly to open admin login.
+   ========================================================= */
+let secretAdminTapCount = 0;
+let secretAdminTapTimer = null;
+
+function secretAdminEntry() {
+    showCustomerStore();
+
+    secretAdminTapCount += 1;
+    clearTimeout(secretAdminTapTimer);
+
+    secretAdminTapTimer = setTimeout(() => {
+        secretAdminTapCount = 0;
+    }, 1600);
+
+    if (secretAdminTapCount >= 5) {
+        secretAdminTapCount = 0;
+        clearTimeout(secretAdminTapTimer);
+        if (isAdminLoggedIn()) {
+            showAdminDashboard();
+        } else {
+            showAdminLogin();
+        }
+    }
+}
+
+/* =========================================================
    HTML COMPATIBILITY ALIASES
    Existing index.html handlers -> current app functions.
 ========================================================= */
@@ -10084,43 +10167,4 @@ function setDashboardPeriod(period) {
 
 function openProductModal(productId) {
     return openAddProduct(productId);
-}
-// ===== SALE 11 OLD HTML BUTTON COMPATIBILITY =====
-
-function openCartModal() {
-    return openCart();
-}
-
-function openAdminModal() {
-    if (typeof isAdminLoggedIn === "function" && isAdminLoggedIn()) {
-        return showAdminDashboard();
-    }
-    return showAdminLogin();
-}
-
-function openLoginModal() {
-    return openAccount();
-}
-
-function toggleDarkMode() {
-    document.body.classList.toggle("dark-mode");
-
-    const isDark =
-        document.body.classList.contains("dark-mode");
-
-    localStorage.setItem("sale11_dark_mode", isDark ? "1" : "0");
-}
-
-function openSupportModal() {
-    const modal =
-        document.getElementById("supportModal");
-
-    if (modal) {
-        openModal("supportModal");
-        return;
-    }
-
-    if (typeof showToast === "function") {
-        showToast("Support section is opening soon.", "info");
-    }
 }

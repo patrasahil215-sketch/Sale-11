@@ -2698,3 +2698,143 @@ p {
 }
 
 .switch-slider::after
+
+/* =========================================================
+   SALE 11 — APP LAYOUT / MODALS / MOBILE
+   ========================================================= */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(15, 23, 42, .56);
+    backdrop-filter: blur(4px);
+}
+
+.modal-overlay.hidden { display: none !important; }
+.modal-overlay.active { display: flex !important; }
+
+.modal {
+    width: min(100%, 720px);
+    max-height: min(90vh, 820px);
+    overflow: auto;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 24px 70px rgba(15,23,42,.25);
+}
+
+.modal-small { width: min(100%, 430px); }
+.modal-medium { width: min(100%, 620px); }
+
+.modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 20px 14px;
+    border-bottom: 1px solid #eef1f5;
+}
+
+.modal-header h2 { margin: 2px 0 4px; font-size: 20px; color: var(--text-dark); }
+.modal-header p { margin: 0; color: var(--text-muted); font-size: 12px; }
+.modal-kicker { color: var(--primary); font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.modal-close { width: 36px; height: 36px; border: 0; border-radius: 50%; background: #f3f5f8; color: #475467; font-size: 24px; line-height: 1; }
+.modal-close:hover { background: var(--primary-light); color: var(--primary); }
+
+.wishlist-items { padding: 16px; }
+
+.hidden-admin { display: none !important; }
+
+.mobile-bottom-nav { display: none; }
+
+@media (max-width: 900px) {
+    body { padding-bottom: 76px; background: #f7f8fb; }
+    .site-header { position: sticky; top: 0; }
+    .header-main { width: 100%; padding: 10px 12px; display: grid; grid-template-columns: auto 1fr auto; gap: 8px; }
+    .brand { min-width: 42px; }
+    .brand-text { display: none; }
+    .brand-mark { width: 38px; height: 38px; }
+    .search-box { min-width: 0; height: 42px; }
+    .search-box input { font-size: 14px; padding-left: 40px; }
+    .header-actions { gap: 2px; }
+    .header-action { display: none; }
+    .header-actions .icon-btn { display: inline-flex; width: 42px; height: 42px; }
+    .category-strip { overflow: hidden; }
+    .category-scroll { width: 100%; padding: 8px 12px; gap: 8px; }
+    .category-btn { min-width: 76px; min-height: 62px; padding: 8px 7px; border: 1px solid #e8ebf0; border-radius: 12px; background: #fff; font-size: 11px; }
+    .category-btn.active { color: var(--primary); border-color: #bdd2ff; background: var(--primary-light); }
+
+    .hero-section { width: calc(100% - 24px); margin: 12px auto; border-radius: 18px; }
+    .hero-content { min-height: 190px; padding: 24px 20px; grid-template-columns: 1fr; }
+    .hero-text h1 { font-size: 28px; line-height: 1.12; }
+    .hero-text p { font-size: 13px; max-width: 320px; }
+    .hero-placeholder { min-height: 70px; padding: 14px; }
+
+    .trust-row { width: calc(100% - 24px); margin: 0 auto 12px; display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+    .trust-item { padding: 10px; border-radius: 12px; }
+
+    .products-section { width: calc(100% - 16px); margin: 12px auto; padding: 0 4px; }
+    .section-heading { align-items: center; gap: 8px; }
+    .section-heading h2 { font-size: 20px; }
+    .section-heading p { font-size: 11px; }
+    .sort-area select { height: 38px; font-size: 11px; max-width: 120px; }
+    .product-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+    .product-card { border-radius: 12px; overflow: hidden; }
+    .product-card-image { aspect-ratio: 1 / 1.05; }
+    .product-card-body { padding: 9px; }
+    .product-card-name { font-size: 12px; min-height: 34px; }
+    .product-price { font-size: 16px; }
+    .product-mrp { font-size: 10px; }
+    .product-buy-btn { min-height: 36px; font-size: 11px; width: 100%; }
+
+    .site-footer { display: none; }
+
+    .mobile-bottom-nav {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 900;
+        height: 68px; padding: 5px 4px calc(5px + env(safe-area-inset-bottom));
+        display: grid; grid-template-columns: repeat(5,1fr);
+        background: rgba(255,255,255,.98); border-top: 1px solid #e4e7ec;
+        box-shadow: 0 -4px 18px rgba(16,24,40,.08);
+    }
+    .mobile-nav-item { position: relative; border: 0; background: transparent; color: #667085; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 10px; font-weight: 700; }
+    .mobile-nav-icon { font-size: 23px; line-height: 25px; }
+    .mobile-nav-item.active { color: var(--primary); }
+    .mobile-nav-item .nav-count { top: 1px; right: 22%; }
+
+    .admin-layout { grid-template-columns: 1fr; }
+    .admin-sidebar { position: static; display: flex; overflow-x: auto; gap: 6px; padding: 8px; }
+    .admin-tab { white-space: nowrap; }
+    .admin-content { padding: 12px; }
+    .stats-grid, .report-cards { grid-template-columns: repeat(2,1fr); }
+    .dashboard-grid, .settings-layout, .report-layout { grid-template-columns: 1fr; }
+    .form-grid, .form-grid.three { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: auto; }
+    .table-wrap { overflow-x: auto; }
+
+    .modal-overlay { align-items: flex-end; padding: 0; }
+    .modal { width: 100%; max-height: 92vh; border-radius: 20px 20px 0 0; }
+}
+
+@media (min-width: 901px) {
+    .mobile-bottom-nav { display: none !important; }
+}
+
+@media (max-width: 480px) {
+    .header-main { grid-template-columns: auto minmax(0,1fr) auto; }
+    .category-btn { min-width: 72px; }
+    .hero-text h1 { font-size: 25px; }
+    .trust-row { grid-template-columns: 1fr 1fr; }
+    .product-grid { gap: 7px; }
+}
+.category-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+.category-icon { font-size:18px; line-height:1; }
+.category-label { white-space:nowrap; }
+@media (max-width:900px) {
+  .category-btn { flex-direction:column; gap:4px; }
+  .category-icon { font-size:22px; }
+  .category-label { max-width:72px; overflow:hidden; text-overflow:ellipsis; }
+}
