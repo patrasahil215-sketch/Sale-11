@@ -3808,28 +3808,34 @@ function initializePart2() {
 
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
+
     if (!modal) return;
-    modal.classList.remove("hidden");
+
     modal.classList.add("active");
     modal.setAttribute("aria-hidden", "false");
+
     document.body.classList.add("modal-open");
 }
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
+
     if (!modal) return;
+
     modal.classList.remove("active");
-    modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
-    if (!document.querySelector(".modal.active")) document.body.classList.remove("modal-open");
+
+    if (!document.querySelector(".modal.active")) {
+        document.body.classList.remove("modal-open");
+    }
 }
 
 function closeAllModals() {
     document.querySelectorAll(".modal.active").forEach(modal => {
         modal.classList.remove("active");
-        modal.classList.add("hidden");
         modal.setAttribute("aria-hidden", "true");
     });
+
     document.body.classList.remove("modal-open");
 }
 
@@ -9849,20 +9855,62 @@ function bindModalCloseEvents() {
    ========================================================= */
 
 function bindMobileNavigation() {
-    const items = document.querySelectorAll(".mobile-nav-item");
+    const items = document.querySelectorAll(
+        ".mobile-nav-item"
+    );
+
     items.forEach(item => {
         if (item.dataset.mobileBound === "true") return;
+
         item.dataset.mobileBound = "true";
+
         item.addEventListener("click", () => {
-            const action = item.dataset.mobileNav || item.dataset.action || "";
-            document.querySelectorAll(".mobile-nav-item").forEach(btn => btn.classList.remove("active"));
-            item.classList.add("active");
+            const action = item.dataset.action || item.dataset.mobileNav;
+
             switch (action) {
-                case "home": showCustomerStore(); window.scrollTo({top:0,behavior:"smooth"}); break;
-                case "categories": showCustomerStore(); document.querySelector(".category-strip")?.scrollIntoView({behavior:"smooth",block:"start"}); break;
-                case "wishlist": openWishlistModal(); break;
-                case "cart": openCart(); break;
-                case "account": openAccount(); break;
+                case "home":
+                    showCustomerStore();
+                    window.scrollTo({
+                        top: 0,
+                        behavior: "smooth"
+                    });
+                    break;
+
+                case "categories":
+                    {
+                        const strip = document.querySelector(".category-strip");
+                        if (strip) strip.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                    break;
+
+                case "search":
+                    {
+                        const input =
+                            document.querySelector(
+                                ".search-box input"
+                            );
+
+                        if (input) {
+                            input.focus();
+                            window.scrollTo({
+                                top: input.offsetTop - 100,
+                                behavior: "smooth"
+                            });
+                        }
+                    }
+                    break;
+
+                case "wishlist":
+                    openWishlistModal();
+                    break;
+
+                case "cart":
+                    openCartModal();
+                    break;
+
+                case "account":
+                    openAccountModal();
+                    break;
             }
         });
     });
@@ -9979,13 +10027,15 @@ function initializePart5() {
 SAFE START
    ========================================================= */
 
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-        ensureWishlistModal();
-        initializePart5();
-    }, { once: true });
+if (
+    document.readyState === "loading"
+) {
+    document.addEventListener(
+        "DOMContentLoaded",
+        initializePart5,
+        { once: true }
+    );
 } else {
-    ensureWishlistModal();
     initializePart5();
 }
 
@@ -9993,20 +10043,6 @@ if (document.readyState === "loading") {
 /* =========================================================
    PART 5 END
    ========================================================= */
-
-/* =========================================================
-   V4 COMPATIBILITY FIXES
-   ========================================================= */
-function ensureWishlistModal() {
-    if (document.getElementById("wishlistModal")) return;
-    const el = document.createElement("div");
-    el.id = "wishlistModal";
-    el.className = "modal-overlay hidden";
-    el.setAttribute("aria-hidden", "true");
-    el.innerHTML = `<div class="modal modal-medium"><div class="modal-header"><div><span class="modal-kicker">SALE 11</span><h2>Wishlist</h2></div><button type="button" class="modal-close" data-close-modal="wishlistModal">×</button></div><div id="wishlistItems" class="modal-body"></div></div>`;
-    document.body.appendChild(el);
-}
-function openCartModal() { return openCart(); }
 
 /* =========================================================
    HTML COMPATIBILITY ALIASES
@@ -10055,4 +10091,34 @@ function setDashboardPeriod(period) {
 
 function openProductModal(productId) {
     return openAddProduct(productId);
+}
+
+
+/* Compatibility aliases for app navigation */
+function openCartModal() { return openCart(); }
+function openLoginModal() { return openAccount(); }
+function openAdminModal() {
+    if (typeof isAdminLoggedIn === "function" && isAdminLoggedIn()) return showAdminDashboard();
+    return showAdminLogin();
+}
+
+function openSupportModal() {
+    const modal = document.getElementById("supportModal");
+    if (!modal) return;
+
+    const phone = (typeof settings !== "undefined" && settings.supportPhone)
+        ? String(settings.supportPhone).trim()
+        : "";
+    const display = document.getElementById("supportPhoneDisplay");
+    const callBtn = document.getElementById("supportCallBtn");
+
+    if (display) display.textContent = phone || "Support number not set";
+    if (callBtn) {
+        callBtn.disabled = !phone;
+        callBtn.onclick = () => {
+            if (phone) window.location.href = `tel:${phone.replace(/[^0-9+]/g, "")}`;
+        };
+    }
+
+    openModal("supportModal");
 }

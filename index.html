@@ -4999,6 +4999,54 @@
     </div>
 
 </div>
+
+<!-- SUPPORT MODAL -->
+<div id="supportModal" class="modal-overlay hidden" aria-hidden="true">
+  <div class="modal modal-medium support-modal">
+    <div class="modal-header">
+      <div>
+        <span class="modal-kicker">HELP CENTER</span>
+        <h2>Customer Support</h2>
+      </div>
+      <button type="button" class="modal-close" data-close-modal="supportModal" aria-label="Close">×</button>
+    </div>
+    <div class="support-content">
+      <div class="support-card">
+        <div class="support-icon">🎧</div>
+        <div>
+          <strong>Need help with your order?</strong>
+          <p>Contact Sale 11 support for order, delivery or account assistance.</p>
+        </div>
+      </div>
+      <div class="support-contact-row">
+        <span>Support Mobile</span>
+        <strong id="supportPhoneDisplay">Support number not set</strong>
+      </div>
+      <div class="support-actions">
+        <button type="button" class="primary-btn" id="supportCallBtn">📞 Call Support</button>
+        <button type="button" class="secondary-btn" data-close-modal="supportModal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WISHLIST MODAL -->
+<div id="wishlistModal" class="modal-overlay hidden">
+  <div class="modal modal-medium">
+    <div class="modal-header">
+      <div>
+        <span class="modal-kicker">SAVED</span>
+        <h2>My Wishlist</h2>
+      </div>
+      <button type="button" class="modal-close" data-close-modal="wishlistModal" aria-label="Close">×</button>
+    </div>
+    <div id="wishlistItems" class="cart-items"></div>
+    <div class="modal-footer">
+      <button type="button" class="secondary-btn" data-close-modal="wishlistModal">Continue Shopping</button>
+    </div>
+  </div>
+</div>
+
 <!-- =========================================================
      PART 5 — FINAL HTML / MOBILE NAV / SCRIPT
      ========================================================= -->
@@ -5016,7 +5064,7 @@
     <button
         type="button"
         class="mobile-nav-item active"
-        data-mobile-nav="home"
+        data-action="home"
         id="mobileHomeBtn"
     >
         <span class="mobile-nav-icon">
@@ -5032,7 +5080,7 @@
     <button
         type="button"
         class="mobile-nav-item"
-        data-mobile-nav="categories"
+        data-action="categories"
         id="mobileCategoriesBtn"
     >
         <span class="mobile-nav-icon">
@@ -5048,7 +5096,7 @@
     <button
         type="button"
         class="mobile-nav-item"
-        data-mobile-nav="wishlist"
+        data-action="wishlist"
         id="mobileWishlistBtn"
     >
         <span class="mobile-nav-icon">
@@ -5072,7 +5120,7 @@
     <button
         type="button"
         class="mobile-nav-item"
-        data-mobile-nav="cart"
+        data-action="cart"
         id="mobileCartBtn"
     >
         <span class="mobile-nav-icon">
@@ -5096,7 +5144,7 @@
     <button
         type="button"
         class="mobile-nav-item"
-        data-mobile-nav="account"
+        data-action="account"
         id="mobileAccountBtn"
     >
         <span class="mobile-nav-icon">
