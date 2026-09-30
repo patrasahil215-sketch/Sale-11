@@ -1542,7 +1542,7 @@ function updateCartBadge() {
 
     document
         .querySelectorAll(
-            ".cart-badge, #mobileCartCount"
+            ".cart-badge"
         )
         .forEach(
             badge => {
@@ -1566,20 +1566,10 @@ function updateCartBadge() {
    ========================================================= */
 
 function updateWishlistCount() {
-
-    document
-        .querySelectorAll(
-            "[data-wishlist-count]"
-        )
-        .forEach(
-            element => {
-
-                element.textContent =
-                    String(
-                        wishlist.length
-                    );
-            }
-        );
+    document.querySelectorAll("[data-wishlist-count], #mobileWishlistCount").forEach(element => {
+        element.textContent = String(wishlist.length);
+        element.classList.toggle("hidden", wishlist.length === 0);
+    });
 }
 
 
@@ -1818,24 +1808,13 @@ function renderCategories(
                             ? "active"
                             : "";
 
-                    const icons = {
-                        "All": "✨",
-                        "Fashion": "👕",
-                        "Electronics": "📱",
-                        "Home & Kitchen": "🏠",
-                        "Beauty": "💄",
-                        "Kids": "🧸",
-                        "Best Sellers": "🔥"
-                    };
-
                     return `
                         <button
                             type="button"
                             class="category-btn ${active}"
                             data-category="${escapeAttribute(category)}"
                         >
-                            <span class="category-icon">${icons[category] || "🛍️"}</span>
-                            <span class="category-label">${escapeHTML(category)}</span>
+                            ${escapeHTML(category)}
                         </button>
                     `;
                 }
@@ -3403,13 +3382,38 @@ function buySelectedProduct() {
    33. OPEN WISHLIST
    ========================================================= */
 
+function ensureWishlistModal() {
+    let modal = document.getElementById("wishlistModal");
+    if (modal) return modal;
+
+    modal = document.createElement("div");
+    modal.id = "wishlistModal";
+    modal.className = "modal-overlay hidden";
+    modal.setAttribute("aria-hidden", "true");
+    modal.innerHTML = `
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <div>
+                    <span class="modal-kicker">SALE 11</span>
+                    <h2>My Wishlist</h2>
+                </div>
+                <button type="button" class="modal-close" onclick="closeModal('wishlistModal')">×</button>
+            </div>
+            <div id="wishlistItems" class="cart-items"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+
 function openWishlistModal() {
-
+    ensureWishlistModal();
     renderWishlist();
+    openModal("wishlistModal");
+}
 
-    openModal(
-        "wishlistModal"
-    );
+function openCartModal() {
+    return openCart();
 }
 
 
@@ -3819,22 +3823,17 @@ function initializePart2() {
 
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
+    if (!modal) return;
 
-    if (!modal) {
-        console.warn("Sale 11: modal not found:", modalId);
-        return;
-    }
-
+    // The HTML uses the .hidden class by default. Remove it when opening.
     modal.classList.remove("hidden");
     modal.classList.add("active");
     modal.setAttribute("aria-hidden", "false");
-
     document.body.classList.add("modal-open");
 }
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
-
     if (!modal) return;
 
     modal.classList.remove("active");
@@ -3852,7 +3851,6 @@ function closeAllModals() {
         modal.classList.add("hidden");
         modal.setAttribute("aria-hidden", "true");
     });
-
     document.body.classList.remove("modal-open");
 }
 
@@ -6461,7 +6459,7 @@ function showAdminDashboard() {
 
     const adminView =
         document.getElementById(
-            "adminView"
+            "adminDashboardView"
         );
 
     if (storeView) {
@@ -6469,7 +6467,6 @@ function showAdminDashboard() {
     }
 
     if (adminView) {
-        adminView.classList.remove("hidden");
         adminView.style.display = "block";
     }
 
@@ -6492,11 +6489,10 @@ function showCustomerStore() {
 
     const adminView =
         document.getElementById(
-            "adminView"
+            "adminDashboardView"
         );
 
     if (adminView) {
-        adminView.classList.add("hidden");
         adminView.style.display = "none";
     }
 
@@ -6543,13 +6539,13 @@ function showAdminTab(tabName) {
     }
 
     const tabMap = {
-        dashboard: "adminDashboardView",
-        products: "adminProductsView",
-        orders: "adminOrdersView",
-        customers: "adminCustomersView",
-        reports: "adminReportsView",
-        categories: "adminCategoriesView",
-        settings: "adminSettingsView"
+        dashboard: "adminTabDashboard",
+        products: "adminTabProducts",
+        orders: "adminTabOrders",
+        customers: "adminTabCustomers",
+        reports: "adminTabReports",
+        categories: "adminTabCategories",
+        settings: "adminTabSettings"
     };
 
     Object.values(tabMap).forEach(id => {
@@ -6574,12 +6570,13 @@ function showAdminTab(tabName) {
     document
         .querySelectorAll(".admin-tab")
         .forEach(button => {
-            const buttonTab =
-                button.dataset.tab ||
-                button.dataset.adminTab ||
-                button.id.replace(/^adminTab/, "").toLowerCase();
 
-            button.classList.toggle("active", buttonTab === tabName);
+            button.classList.toggle(
+                "active",
+                button.dataset.tab === tabName ||
+                button.dataset.adminTab === tabName
+            );
+
         });
 
     if (tabName === "dashboard") {
@@ -9850,8 +9847,7 @@ function bindModalCloseEvents() {
         }
 
         if (
-            event.target.classList.contains("modal-backdrop") ||
-            event.target.classList.contains("modal-overlay")
+            event.target.classList.contains("modal-backdrop")
         ) {
             const modal = event.target.closest(".modal");
 
@@ -9874,60 +9870,39 @@ function bindModalCloseEvents() {
    ========================================================= */
 
 function bindMobileNavigation() {
-    const items = document.querySelectorAll(
-        ".mobile-nav-item"
-    );
-
-    items.forEach(item => {
+    document.querySelectorAll(".mobile-nav-item").forEach(item => {
         if (item.dataset.mobileBound === "true") return;
-
         item.dataset.mobileBound = "true";
 
         item.addEventListener("click", () => {
-            const action = item.dataset.action || item.dataset.mobileNav;
+            const action = item.dataset.mobileNav || item.dataset.action || "";
 
-            document.querySelectorAll(".mobile-nav-item").forEach(nav => {
-                nav.classList.toggle("active", nav === item);
-            });
+            document.querySelectorAll(".mobile-nav-item").forEach(btn => btn.classList.remove("active"));
+            item.classList.add("active");
 
             switch (action) {
                 case "home":
                     showCustomerStore();
                     window.scrollTo({ top: 0, behavior: "smooth" });
                     break;
-
                 case "categories":
                     showCustomerStore();
-                    const categoryStrip = document.querySelector(".category-strip");
-                    if (categoryStrip) {
-                        categoryStrip.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }
+                    document.querySelector(".category-strip")?.scrollIntoView({ behavior: "smooth", block: "start" });
                     break;
-
-                case "search": {
-                    const input = document.querySelector("#searchInput, .search-box input");
-                    if (input) {
-                        input.focus();
-                        window.scrollTo({ top: Math.max(0, input.getBoundingClientRect().top + window.scrollY - 90), behavior: "smooth" });
-                    }
-                    break;
-                }
-
                 case "wishlist":
                     openWishlistModal();
                     break;
-
                 case "cart":
                     openCart();
                     break;
-
                 case "account":
-                    openAccountModal();
+                    openAccount();
                     break;
             }
         });
     });
 }
+
 
 
 /* =========================================================
@@ -9991,39 +9966,6 @@ function bindStorageSync() {
 FINAL APP INITIALIZATION
    ========================================================= */
 
-/* =========================================================
-   CUSTOMER STORE INTERACTIONS
-   ========================================================= */
-function bindStoreInteractions() {
-    bindCategoryEvents();
-    bindProductGridEvents();
-    bindProductDetailEvents();
-
-    const sort = document.getElementById("sortProducts");
-    if (sort && sort.dataset.storeBound !== "true") {
-        sort.dataset.storeBound = "true";
-        sort.addEventListener("change", event => sortProducts(event.target.value));
-    }
-
-    const wishlistBox = document.getElementById("wishlistItems");
-    if (wishlistBox && wishlistBox.dataset.storeBound !== "true") {
-        wishlistBox.dataset.storeBound = "true";
-        wishlistBox.addEventListener("click", event => {
-            const target = event.target.closest("[data-action]");
-            if (!target) return;
-            const action = target.dataset.action;
-            const id = target.dataset.id;
-            if (!id) return;
-            if (action === "product-detail") openProductDetail(id);
-            if (action === "remove-wishlist") {
-                removeFromWishlist(id);
-                renderWishlist();
-            }
-        });
-    }
-}
-
-
 function initializePart5() {
     try {
         loadAdminAuth();
@@ -10037,13 +9979,13 @@ function initializePart5() {
         renderProducts();
 
         bindCategoryAdminEvents();
-        bindStoreInteractions();
         bindReportPeriodButtons();
         bindSettingsEvents();
         bindGlobalSearch();
         bindHeaderActions();
         bindModalCloseEvents();
         bindMobileNavigation();
+        bindHiddenAdminAccess();
         bindScrollTop();
         bindStorageSync();
 
@@ -10071,6 +10013,26 @@ function initializePart5() {
 
 
 /* =========================================================
+   HIDDEN ADMIN ACCESS
+   ========================================================= */
+function bindHiddenAdminAccess() {
+    const brand = document.querySelector(".brand");
+    if (!brand || brand.dataset.adminBound === "true") return;
+    brand.dataset.adminBound = "true";
+    let taps = 0;
+    let timer = null;
+    brand.addEventListener("click", event => {
+        taps += 1;
+        clearTimeout(timer);
+        timer = setTimeout(() => { taps = 0; }, 1800);
+        if (taps >= 5) {
+            taps = 0;
+            showAdminLogin();
+        }
+    });
+}
+
+/* =========================================================
 SAFE START
    ========================================================= */
 
@@ -10090,35 +10052,6 @@ if (
 /* =========================================================
    PART 5 END
    ========================================================= */
-
-/* =========================================================
-   HIDDEN ADMIN ENTRY
-   Customer-facing admin button is hidden.
-   Tap the SALE 11 logo 5 times quickly to open admin login.
-   ========================================================= */
-let secretAdminTapCount = 0;
-let secretAdminTapTimer = null;
-
-function secretAdminEntry() {
-    showCustomerStore();
-
-    secretAdminTapCount += 1;
-    clearTimeout(secretAdminTapTimer);
-
-    secretAdminTapTimer = setTimeout(() => {
-        secretAdminTapCount = 0;
-    }, 1600);
-
-    if (secretAdminTapCount >= 5) {
-        secretAdminTapCount = 0;
-        clearTimeout(secretAdminTapTimer);
-        if (isAdminLoggedIn()) {
-            showAdminDashboard();
-        } else {
-            showAdminLogin();
-        }
-    }
-}
 
 /* =========================================================
    HTML COMPATIBILITY ALIASES
@@ -10168,20 +10101,3 @@ function setDashboardPeriod(period) {
 function openProductModal(productId) {
     return openAddProduct(productId);
 }
-
-
-function openSupportModal() {
-    const modal = document.getElementById("supportModal");
-    if (!modal) return;
-    if (typeof openModal === "function") return openModal("supportModal");
-    modal.classList.remove("hidden");
-    modal.setAttribute("aria-hidden", "false");
-}
-
-function updateQuickCartCount() {
-    const badge = document.getElementById("quickCartCount");
-    const source = document.getElementById("cartBadge");
-    if (badge) badge.textContent = source ? (source.textContent || "0") : "0";
-}
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", updateQuickCartCount, {once:true});
-else updateQuickCartCount();

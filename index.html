@@ -32,9 +32,8 @@
 
             <button
                 class="brand"
-                onclick="secretAdminEntry()"
+                onclick="switchTab('store')"
                 type="button"
-                aria-label="SALE 11 Home"
             >
                 <span class="brand-mark">S</span>
                 <span class="brand-text">SALE 11</span>
@@ -92,7 +91,7 @@
                 </button>
 
                 <button
-                    class="header-action admin-link hidden-admin"
+                    class="header-action admin-link"
                     onclick="switchTab('admin')"
                     type="button"
                 >
@@ -123,15 +122,6 @@
             </div>
 
         </nav>
-
-        <!-- MOBILE QUICK ACTIONS -->
-        <div class="mobile-quick-actions" aria-label="Quick actions">
-            <button type="button" onclick="openOrdersModal()"><span>📦</span><b>Orders</b></button>
-            <button type="button" onclick="openWishlist()"><span>♡</span><b>Wishlist</b></button>
-            <button type="button" onclick="openAccountModal()"><span>👤</span><b>Account</b></button>
-            <button type="button" onclick="openCart()"><span>🛒</span><b>Cart</b><em id="quickCartCount">0</em></button>
-            <button type="button" onclick="openSupportModal()"><span>💬</span><b>Support</b></button>
-        </div>
 
     </header>
 
@@ -5010,24 +5000,6 @@
 
 </div>
 <!-- =========================================================
-     WISHLIST MODAL
-     ========================================================= -->
-<div id="wishlistModal" class="modal-overlay hidden" aria-hidden="true">
-    <div class="modal modal-medium">
-        <div class="modal-header">
-            <div>
-                <span class="modal-kicker">SAVED ITEMS</span>
-                <h2>My Wishlist</h2>
-                <p>Products you saved for later.</p>
-            </div>
-            <button type="button" class="modal-close" data-close-modal="wishlistModal" aria-label="Close">×</button>
-        </div>
-        <div id="wishlistItems" class="wishlist-items"></div>
-    </div>
-</div>
-
-
-<!-- =========================================================
      PART 5 — FINAL HTML / MOBILE NAV / SCRIPT
      ========================================================= -->
 
@@ -5035,23 +5007,6 @@
 <!-- =========================================================
      MOBILE BOTTOM NAVIGATION
      ========================================================= -->
-
-<div class="modal-overlay hidden" id="supportModal" aria-hidden="true">
-    <div class="modal modal-small">
-        <div class="modal-header">
-            <div>
-                <span class="modal-kicker">HELP &amp; SUPPORT</span>
-                <h2>Sale 11 Support</h2>
-                <p>Need help with shopping or an order?</p>
-            </div>
-            <button class="modal-close" type="button" onclick="closeModal('supportModal')">×</button>
-        </div>
-        <div class="support-panel">
-            <p>For order help, open <strong>My Orders</strong> from your account.</p>
-            <button class="primary-btn full-width" type="button" onclick="closeModal('supportModal'); openOrdersModal();">📦 Open My Orders</button>
-        </div>
-    </div>
-</div>
 
 <nav
     class="mobile-bottom-nav"
@@ -5061,7 +5016,7 @@
     <button
         type="button"
         class="mobile-nav-item active"
-        data-action="home"
+        data-mobile-nav="home"
         id="mobileHomeBtn"
     >
         <span class="mobile-nav-icon">
@@ -5077,7 +5032,7 @@
     <button
         type="button"
         class="mobile-nav-item"
-        data-action="categories"
+        data-mobile-nav="categories"
         id="mobileCategoriesBtn"
     >
         <span class="mobile-nav-icon">
@@ -5093,7 +5048,7 @@
     <button
         type="button"
         class="mobile-nav-item"
-        data-action="wishlist"
+        data-mobile-nav="wishlist"
         id="mobileWishlistBtn"
     >
         <span class="mobile-nav-icon">
@@ -5107,7 +5062,6 @@
         <b
             id="mobileWishlistCount"
             class="nav-count hidden"
-            data-wishlist-count
         >
             0
         </b>
@@ -5118,7 +5072,7 @@
     <button
         type="button"
         class="mobile-nav-item"
-        data-action="cart"
+        data-mobile-nav="cart"
         id="mobileCartBtn"
     >
         <span class="mobile-nav-icon">
@@ -5142,7 +5096,7 @@
     <button
         type="button"
         class="mobile-nav-item"
-        data-action="account"
+        data-mobile-nav="account"
         id="mobileAccountBtn"
     >
         <span class="mobile-nav-icon">
