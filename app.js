@@ -1566,10 +1566,20 @@ function updateCartBadge() {
    ========================================================= */
 
 function updateWishlistCount() {
-    document.querySelectorAll("[data-wishlist-count], #mobileWishlistCount").forEach(element => {
-        element.textContent = String(wishlist.length);
-        element.classList.toggle("hidden", wishlist.length === 0);
-    });
+
+    document
+        .querySelectorAll(
+            "[data-wishlist-count]"
+        )
+        .forEach(
+            element => {
+
+                element.textContent =
+                    String(
+                        wishlist.length
+                    );
+            }
+        );
 }
 
 
@@ -3382,38 +3392,13 @@ function buySelectedProduct() {
    33. OPEN WISHLIST
    ========================================================= */
 
-function ensureWishlistModal() {
-    let modal = document.getElementById("wishlistModal");
-    if (modal) return modal;
-
-    modal = document.createElement("div");
-    modal.id = "wishlistModal";
-    modal.className = "modal-overlay hidden";
-    modal.setAttribute("aria-hidden", "true");
-    modal.innerHTML = `
-        <div class="modal modal-large">
-            <div class="modal-header">
-                <div>
-                    <span class="modal-kicker">SALE 11</span>
-                    <h2>My Wishlist</h2>
-                </div>
-                <button type="button" class="modal-close" onclick="closeModal('wishlistModal')">×</button>
-            </div>
-            <div id="wishlistItems" class="cart-items"></div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    return modal;
-}
-
 function openWishlistModal() {
-    ensureWishlistModal();
-    renderWishlist();
-    openModal("wishlistModal");
-}
 
-function openCartModal() {
-    return openCart();
+    renderWishlist();
+
+    openModal(
+        "wishlistModal"
+    );
 }
 
 
@@ -3824,8 +3809,6 @@ function initializePart2() {
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
-
-    // The HTML uses the .hidden class by default. Remove it when opening.
     modal.classList.remove("hidden");
     modal.classList.add("active");
     modal.setAttribute("aria-hidden", "false");
@@ -3835,18 +3818,14 @@ function openModal(modalId) {
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
-
     modal.classList.remove("active");
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
-
-    if (!document.querySelector(".modal-overlay.active")) {
-        document.body.classList.remove("modal-open");
-    }
+    if (!document.querySelector(".modal.active")) document.body.classList.remove("modal-open");
 }
 
 function closeAllModals() {
-    document.querySelectorAll(".modal-overlay.active").forEach(modal => {
+    document.querySelectorAll(".modal.active").forEach(modal => {
         modal.classList.remove("active");
         modal.classList.add("hidden");
         modal.setAttribute("aria-hidden", "true");
@@ -9870,39 +9849,24 @@ function bindModalCloseEvents() {
    ========================================================= */
 
 function bindMobileNavigation() {
-    document.querySelectorAll(".mobile-nav-item").forEach(item => {
+    const items = document.querySelectorAll(".mobile-nav-item");
+    items.forEach(item => {
         if (item.dataset.mobileBound === "true") return;
         item.dataset.mobileBound = "true";
-
         item.addEventListener("click", () => {
             const action = item.dataset.mobileNav || item.dataset.action || "";
-
             document.querySelectorAll(".mobile-nav-item").forEach(btn => btn.classList.remove("active"));
             item.classList.add("active");
-
             switch (action) {
-                case "home":
-                    showCustomerStore();
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                    break;
-                case "categories":
-                    showCustomerStore();
-                    document.querySelector(".category-strip")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    break;
-                case "wishlist":
-                    openWishlistModal();
-                    break;
-                case "cart":
-                    openCart();
-                    break;
-                case "account":
-                    openAccount();
-                    break;
+                case "home": showCustomerStore(); window.scrollTo({top:0,behavior:"smooth"}); break;
+                case "categories": showCustomerStore(); document.querySelector(".category-strip")?.scrollIntoView({behavior:"smooth",block:"start"}); break;
+                case "wishlist": openWishlistModal(); break;
+                case "cart": openCart(); break;
+                case "account": openAccount(); break;
             }
         });
     });
 }
-
 
 
 /* =========================================================
@@ -9985,7 +9949,6 @@ function initializePart5() {
         bindHeaderActions();
         bindModalCloseEvents();
         bindMobileNavigation();
-        bindHiddenAdminAccess();
         bindScrollTop();
         bindStorageSync();
 
@@ -10013,38 +9976,16 @@ function initializePart5() {
 
 
 /* =========================================================
-   HIDDEN ADMIN ACCESS
-   ========================================================= */
-function bindHiddenAdminAccess() {
-    const brand = document.querySelector(".brand");
-    if (!brand || brand.dataset.adminBound === "true") return;
-    brand.dataset.adminBound = "true";
-    let taps = 0;
-    let timer = null;
-    brand.addEventListener("click", event => {
-        taps += 1;
-        clearTimeout(timer);
-        timer = setTimeout(() => { taps = 0; }, 1800);
-        if (taps >= 5) {
-            taps = 0;
-            showAdminLogin();
-        }
-    });
-}
-
-/* =========================================================
 SAFE START
    ========================================================= */
 
-if (
-    document.readyState === "loading"
-) {
-    document.addEventListener(
-        "DOMContentLoaded",
-        initializePart5,
-        { once: true }
-    );
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+        ensureWishlistModal();
+        initializePart5();
+    }, { once: true });
 } else {
+    ensureWishlistModal();
     initializePart5();
 }
 
@@ -10052,6 +9993,20 @@ if (
 /* =========================================================
    PART 5 END
    ========================================================= */
+
+/* =========================================================
+   V4 COMPATIBILITY FIXES
+   ========================================================= */
+function ensureWishlistModal() {
+    if (document.getElementById("wishlistModal")) return;
+    const el = document.createElement("div");
+    el.id = "wishlistModal";
+    el.className = "modal-overlay hidden";
+    el.setAttribute("aria-hidden", "true");
+    el.innerHTML = `<div class="modal modal-medium"><div class="modal-header"><div><span class="modal-kicker">SALE 11</span><h2>Wishlist</h2></div><button type="button" class="modal-close" data-close-modal="wishlistModal">×</button></div><div id="wishlistItems" class="modal-body"></div></div>`;
+    document.body.appendChild(el);
+}
+function openCartModal() { return openCart(); }
 
 /* =========================================================
    HTML COMPATIBILITY ALIASES
